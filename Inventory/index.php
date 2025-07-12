@@ -1,0 +1,361 @@
+<?php
+include 'connection.php';
+// dashboard.php - Dashboard Page
+session_start();
+
+if (!isset($_SESSION['username'])) {
+    header('Location: index.php');
+    exit();
+}
+
+
+$role = $_SESSION['role']; // 'admin' or 'user'
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMMS - Inventory Management</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="brand">
+                <i class="fas fa-building"></i>
+                <span class="brand-name">BMMS</span>
+            </div>
+            <div class="sidebar-menu">
+                <a href="/backend/dashbood/dashbood.php" class="sidebar-link">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+                <?php if ($role === 'admin'): ?>
+                </a>
+                <a href="/backend/Categories/index.php" class="sidebar-link">
+                    <i class="fas fa-tags"></i>
+                    <span>Categories</span>
+                </a>
+                <a href="/backend/Suppliers/index.php" class="sidebar-link">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                    <span>suppliers</span>
+                </a>
+                <a href="/backend/Employees/index.php" class="sidebar-link">
+                    <i class="fas fa-users"></i>
+                    <span>Employees</span>
+                </a>
+                <a href="/backend/Customers/index.php" class="sidebar-link">
+                    <i class="fas fa-exchange-alt"></i>
+                    <span>customers</span>
+                </a>
+                <?php endif; ?>
+                <a href="/backend/Items/index.php" class="sidebar-link">
+                    <i class="fas fa-boxes"></i>
+                    <span>Items</span>
+                </a>
+                <a href="/backend/Inventory/index.php" class="sidebar-link active">
+                    <i class="fas fa-user-tie"></i>
+                    <span>inventory</span>
+                </a>
+                <a href="/backend/Orders/index.php" class="sidebar-link">
+                    <i class="fas fa-truck"></i>
+                    <span>orders</span>
+                </a>
+                <?php if ($role === 'admin'): ?>
+                <a href="/backend/Transactions/index.php" class="sidebar-link">
+                    <i class="fas fa-warehouse"></i>
+                    <span>transactions</span>
+                </a>
+                <a href="/backend/Salaries/index.php" class="sidebar-link ">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <span>Salaries</span>
+                </a>
+               
+           <!-- Inside your sidebar-menu div, add this link before the Settings link -->
+           <a href="/backend/signup/index.php" class="sidebar-link">
+    <i class="fas fa-user-plus"></i>
+    <span>Sign Up</span>
+</a>
+<?php endif; ?>
+                <nav class="sidebar">
+                    <ul>
+                        <li class="report-dropdown">
+                            <a href="#" class="sidebar-link sidebar-report-btn">
+                                <i class="fa-solid fa-chart-pie"></i>
+                                <span>Reports</span>
+                                <i class="fa-solid fa-angle-down dropdown-icon"></i>
+                            </a>
+                            <ul class="report-dropdown-content">
+                                <li><a href="/backend/reports/inventory.php">Inventory Report</a></li>
+                                <li><a href="/backend/reports/items.php">Items Report</a></li>
+                                <li><a href="/backend/reports/orders.php">Orders Report</a></li>
+                                <?php if ($role === 'admin'): ?>
+                                <li><a href="/backend/reports/salaries.php"> Salaries Report</a></li>
+                                 <li><a href="/backend/reports/transactions.php"> Transactions Report</a></li>
+                                 <li><a href="\backend\signup\backup.php"> backup </a></li>
+                                 <?php endif; ?>
+                            </ul>
+                        </li>
+                    </ul>
+                </nav>
+                <a href="/backend/Inventory/logout.php" class="sidebar-link" >
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>logout</span>
+                </a>
+
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="header">
+                <div class="page-title">
+                    <h1>Inventory Management</h1>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" id="addInventoryBtn">
+                        <i class="fas fa-plus"></i> Add New Item
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Search and Filter -->
+            <div class="search-filter">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Search by Item Name...">
+                </div>
+            </div>
+            
+            <!-- Inventory Table -->
+            <table class="inventory-table">
+                <thead>
+                    <tr>
+                        <th>Inventory ID</th>
+                        <th>Item ID</th>
+                        <th>Item Name</th>
+                        <th>Price</th>
+                        <th>Quantity</th>
+                        <th>Last Updated</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>INV-1001</td>
+                        <td>ITM-5001</td>
+                        <td>Flour (50kg)</td>
+                        <td>150</td>
+                        <td>2023-06-15 10:30 AM</td>
+                        <td class="action-cell">
+                            <button class="action-btn view-btn" onclick="viewInventory('INV-1001')">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                            <button class="action-btn edit-btn" onclick="editInventory('INV-1001')">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button class="action-btn delete-btn" onclick="deleteInventory('INV-1001')">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>INV-1002</td>
+                        <td>ITM-5002</td>
+                        <td>Sugar (25kg)</td>
+                        <td>200</td>
+                        <td>2023-06-14 02:15 PM</td>
+                        <td class="action-cell">
+                            <button class="action-btn view-btn" onclick="viewInventory('INV-1002')">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                            <button class="action-btn edit-btn" onclick="editInventory('INV-1002')">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button class="action-btn delete-btn" onclick="deleteInventory('INV-1002')">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>INV-1003</td>
+                        <td>ITM-5003</td>
+                        <td>Rice (25kg)</td>
+                        <td>120</td>
+                        <td>2023-06-15 09:45 AM</td>
+                        <td class="action-cell">
+                            <button class="action-btn view-btn" onclick="viewInventory('INV-1003')">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                            <button class="action-btn edit-btn" onclick="editInventory('INV-1003')">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button class="action-btn delete-btn" onclick="deleteInventory('INV-1003')">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>INV-1004</td>
+                        <td>ITM-5004</td>
+                        <td>Cooking Oil (5L)</td>
+                        <td>80</td>
+                        <td>2023-06-13 04:20 PM</td>
+                        <td class="action-cell">
+                            <button class="action-btn view-btn" onclick="viewInventory('INV-1004')">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                            <button class="action-btn edit-btn" onclick="editInventory('INV-1004')">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button class="action-btn delete-btn" onclick="deleteInventory('INV-1004')">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <!-- Pagination -->
+            <div class="pagination">
+                <button class="page-btn"><i class="fas fa-angle-left"></i></button>
+                <button class="page-btn active">1</button>
+                <button class="page-btn">2</button>
+                <button class="page-btn">3</button>
+                <button class="page-btn"><i class="fas fa-angle-right"></i></button>
+            </div>
+        </div>
+    </div>
+
+    
+    
+    <!-- Add/Edit Inventory Modal -->
+    <div class="modal" id="inventoryModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Add New Inventory Item</h3>
+                <button class="close-btn" id="closeModal">&times;</button>
+            </div>
+            <form id="inventoryForm">
+                <input type="hidden" id="inventoryId">
+                
+                <div class="form-group">
+    <label for="itemId">Item ID</label>
+    <input type="text" id="itemId" required>
+</div>
+
+<div class="form-group">
+    <label for="itemName">Item Name</label>
+    <input type="text" id="itemName" readonly required>
+</div>
+
+<div class="form-group">
+    <label for="price">Price</label>
+    <input type="number" id="price" step="0.01" readonly required>
+</div>
+
+                <div class="form-group">
+                    <label for="quantity">Quantity</label>
+                    <input type="number" id="quantity" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="lastUpdated">Last Updated</label>
+                    <input type="datetime-local" id="lastUpdated" required>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-danger" id="cancelBtn">Cancel</button>
+                    <button type="submit" class="btn btn-success" id="saveBtn">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- View Inventory Modal -->
+    <div class="modal" id="viewModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Inventory Item Details</h3>
+                <button class="close-btn" id="closeViewModal">&times;</button>
+            </div>
+            <div class="item-details">
+                <div class="detail-row">
+                    <strong>Inventory ID:</strong> <span id="viewId">INV-1001</span>
+                </div>
+                <div class="detail-row">
+                    <strong>Item ID:</strong> <span id="viewItemId">ITM-5001</span>
+                </div>
+                <div class="detail-row">
+                    <strong>Item Name:</strong> <span id="viewItemName">Flour (50kg)</span>
+                </div>
+                <div class="detail-row">
+        <strong>Price:</strong> <span id="viewPrice">$25.99</span>
+    </div>
+                <div class="detail-row">
+                    <strong>Quantity:</strong> <span id="viewQuantity">150</span>
+                </div>
+                <div class="detail-row">
+                    <strong>Last Updated:</strong> <span id="viewLastUpdated">2023-06-15 10:30 AM</span>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-primary" id="closeViewBtn">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Delete Confirmation Modal -->
+    <div class="modal" id="deleteModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Confirm Delete</h3>
+                <button class="close-btn" id="closeDeleteModal">&times;</button>
+            </div>
+            <div class="delete-message">
+                <p>Are you sure you want to delete this inventory record?</p>
+                <p><strong>Inventory ID:</strong> <span id="deleteInventoryId">INV-1001</span> - <span id="deleteItemName">Flour (50kg)</span></p>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+                <button type="button" class="btn" id="cancelDeleteBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- <input type="number" id="item_id_input" placeholder="Enter Item ID">
+<input type="text" id="item_name_input" placeholder="Item Name" readonly>
+<input type="text" id="price_input" placeholder="Price" readonly> -->
+
+       
+
+
+    <script>
+        // Toggle dropdown when clicking the report button
+        document.querySelector('.sidebar-report-btn').addEventListener('click', function(e) {
+            e.preventDefault();
+            const dropdown = this.closest('.report-dropdown');
+            dropdown.classList.toggle('active');
+        });
+
+        // Close dropdown when clicking outside 
+        document.addEventListener('click', function(e) {
+            // Check if the click was outside the dropdown menu
+            if (!e.target.closest('.sidebar-report-btn') && !e.target.closest('.report-dropdown-content')) {
+                // If click was outside, remove the 'active' class to hide the dropdown
+                document.querySelectorAll('.report-dropdown').forEach(dropdown => {
+                    dropdown.classList.remove('active');
+                });
+            }
+        });
+    </script>
+
+
+
+
+    <script src="script.js"></script>
+</body>
+</html>
