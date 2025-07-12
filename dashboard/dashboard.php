@@ -36,7 +36,7 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
             </div>
             <div class="sidebar-menu">
                 <ul>
-                <a href="/backend/dashbood/dashbood.php" class="sidebar-link active">
+                <a href="/backend/dashboard/dashboard.php" class="sidebar-link active">
                     <i class="fa-solid fa-tachometer-alt"></i>
                      <span>Dashboard</span>
                 </a> 
@@ -105,7 +105,7 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
                         </li>
                     </ul>
                 </nav>
-                <a href="/backend/dashbood/logout.php" class="sidebar-link" >
+                <a href="/backend/dashboard/logout.php" class="sidebar-link" >
                     <i class="fa-solid fa-right-from-bracket"></i>
                     <span>logout</span>
                 </a>

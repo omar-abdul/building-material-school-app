@@ -4,14 +4,14 @@ document.getElementById("loginForm").addEventListener("submit", function(event) 
 
   const formData = new FormData(this);
 
-  fetch("backend.php", {
+  fetch("/backend/api/auth/login.php", {
     method: "POST",
     body: formData
   })
   .then(res => res.json())
   .then(data => {
     if (data.success) {
-      window.location.href = "dashbood.php"; // beddel bogga haddii la galo
+      window.location.href = "dashboard.php"; // beddel bogga haddii la galo
     } else {
       document.getElementById("loginError").textContent = data.message;
     }
