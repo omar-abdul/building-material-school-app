@@ -1,52 +1,57 @@
 <?php
-require_once 'connection.php';
+/**
+ * Items Backend API
+ * Uses centralized database and utilities
+ */
 
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/utils.php';
+
+// Set headers for API
 header('Content-Type: application/json');
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
 header("Access-Control-Allow-Headers: Content-Type");
 
+$db = Database::getInstance();
 $action = $_GET['action'] ?? '';
 
 try {
     switch ($action) {
         case 'getItems':
-            getItems($conn);
+            getItems($db);
             break;
         case 'getItem':
-            getItem($conn);
+            getItem($db);
             break;
         case 'getCategoryDetails':
-            getCategoryDetails($conn);
+            getCategoryDetails($db);
             break;
         case 'getSupplierDetails':
-            getSupplierDetails($conn);
+            getSupplierDetails($db);
             break;
         case 'getEmployeeDetails':
-            getEmployeeDetails($conn);
+            getEmployeeDetails($db);
             break;
         case 'addItem':
-            addItem($conn);
+            addItem($db);
             break;
         case 'updateItem':
-            updateItem($conn);
+            updateItem($db);
             break;
         case 'deleteItem':
-            deleteItem($conn);
+            deleteItem($db);
             break;
         default:
-            echo json_encode(['error' => 'Invalid action']);
+            Utils::sendErrorResponse('Invalid action');
             break;
     }
 } catch (Exception $e) {
-    echo json_encode(['error' => $e->getMessage()]);
+    Utils::logError('Items API Error: ' . $e->getMessage());
+    Utils::sendErrorResponse($e->getMessage());
 }
 
-function sanitize_input($data, $conn) {
-    return htmlspecialchars(stripslashes(trim($data)));
-}
-
-function getItems($conn) {
+function getItems($db) {
     $search = $_GET['search'] ?? '';
     $categoryFilter = $_GET['categoryFilter'] ?? '';
     
@@ -62,38 +67,26 @@ function getItems($conn) {
               WHERE 1=1";
     
     $params = [];
-    $types = '';
     
     if (!empty($search)) {
         $query .= " AND (i.ItemName LIKE ? OR i.Description LIKE ? OR c.CategoryName LIKE ? OR s.SupplierName LIKE ?)";
         $searchParam = "%$search%";
         $params = array_merge($params, [$searchParam, $searchParam, $searchParam, $searchParam]);
-        $types .= 'ssss';
     }
     
     if (!empty($categoryFilter)) {
         $query .= " AND c.CategoryName = ?";
         $params[] = $categoryFilter;
-        $types .= 's';
     }
     
     $query .= " ORDER BY i.CreatedDate DESC";
     
-    $stmt = $conn->prepare($query);
-    
-    if (!empty($params)) {
-        $stmt->bind_param($types, ...$params);
+    try {
+        $items = $db->fetchAll($query, $params);
+        Utils::sendSuccessResponse('Items retrieved successfully', $items);
+    } catch (Exception $e) {
+        Utils::sendErrorResponse('Failed to retrieve items: ' . $e->getMessage());
     }
-    
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    $items = [];
-    while ($row = $result->fetch_assoc()) {
-        $items[] = $row;
-    }
-    
-    echo json_encode($items);
 }
 
 function getItem($conn) {

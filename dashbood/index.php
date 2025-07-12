@@ -182,6 +182,10 @@
         <span>KuLan<br><small>BUILDINGS MATERIAL</small></span>
       </div>
       <form id="loginForm">
+        <?php
+        require_once __DIR__ . '/../config/csrf.php';
+        echo CSRF::getHiddenInput();
+        ?>
         <div class="form-group">
           <label for="username">Username</label>
           <input type="text" id="username" name="username" required />
