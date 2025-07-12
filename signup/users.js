@@ -262,7 +262,7 @@ function signUpUser(e) {
     formData.append('password', password);
     formData.append('confirmPassword', confirmPassword);
     
-    fetch('backend.php', {
+    fetch('/backend/api/auth/signup.php', {
         method: 'POST',
         body: formData
     })

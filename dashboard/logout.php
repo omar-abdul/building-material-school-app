@@ -10,6 +10,6 @@ $auth = new Auth();
 $auth->logout();
 
 // Redirect to login page
-header('Location: /backend/dashbood/index.php');
+header('Location: /backend/dashboard/index.php');
 exit();
 ?>

@@ -178,7 +178,7 @@
   <div class="container">
     <div class="left-side">
       <div class="logo">
-        <img src="/backend/dashbood/image/logo.png" alt="kulan Logo">
+        <img src="/backend/dashboard/image/logo.png" alt="kulan Logo">
         <span>KuLan<br><small>BUILDINGS MATERIAL</small></span>
       </div>
       <form id="loginForm">
@@ -204,7 +204,7 @@
     <div class="right-side">
       <div class="top-half">
         <div class="top-content">
-          <img src="/backend/dashbood/image/111.png" alt="Qalab Dhisme">
+          <img src="/backend/dashboard/image/111.png" alt="Qalab Dhisme">
           <h2>libso qalab dhisme tayo sare leh</h2>
         </div>
       </div>

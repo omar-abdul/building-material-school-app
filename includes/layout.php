@@ -15,8 +15,8 @@ $currentDir = basename(dirname($_SERVER['PHP_SELF']));
 
 // Define navigation items
 $navItems = [
-    'dashbood' => [
-        'url' => '/backend/dashbood/dashbood.php',
+    'dashboard' => [
+        'url' => '/backend/dashboard/dashboard.php',
         'icon' => 'fa-tachometer-alt',
         'text' => 'Dashboard',
         'admin_only' => false
@@ -165,7 +165,7 @@ function renderSidebar($navItems, $reportItems, $auth, $currentDir) {
     echo '</nav>';
     
     // Logout link
-    echo '<a href="/backend/dashbood/logout.php" class="sidebar-link">';
+    echo '<a href="/backend/dashboard/logout.php" class="sidebar-link">';
     echo '<i class="fa-solid fa-right-from-bracket"></i>';
     echo '<span>Logout</span>';
     echo '</a>';

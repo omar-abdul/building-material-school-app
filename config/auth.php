@@ -135,7 +135,7 @@ class Auth {
     /**
      * Require authentication - redirect to login if not authenticated
      */
-    public function requireAuth($redirectUrl = '/backend/dashbood/index.php') {
+    public function requireAuth($redirectUrl = '/backend/dashboard/index.php') {
         if (!$this->isLoggedIn()) {
             header('Location: ' . $redirectUrl);
             exit();
@@ -145,7 +145,7 @@ class Auth {
     /**
      * Require admin role - redirect to dashboard if not admin
      */
-    public function requireAdmin($redirectUrl = '/backend/dashbood/dashbood.php') {
+    public function requireAdmin($redirectUrl = '/backend/dashboard/dashboard.php') {
         $this->requireAuth();
         if (!$this->isAdmin()) {
             header('Location: ' . $redirectUrl);

@@ -30,7 +30,7 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
                 <span class="brand-name">BMMS</span>
             </div>
             <div class="sidebar-menu">
-                <a href="/backend/dashbood/dashbood.php" class="sidebar-link">
+                <a href="/backend/dashboard/dashboard.php" class="sidebar-link">
                     <i class="fas fa-tachometer-alt"></i>
                     <span>Dashboard</span>
                 </a>
@@ -102,7 +102,7 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
                     </ul>
               </nav>
 
-              <a href="/backend/Items/logout.php" class="sidebar-link" >
+              <a href="/backend/dashboard/logout.php" class="sidebar-link" >
                     <i class="fa-solid fa-right-from-bracket"></i>
                     <span>logout</span>
                 </a>

@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', loadItems);
 
 // Functions
 function loadItems() {
-    fetch('backend.php?action=getItems')
+    fetch('/backend/api/items/items.php?action=getItems')
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -125,7 +125,7 @@ function openAddItemModal() {
 }
 
 function editItem(id) {
-    fetch(`backend.php?action=getItem&itemId=${id}`)
+    fetch(`/backend/api/items/items.php?action=getItem&itemId=${id}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -160,7 +160,7 @@ function editItem(id) {
 }
 
 function viewItem(id) {
-    fetch(`backend.php?action=getItem&itemId=${id}`)
+    fetch(`/backend/api/items/items.php?action=getItem&itemId=${id}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -197,7 +197,7 @@ function deleteItem(id) {
         return; // User clicked cancel
     }
 
-    fetch(`backend.php?action=deleteItem&itemId=${id}`)
+    fetch(`/backend/api/items/items.php?action=deleteItem&itemId=${id}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network error');
@@ -232,7 +232,7 @@ function fetchCategoryDetails() {
         return;
     }
     
-    fetch(`backend.php?action=getCategoryDetails&categoryId=${categoryId}`)
+    fetch(`/backend/api/items/items.php?action=getCategoryDetails&categoryId=${categoryId}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -260,7 +260,7 @@ function fetchSupplierDetails() {
         return;
     }
     
-    fetch(`backend.php?action=getSupplierDetails&supplierId=${supplierId}`)
+    fetch(`/backend/api/items/items.php?action=getSupplierDetails&supplierId=${supplierId}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -288,7 +288,7 @@ function fetchEmployeeDetails() {
         return;
     }
     
-    fetch(`backend.php?action=getEmployeeDetails&employeeId=${employeeId}`)
+    fetch(`/backend/api/items/items.php?action=getEmployeeDetails&employeeId=${employeeId}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -339,7 +339,7 @@ function saveItem(e) {
     }
     
     // Determine URL and method
-    const url = `backend.php?action=${id ? 'updateItem' : 'addItem'}`;
+    const url = `/backend/api/items/items.php?action=${id ? 'updateItem' : 'addItem'}`;
     
     // Send request
     fetch(url, {
@@ -387,7 +387,7 @@ function filterItems() {
     const searchTerm = searchInput.value;
     const categoryFilterValue = categoryFilter.value;
     
-    fetch(`backend.php?action=getItems&search=${encodeURIComponent(searchTerm)}&categoryFilter=${encodeURIComponent(categoryFilterValue)}`)
+    fetch(`/backend/api/items/items.php?action=getItems&search=${encodeURIComponent(searchTerm)}&categoryFilter=${encodeURIComponent(categoryFilterValue)}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -405,7 +405,7 @@ function filterItems() {
 function confirmDelete() {
     if (!currentItemToDelete) return;
     
-    fetch(`backend.php?action=deleteItem&itemId=${currentItemToDelete}`)
+    fetch(`/backend/api/items/items.php?action=deleteItem&itemId=${currentItemToDelete}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
