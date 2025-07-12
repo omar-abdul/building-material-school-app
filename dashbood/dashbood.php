@@ -1,14 +1,15 @@
 <?php
-// dashboard.php - Dashboard Page
-session_start();
+/**
+ * Dashboard Page
+ * Uses centralized authentication system
+ */
 
-if (!isset($_SESSION['username'])) {
-    header('Location: index.php');
-    exit();
-}
+require_once __DIR__ . '/../config/auth.php';
 
+$auth = new Auth();
+$auth->requireAuth();
 
-$role = $_SESSION['role']; // 'admin' or 'user'
+$role = $auth->getUserRole(); // 'admin' or 'user'
 ?>
 <!DOCTYPE html>
 <html lang="en">

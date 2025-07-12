@@ -1,6 +1,16 @@
 <?php
-include 'connection.php';
+/**
+ * User Management Backend API
+ * Uses centralized authentication and database system
+ */
 
+require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../config/utils.php';
+
+$auth = new Auth();
+$auth->startSession();
+
+// Set headers for API
 header('Content-Type: application/json');
 
 $action = $_POST['action'] ?? '';
@@ -8,113 +18,80 @@ $action = $_POST['action'] ?? '';
 try {
     switch ($action) {
         case 'get_users':
-            handleGetUsers($conn);
+            handleGetUsers($auth);
             break;
         case 'get_user':
-            handleGetUser($conn);
+            handleGetUser($auth);
             break;
         case 'add_user':
-            handleAddUser($conn);
+            handleAddUser($auth);
             break;
         case 'edit_user':
-            handleEditUser($conn);
+            handleEditUser($auth);
             break;
         case 'delete_user':
-            handleDeleteUser($conn);
+            handleDeleteUser($auth);
             break;
         case 'signup_user':
-            handleSignupUser($conn);
+            handleSignupUser($auth);
             break;
         default:
-            echo json_encode(['success' => false, 'message' => 'Invalid action']);
+            Utils::sendErrorResponse('Invalid action');
     }
-} catch(PDOException $e) {
-    echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+} catch(Exception $e) {
+    Utils::logError('User Management API Error: ' . $e->getMessage());
+    Utils::sendErrorResponse('Database error: ' . $e->getMessage());
 }
 
-function handleGetUsers($conn) {
+function handleGetUsers($auth) {
     $search = $_POST['search'] ?? '';
     $roleFilter = $_POST['roleFilter'] ?? '';
     
-    $query = "SELECT id, username, role, created_at FROM users WHERE 1=1";
-    $params = [];
-    
-    if (!empty($search)) {
-        $query .= " AND username LIKE :search";
-        $params[':search'] = "%$search%";
-    }
-    
-    if (!empty($roleFilter)) {
-        $query .= " AND role = :role";
-        $params[':role'] = $roleFilter;
-    }
-    
-    $query .= " ORDER BY created_at DESC";
-    
-    $stmt = $conn->prepare($query);
-    $stmt->execute($params);
-    
-    $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    echo json_encode(['success' => true, 'users' => $users]);
+    $result = $auth->getAllUsers($search, $roleFilter);
+    Utils::sendJsonResponse($result);
 }
 
 
 
-function handleDeleteUser($conn) {
+function handleDeleteUser($auth) {
     $id = $_POST['id'] ?? 0;
     
-    $stmt = $conn->prepare("DELETE FROM users WHERE id = :id");
-    $stmt->bindParam(':id', $id);
+    // Sanitize input
+    $id = Utils::sanitizeInput($id);
     
-    if ($stmt->execute()) {
-        echo json_encode(['success' => true, 'message' => 'User deleted successfully']);
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to delete user']);
+    if (empty($id)) {
+        Utils::sendErrorResponse('User ID is required');
+        return;
     }
+    
+    $result = $auth->deleteUser($id);
+    Utils::sendJsonResponse($result);
 }
 
-function handleSignupUser($conn) {
+function handleSignupUser($auth) {
     $username = $_POST['username'] ?? '';
     $password = $_POST['password'] ?? '';
     $confirmPassword = $_POST['confirmPassword'] ?? '';
     
+    // Sanitize inputs
+    $username = Utils::sanitizeInput($username);
+    $password = Utils::sanitizeInput($password);
+    $confirmPassword = Utils::sanitizeInput($confirmPassword);
+    
     // Validate inputs
     if (empty($username) || empty($password) || empty($confirmPassword)) {
-        echo json_encode(['success' => false, 'message' => 'All fields are required']);
+        Utils::sendErrorResponse('All fields are required');
         return;
     }
     
     if ($password !== $confirmPassword) {
-        echo json_encode(['success' => false, 'message' => 'Passwords do not match']);
+        Utils::sendErrorResponse('Passwords do not match');
         return;
     }
     
-    // Check if username already exists
-    $stmt = $conn->prepare("SELECT id FROM users WHERE username = :username");
-    $stmt->bindParam(':username', $username);
-    $stmt->execute();
-    
-    if ($stmt->fetch()) {
-        echo json_encode(['success' => false, 'message' => 'Username already exists']);
-        return;
-    }
-    
-    // Hash the password
-    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-    
-    // Insert new user with default 'user' role
-    $role = 'user';
-    $stmt = $conn->prepare("INSERT INTO users (username, password, role) VALUES (:username, :password, :role)");
-    $stmt->bindParam(':username', $username);
-    $stmt->bindParam(':password', $hashedPassword);
-    $stmt->bindParam(':role', $role);
-    
-    if ($stmt->execute()) {
-        echo json_encode(['success' => true, 'message' => 'User signed up successfully']);
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to sign up user']);
-    }
+    // Create user using centralized authentication
+    $result = $auth->createUser($username, $password, 'user');
+    Utils::sendJsonResponse($result);
 }
 
 
@@ -140,48 +117,32 @@ function handleGetUser($conn) {
 
 
 
-// 1. handleAddUser (Ku dar user cusub)
-function handleAddUser($conn) {
+// 1. handleAddUser (Add new user)
+function handleAddUser($auth) {
     $username = $_POST['username'] ?? '';
     $password = $_POST['password'] ?? '';
     $confirmPassword = $_POST['confirmPassword'] ?? '';
     $role = $_POST['role'] ?? 'user';
     
+    // Sanitize inputs
+    $username = Utils::sanitizeInput($username);
+    $password = Utils::sanitizeInput($password);
+    $confirmPassword = Utils::sanitizeInput($confirmPassword);
+    $role = Utils::sanitizeInput($role);
+    
     if (empty($username) || empty($password) || empty($confirmPassword)) {
-        echo json_encode(['success' => false, 'message' => 'All fields are required']);
+        Utils::sendErrorResponse('All fields are required');
         return;
     }
     
     if ($password !== $confirmPassword) {
-        echo json_encode(['success' => false, 'message' => 'Passwords do not match']);
+        Utils::sendErrorResponse('Passwords do not match');
         return;
     }
     
-    // Check if username exists
-    $stmt = $conn->prepare("SELECT id FROM users WHERE username = :username");
-    $stmt->bindParam(':username', $username);
-    $stmt->execute();
-    
-    if ($stmt->fetch()) {
-        echo json_encode(['success' => false, 'message' => 'Username already exists']);
-        return;
-    }
-    
-    
-    // Ku kaydi password-ka oo qoran (plain text)
-    // =====================================
-    $plainPassword = $password; // No hashing
-    
-    $stmt = $conn->prepare("INSERT INTO users (username, password, role) VALUES (:username, :password, :role)");
-    $stmt->bindParam(':username', $username);
-    $stmt->bindParam(':password', $plainPassword); // Plain text password
-    $stmt->bindParam(':role', $role);
-    
-    if ($stmt->execute()) {
-        echo json_encode(['success' => true, 'message' => 'User added successfully']);
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to add user']);
-    }
+    // Create user using centralized authentication
+    $result = $auth->createUser($username, $password, $role);
+    Utils::sendJsonResponse($result);
 }
 
 // =====================================

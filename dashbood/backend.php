@@ -1,46 +1,35 @@
 
 <?php
-session_start();
+/**
+ * Login Backend Handler
+ * Uses centralized authentication system with CSRF protection
+ */
 
-// Xiriirka database-ka
-$host = "localhost";
-$dbname = "bmmss";
-$user = "root";
-$pass = "";
+require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../config/utils.php';
+require_once __DIR__ . '/../config/csrf.php';
 
-try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname", $user, $pass);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch (PDOException $e) {
-    echo json_encode(["success" => false, "message" => "Database connection failed."]);
-    exit;
-}
+$auth = new Auth();
+$auth->startSession();
 
-// Foomka la helay
+// Handle login request
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    // Validate CSRF token
+    if (!CSRF::validatePostToken()) {
+        Utils::sendErrorResponse('Invalid request token', 403);
+    }
+    
     $username = $_POST["username"] ?? '';
     $password = $_POST["password"] ?? '';
 
-    // Akhri user-ka
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
-    $stmt->execute([$username]);
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    // Sanitize inputs
+    $username = Utils::sanitizeInput($username);
+    $password = Utils::sanitizeInput($password);
 
-    if ($user && $password === $user['password']) {
-        // Haddii aad isticmaaleyso password_hash:
-        // if (password_verify($password, $user['password'])) {
-
-        $_SESSION['username'] = $user['username'];
-        $_SESSION['role'] = $user['role'];
-
-        echo json_encode(["success" => true]);
-    } else {
-        echo json_encode([
-            "success" => false,
-            "message" => "Invalid username or password."
-        ]);
-    }
-    exit;
+    // Attempt login
+    $result = $auth->login($username, $password);
+    
+    Utils::sendJsonResponse($result);
 }
 ?>
 

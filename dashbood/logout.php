@@ -1,8 +1,15 @@
 <?php
-// logout.php
-session_start();
-session_unset(); // Tirtir dhammaan session variables
-session_destroy(); // Tirtir session-ka
-header('Location: /backend/dashbood/index.php'); // Ku celi login form
+/**
+ * Logout Handler
+ * Uses centralized authentication system
+ */
+
+require_once __DIR__ . '/../config/auth.php';
+
+$auth = new Auth();
+$auth->logout();
+
+// Redirect to login page
+header('Location: /backend/dashbood/index.php');
 exit();
 ?>
