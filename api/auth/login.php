@@ -5,9 +5,11 @@
  * Uses centralized authentication system with CSRF protection
  */
 
-require_once __DIR__ . '/../config/auth.php';
-require_once __DIR__ . '/../config/utils.php';
-require_once __DIR__ . '/../config/csrf.php';
+
+
+require_once __DIR__ . '/../../config/auth.php';
+require_once __DIR__ . '/../../config/utils.php';
+require_once __DIR__ . '/../../config/csrf.php';
 
 $auth = new Auth();
 $auth->startSession();
@@ -18,7 +20,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     if (!CSRF::validatePostToken()) {
         Utils::sendErrorResponse('Invalid request token', 403);
     }
-    
+
     $username = $_POST["username"] ?? '';
     $password = $_POST["password"] ?? '';
 
@@ -28,9 +30,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     // Attempt login
     $result = $auth->login($username, $password);
-    
+
     Utils::sendJsonResponse($result);
 }
+
+
 ?>
 
 

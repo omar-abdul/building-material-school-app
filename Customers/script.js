@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', loadCustomers);
 
 // Functions
 function loadCustomers() {
-    fetch('backend.php?action=getCustomers')
+    fetch('/backend/api/customers/customers.php?action=getCustomers')
         .then(response => response.json())
         .then(data => {
             renderCustomersTable(data);
@@ -54,7 +54,8 @@ function loadCustomers() {
 function renderCustomersTable(customers) {
     customersTable.innerHTML = '';
     
-    customers.forEach(customer => {
+    // biome-ignore lint/complexity/noForEach: <explanation>
+        customers.forEach(customer => {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${customer.CustomerID}</td>
@@ -93,7 +94,7 @@ function openAddCustomerModal() {
 }
 
 function editCustomer(id) {
-    fetch(`backend.php?action=getCustomer&id=${id}`)
+    fetch(`/backend/api/customers/customers.php?action=getCustomer&id=${id}`)
         .then(response => response.json())
         .then(customer => {
             document.getElementById('modalTitle').textContent = "Edit Customer";
@@ -111,7 +112,7 @@ function editCustomer(id) {
 }
 
 function viewCustomer(id) {
-    fetch(`backend.php?action=getCustomer&id=${id}`)
+    fetch(`/backend/api/customers/customers.php?action=getCustomer&id=${id}`)
         .then(response => response.json())
         .then(customer => {
             document.getElementById('viewId').textContent = customer.CustomerID;
@@ -130,7 +131,7 @@ function viewCustomer(id) {
 function deleteCustomer(id) {
     currentCustomerToDelete = id;
     // Get customer name for display in confirmation
-    fetch(`backend.php?action=getCustomer&id=${id}`)
+    fetch(`/backend/api/customers/customers.php?action=getCustomer&id=${id}`)
         .then(response => response.json())
         .then(customer => {
             document.getElementById('deleteCustomerId').textContent = customer.CustomerID;
@@ -145,7 +146,7 @@ function deleteCustomer(id) {
 
 function confirmDelete() {
     if (currentCustomerToDelete) {
-        fetch(`backend.php?action=deleteCustomer&id=${currentCustomerToDelete}`, {
+        fetch(`/backend/api/customers/customers.php?action=deleteCustomer&id=${currentCustomerToDelete}`, {
             method: 'GET'
         })
         .then(response => response.json())
@@ -172,13 +173,13 @@ function viewOrderHistory(id) {
     currentCustomerToViewHistory = id;
     
     // Get customer name for display
-    fetch(`backend.php?action=getCustomer&id=${id}`)
+    fetch(`/backend/api/customers/customers.php?action=getCustomer&id=${id}`)
         .then(response => response.json())
         .then(customer => {
             document.getElementById('historyCustomerName').textContent = `${customer.Name} (${customer.CustomerID})`;
             
             // Get order history
-            return fetch(`backend.php?action=getOrderHistory&id=${id}`);
+            return fetch(`/backend/api/customers/customers.php?action=getOrderHistory&id=${id}`);
         })
         .then(response => response.json())
         .then(orders => {
@@ -242,7 +243,7 @@ function saveCustomer(e) {
         address: address
     };
     
-    const url = id ? 'backend.php?action=updateCustomer' : 'backend.php?action=addCustomer';
+    const url = id ? '/backend/api/customers/customers.php?action=updateCustomer' : '/backend/api/customers/customers.php?action=addCustomer';
     const method = 'POST';
     
     if (id) {
@@ -280,7 +281,7 @@ function filterCustomers() {
         return;
     }
     
-    fetch(`backend.php?action=searchCustomers&term=${encodeURIComponent(searchTerm)}`)
+    fetch(`/backend/api/customers/customers.php?action=searchCustomers&term=${encodeURIComponent(searchTerm)}`)
         .then(response => response.json())
         .then(data => {
             renderCustomersTable(data);
@@ -313,13 +314,13 @@ function viewOrderHistory(id) {
     currentCustomerToViewHistory = id;
     
     // Get customer name for display
-    fetch(`backend.php?action=getCustomer&id=${id}`)
+    fetch(`/backend/api/customers/customers.php?action=getCustomer&id=${id}`)
         .then(response => response.json())
         .then(customer => {
             document.getElementById('historyCustomerName').textContent = `${customer.Name} (${customer.CustomerID})`;
             
             // Get order history
-            return fetch(`backend.php?action=getOrderHistory&id=${id}`);
+            return fetch(`/backend/api/customers/customers.php?action=getOrderHistory&id=${id}`);
         })
         .then(response => response.json())
         .then(orders => {

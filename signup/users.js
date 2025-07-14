@@ -40,7 +40,7 @@ searchInput.addEventListener('input', filterUsers);
 roleFilter.addEventListener('change', filterUsers);
 
 // Load users when page loads
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', () => {
     loadUsers();
 });
 
@@ -118,7 +118,7 @@ function confirmDelete() {
                 alert('User deleted successfully');
                 loadUsers();
             } else {
-                alert('Failed to delete user: ' + data.message);
+                alert(`Failed to delete user: ${data.message}`);
             }
             closeModals();
         })
@@ -226,7 +226,7 @@ function saveUser(e) {
             loadUsers();
             closeModals();
         } else {
-            alert('Khalad: ' + data.message);
+            alert(`Khalad: ${data.message}`);
         }
     })
     .catch(error => {
@@ -273,7 +273,7 @@ function signUpUser(e) {
             loadUsers();
             closeModals();
         } else {
-            alert('Sign up failed: ' + data.message);
+            alert(`Sign up failed: ${data.message}`);
         }
     })
     .catch(error => {
@@ -352,7 +352,7 @@ function fetchUserById(id, callback) {
         if (data.success) {
             callback(data.user);
         } else {
-            alert('User not found: ' + data.message);
+            alert(`User not found: ${data.message}`);
             callback(null);
         }
     })
@@ -413,7 +413,8 @@ function renderUsers(users) {
     const tbody = document.querySelector('.users-table tbody');
     tbody.innerHTML = '';
     
-    users.forEach(user => {
+    // biome-ignore lint/complexity/noForEach: <explanation>
+        users.forEach(user => {
         const tr = document.createElement('tr');
         
         tr.innerHTML = `

@@ -309,7 +309,7 @@ window.addEventListener('click', (e) => {
 
 // API Functions
 async function getCustomerDetails(customerId) {
-    const response = await fetch(`backend.php?customer_id=${customerId}`);
+    const response = await fetch(`/backend/api/orders/orders.php?customer_id=${customerId}`);
     const data = await response.json();
     if (data.error) {
         alert(data.error);
@@ -319,7 +319,7 @@ async function getCustomerDetails(customerId) {
 }
 
 async function getEmployeeDetails(employeeId) {
-    const response = await fetch(`backend.php?employee_id=${employeeId}`);
+    const response = await fetch(`/backend/api/orders/orders.php?employee_id=${employeeId}`);
     const data = await response.json();
     if (data.error) {
         alert(data.error);
@@ -329,7 +329,7 @@ async function getEmployeeDetails(employeeId) {
 }
 
 async function getItemDetails(itemId) {
-    const response = await fetch(`backend.php?item_id=${itemId}`);
+    const response = await fetch(`/backend/api/orders/orders.php?item_id=${itemId}`);
     const data = await response.json();
     if (data.error) {
         alert(data.error);
@@ -339,7 +339,7 @@ async function getItemDetails(itemId) {
 }
 
 async function saveOrderToServer(orderData) {
-    const response = await fetch('backend.php', {
+    const response = await fetch('/backend/api/orders/orders.php', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -350,19 +350,19 @@ async function saveOrderToServer(orderData) {
 }
 
 async function deleteOrder(orderId) {
-    const response = await fetch(`backend.php?order_id=${orderId}`, {
+    const response = await fetch(`/backend/api/orders/orders.php?order_id=${orderId}`, {
         method: 'DELETE'
     });
     return await response.json();
 }
 
 async function getOrderDetails(orderId) {
-    const response = await fetch(`backend.php?order_id=${orderId}`);
+    const response = await fetch(`/backend/api/orders/orders.php?order_id=${orderId}`);
     return await response.json();
 }
 
 async function getOrders(searchTerm = '', statusFilter = '') {
-    let url = 'backend.php';
+    let url = '/backend/api/orders/orders.php';
     const params = new URLSearchParams();
 
     if (searchTerm) params.append('search', searchTerm);
@@ -878,7 +878,7 @@ async function confirmDelete() {
 
 // Add this separate function for the actual deletion
 async function deleteOrderFromServer(orderId) {
-    const response = await fetch(`backend.php?order_id=${orderId}`, {
+    const response = await fetch(`/backend/api/orders/orders.php?order_id=${orderId}`, {
         method: 'DELETE'
     });
     return await response.json();
@@ -977,7 +977,7 @@ async function confirmDelete() {
 
 // Function to actually delete from server
 async function deleteOrderFromServer(orderId) {
-    const response = await fetch(`backend.php?order_id=${orderId}`, {
+    const response = await fetch(`/backend/api/orders/orders.php?order_id=${orderId}`, {
         method: 'DELETE'
     });
     return await response.json();
