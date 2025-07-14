@@ -190,8 +190,7 @@ function viewOrderHistory(id) {
             if (orders.length === 0) {
                 orderHistoryBody.innerHTML = `<tr><td colspan="5" style="text-align: center;">No order history found</td></tr>`;
             } else {
-                // biome-ignore lint/complexity/noForEach: <explanation>
-                orders.forEach(order => {
+                for (const order of orders) {
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${order.OrderID}</td>
@@ -201,7 +200,7 @@ function viewOrderHistory(id) {
                         <td>${order.Status}</td>
                     `;
                     orderHistoryBody.appendChild(row);
-                });
+                }
             }
             
             historyModal.style.display = "flex";

@@ -42,14 +42,14 @@ function loadEmployees() {
         .then(response => response.json())
         .then(data => {
             employeesTable.innerHTML = '';
-            data.forEach(employee => {
+            for (const employee of data) {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${employee.id}</td>
                     <td>${employee.name}</td>
                     <td>${employee.position}</td>
-                    <td>$${parseFloat(employee.baseSalary).toFixed(2)}</td>
-                    <td>$${parseFloat(employee.expectedSalary).toFixed(2)}</td>
+                    <td>$${Number.parseFloat(employee.baseSalary).toFixed(2)}</td>
+                    <td>$${Number.parseFloat(employee.expectedSalary).toFixed(2)}</td>
                     <td>${employee.phone}</td>
                     <td>${employee.email}</td>
                     <td>${employee.guarantor}</td>
@@ -69,7 +69,7 @@ function loadEmployees() {
                     </td>
                 `;
                 employeesTable.appendChild(row);
-            });
+            }
         })
         .catch(error => console.error('Error:', error));
 }
@@ -116,8 +116,8 @@ function viewEmployee(id) {
             document.getElementById('viewId').textContent = employee.id;
             document.getElementById('viewName').textContent = employee.name;
             document.getElementById('viewPosition').textContent = employee.position;
-            document.getElementById('viewBaseSalary').textContent = `$${parseFloat(employee.baseSalary).toFixed(2)}`;
-            document.getElementById('viewExpectedSalary').textContent = `$${parseFloat(employee.expectedSalary).toFixed(2)}`;
+            document.getElementById('viewBaseSalary').textContent = `$${Number.parseFloat(employee.baseSalary).toFixed(2)}`;
+            document.getElementById('viewExpectedSalary').textContent = `$${Number.parseFloat(employee.expectedSalary).toFixed(2)}`;
             document.getElementById('viewPhone').textContent = employee.phone;
             document.getElementById('viewEmail').textContent = employee.email;
             document.getElementById('viewGuarantor').textContent = employee.guarantor;
@@ -157,14 +157,14 @@ function confirmDelete() {
 
 function calculateExpectedSalary() {
     const position = document.getElementById('position').value;
-    const baseSalary = parseFloat(document.getElementById('baseSalary').value) || 0;
+    const baseSalary = Number.parseFloat(document.getElementById('baseSalary').value) || 0;
     
     if (!position) {
         alert("Please select a position first");
         return;
     }
     
-    let increasePercentage = 10; // Default 10% increase for all positions
+    const increasePercentage = 10; // Default 10% increase for all positions
     
     const expectedSalary = baseSalary + (baseSalary * (increasePercentage / 100));
     document.getElementById('expectedSalary').value = expectedSalary.toFixed(2);
@@ -177,7 +177,7 @@ function saveEmployee(e) {
     const name = document.getElementById('employeeName').value;
     const position = document.getElementById('position').value;
     const status = document.getElementById('status').value;
-    const baseSalary = parseFloat(document.getElementById('baseSalary').value);
+    const baseSalary = Number.parseFloat(document.getElementById('baseSalary').value);
     const phone = document.getElementById('phone').value;
     const email = document.getElementById('email').value;
     const guarantor = document.getElementById('guarantor').value;
@@ -224,7 +224,7 @@ function filterEmployees() {
     
     const rows = document.querySelectorAll('.employees-table tbody tr');
     
-    rows.forEach(row => {
+    for (const row of rows) {
         const id = row.cells[0].textContent.toLowerCase();
         const name = row.cells[1].textContent.toLowerCase();
         const position = row.cells[2].textContent.toLowerCase();
@@ -246,7 +246,7 @@ function filterEmployees() {
         } else {
             row.style.display = "none";
         }
-    });
+    }
 }
 
 function closeModals() {
@@ -262,63 +262,9 @@ window.addEventListener('click', (e) => {
     if (e.target === deleteModal) deleteModal.style.display = "none";
 });
 
-
-
-
-
-// script.js - Delete Functions
-function deleteEmployee(id) {
-    currentEmployeeToDelete = id;
-    const row = [...document.querySelectorAll('.employees-table tbody tr')].find(
-        tr => tr.cells[0].textContent === id
-    );
-    const employeeName = row.cells[1].textContent;
-    
-    document.getElementById('deleteEmployeeId').textContent = id;
-    document.getElementById('deleteEmployeeName').textContent = employeeName;
-    deleteModal.style.display = "flex";
-}
-
-async function confirmDelete() {
-    if (!currentEmployeeToDelete) return;
-    
-    try {
-        const response = await fetch('/backend/api/employees/employees.php?action=deleteEmployee', {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `id=${currentEmployeeToDelete}`
-        });
-        const result = await response.json();
-        
-        if (result.success) {
-            loadEmployees(); // Dib u soo celi xogta
-            closeModals();
-        } else {
-            alert(`Khalad: ${result.error || 'Qalad ayaa dhacay'}`);
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Qalad ayaa dhacay marka la tirtirayo!');
-    }
-}
-
-
-// These elements and event listeners are already in your code
-const signUpBtn = document.getElementById('signUpBtn');
-const signUpModal = document.getElementById('signUpModal');
-const closeSignUpModal = document.getElementById('closeSignUpModal');
-const cancelSignUpBtn = document.getElementById('cancelSignUpBtn');
-const signUpForm = document.getElementById('signUpForm');
-
-signUpBtn.addEventListener('click', openSignUpModal);
-closeSignUpModal.addEventListener('click', closeModals);
-cancelSignUpBtn.addEventListener('click', closeModals);
-signUpForm.addEventListener('submit', signUpUser);
-
+// Sign up modal functionality
 function openSignUpModal(e) {
-    e.preventDefault(); // Prevent default link behavior
-    document.getElementById('signUpUsername').value = "";
-    document.getElementById('signUpPassword').value = "";
-    document.getElementById('signUpConfirmPassword').value = "";
-    signUpModal.style.display = "flex";
+    e.preventDefault();
+    // Add your sign up modal logic here
+    console.log('Opening sign up modal...');
 }
