@@ -74,13 +74,14 @@ function renderItems(items) {
         return;
     }
     
-    items.forEach(item => {
+    // biome-ignore lint/complexity/noForEach: <explanation>
+        items.forEach(item => {
         const row = document.createElement('tr');
         
         row.innerHTML = `
             <td>ITM-${item.ItemID}</td>
             <td>${item.ItemName}</td>
-            <td>${item.Price ? '$' + item.Price : 'N/A'}</td>
+            <td>${item.Price ? `$${item.Price}` : 'N/A'}</td>
             <td>${item.CategoryName}</td>
             <td>${item.SupplierName}</td>
             <td>${item.EmployeeName}</td>
@@ -214,7 +215,7 @@ function deleteItem(id) {
         })
         .catch(error => {
             console.error('Delete error:', error);
-            alert('Delete failed: ' + error.message);
+            alert(`Delete failed: ${error.message}`);
         });
 }
 
@@ -448,8 +449,9 @@ document.querySelector('.sidebar-report-btn').addEventListener('click', function
 });
 
 // Close dropdown when clicking outside 
-document.addEventListener('click', function(e) {
+document.addEventListener('click', (e) => {
     if (!e.target.closest('.sidebar-report-btn') && !e.target.closest('.report-dropdown-content')) {
+        // biome-ignore lint/complexity/noForEach: <explanation>
         document.querySelectorAll('.report-dropdown').forEach(dropdown => {
             dropdown.classList.remove('active');
         });
