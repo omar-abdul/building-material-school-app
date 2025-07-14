@@ -1,6 +1,20 @@
-<?php include 'connection.php';?>
+<?php
+
+/**
+ * Suppliers Management Page
+ * Uses centralized authentication system
+ */
+
+require_once __DIR__ . '/../config/auth.php';
+
+$auth = new Auth();
+$auth->requireAuth();
+
+$role = $auth->getUserRole(); // 'admin' or 'user'
+?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +22,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
     <div class="container">
         <!-- Sidebar -->
@@ -17,7 +32,7 @@
                 <span class="brand-name">BMMS</span>
             </div>
             <div class="sidebar-menu">
-                <a href="/backend/dashbood/dashbood.php" class="sidebar-link">
+                <a href="/backend/dashboard/dashboard.php" class="sidebar-link">
                     <i class="fas fa-tachometer-alt"></i>
                     <span>Dashboard</span>
                 </a>
@@ -58,14 +73,14 @@
                     <i class="fas fa-money-bill-wave"></i>
                     <span>Salaries</span>
                 </a>
-        <!-- Inside your sidebar-menu div, add this link before the Settings link -->
-        <a href="/backend/signup/index.php" class="sidebar-link">
-    <i class="fas fa-user-plus"></i>
-    <span>Sign Up</span>
-</a>
+                <!-- Inside your sidebar-menu div, add this link before the Settings link -->
+                <a href="/backend/signup/index.php" class="sidebar-link">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Sign Up</span>
+                </a>
 
 
-<nav class="sidebar">
+                <nav class="sidebar">
                     <ul>
                         <li class="report-dropdown">
                             <a href="#" class="sidebar-link sidebar-report-btn">
@@ -78,13 +93,13 @@
                                 <li><a href="/backend/reports/items.php">Items Report</a></li>
                                 <li><a href="/backend/reports/orders.php">Orders Report</a></li>
                                 <li><a href="/backend/reports/salaries.php"> Salaries Report</a></li>
-                                 <li><a href="/backend/reports/transactions.php"> Transactions Report</a></li>
-                                 <li><a href="\backend\signup\backup.php"> backup </a></li>
+                                <li><a href="/backend/reports/transactions.php"> Transactions Report</a></li>
+                                <li><a href="\backend\signup\backup.php"> backup </a></li>
                             </ul>
                         </li>
                     </ul>
-            </nav>
-            <a href="/backend/Suppliers/logout.php" class="sidebar-link" >
+                </nav>
+                <a href="/backend/dashboard/logout.php" class="sidebar-link">
                     <i class="fa-solid fa-right-from-bracket"></i>
                     <span>logout</span>
                 </a>
@@ -93,7 +108,7 @@
 
             </div>
         </div>
-        
+
         <!-- Main Content -->
         <div class="main-content">
             <div class="header">
@@ -106,7 +121,7 @@
                     </button>
                 </div>
             </div>
-            
+
             <!-- Search and Filter -->
             <div class="search-filter">
                 <div class="search-box">
@@ -114,7 +129,7 @@
                     <input type="text" id="searchInput" placeholder="Search suppliers...">
                 </div>
             </div>
-            
+
             <!-- Suppliers Table -->
             <table class="suppliers-table">
                 <thead>
@@ -232,7 +247,7 @@
                     </tr>
                 </tbody>
             </table>
-            
+
             <!-- Pagination -->
             <div class="pagination">
                 <button class="page-btn"><i class="fas fa-angle-left"></i></button>
@@ -243,7 +258,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Add/Edit Supplier Modal -->
     <div class="modal" id="supplierModal">
         <div class="modal-content">
@@ -253,12 +268,12 @@
             </div>
             <form id="supplierForm">
                 <input type="hidden" id="supplierId">
-                
+
                 <div class="form-group">
                     <label for="supplierName">Supplier Name</label>
                     <input type="text" id="supplierName" required>
                 </div>
-                
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="contactPerson">Contact Person</label>
@@ -269,24 +284,24 @@
                         <input type="tel" id="phone" required>
                     </div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="email">Email</label>
                     <input type="email" id="email">
                 </div>
-                
+
                 <div class="form-group">
                     <label for="address">Address</label>
                     <textarea id="address" rows="3"></textarea>
                 </div>
 
 
-                   <!-- Add this form-group right after the customer details section in the items modal -->
-                   <div class="form-group">
+                <!-- Add this form-group right after the customer details section in the items modal -->
+                <div class="form-group">
                     <label for="DateAdded">Date Added</label>
                     <input type="date" id="DateAdded" required>
                 </div>
-                
+
                 <div class="form-actions">
                     <button type="button" class="btn btn-danger" id="cancelBtn">Cancel</button>
                     <button type="submit" class="btn btn-success" id="saveBtn">Save</button>
@@ -294,7 +309,7 @@
             </form>
         </div>
     </div>
-    
+
     <!-- View Supplier Modal -->
     <div class="modal" id="viewModal">
         <div class="modal-content">
@@ -319,7 +334,7 @@
                     <strong>Email:</strong> <span id="viewEmail">john@globalelectronics.com</span>
                 </div>
                 <div class="detail-row">
-                    <strong>Address:</strong> 
+                    <strong>Address:</strong>
                     <p id="viewAddress">123 Tech Street, Silicon Valley</p>
                 </div>
             </div>
@@ -334,7 +349,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Delete Confirmation Modal -->
     <div class="modal" id="deleteModal">
         <div class="modal-content">
@@ -374,7 +389,8 @@
             }
         });
     </script>
-    
+
     <script src="script.js"></script>
 </body>
+
 </html>

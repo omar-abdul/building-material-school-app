@@ -1,39 +1,54 @@
 <?php
+
+/**
+ * Suppliers Backend API
+ * Uses centralized database and utilities
+ */
+
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../config/utils.php';
+
+// Set headers for API
 header('Content-Type: application/json');
-require_once 'connection.php';
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
+header("Access-Control-Allow-Headers: Content-Type");
+
+$db = Database::getInstance();
 
 $action = $_GET['action'] ?? '';
 
 try {
     switch ($action) {
-        case 'get_suppliers':
+        case 'getSuppliers':
             getSuppliers();
             break;
-        case 'add_supplier':
+        case 'addSupplier':
             addSupplier();
             break;
-        case 'update_supplier':
+        case 'updateSupplier':
             updateSupplier();
             break;
-        case 'delete_supplier':
+        case 'deleteSupplier':
             deleteSupplier();
             break;
-        case 'get_supplier':
+        case 'getSupplier':
             getSupplier();
             break;
         default:
-            echo json_encode(['status' => 'error', 'message' => 'Invalid action']);
+            Utils::sendErrorResponse('Invalid action');
             break;
     }
-} catch(PDOException $e) {
+} catch (PDOException $e) {
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }
 
-function getSuppliers() {
-    global $conn;
-    
+function getSuppliers()
+{
+    global $db;
+
     $search = $_GET['search'] ?? '';
-    
+
     $sql = "SELECT 
                 SupplierID as id,
                 CONCAT('SUP-', SupplierID) as supplierId,
@@ -43,145 +58,143 @@ function getSuppliers() {
                 Email as email,
                 Address as address,
                 DATE_FORMAT(CreatedDate, '%Y-%m-%d') as dateAdded
-            FROM Suppliers";
-    
+            FROM suppliers";
+
+    $params = [];
+
     if (!empty($search)) {
-        $sql .= " WHERE SupplierName LIKE :search OR ContactPerson LIKE :search OR Phone LIKE :search";
-    }
-    
-    $sql .= " ORDER BY CreatedDate DESC";
-    
-    $stmt = $conn->prepare($sql);
-    
-    if (!empty($search)) {
+        $sql .= " WHERE SupplierName LIKE ? OR ContactPerson LIKE ? OR Phone LIKE ?";
         $searchTerm = "%$search%";
-        $stmt->bindParam(':search', $searchTerm);
+        $params = [$searchTerm, $searchTerm, $searchTerm];
     }
-    
-    $stmt->execute();
-    $suppliers = $stmt->fetchAll();
-    
-    echo json_encode(['status' => 'success', 'data' => $suppliers]);
+
+    $sql .= " ORDER BY CreatedDate DESC";
+
+    try {
+        $suppliers = $db->fetchAll($sql, $params);
+        Utils::sendSuccessResponse('Suppliers retrieved successfully', $suppliers);
+    } catch (Exception $e) {
+        Utils::sendErrorResponse('Failed to retrieve suppliers: ' . $e->getMessage());
+    }
 }
 
-function getSupplier() {
-    global $conn;
-    
+function getSupplier()
+{
+    global $db;
+
     $id = $_GET['id'] ?? 0;
-    
-    $stmt = $conn->prepare("SELECT 
-                                SupplierID as id,
-                                CONCAT('SUP-', SupplierID) as supplierId,
-                                SupplierName as name,
-                                ContactPerson as contactPerson,
-                                Phone as phone,
-                                Email as email,
-                                Address as address,
-                                DATE_FORMAT(CreatedDate, '%Y-%m-%d') as dateAdded
-                            FROM Suppliers 
-                            WHERE SupplierID = :id");
-    $stmt->bindParam(':id', $id);
-    $stmt->execute();
-    
-    $supplier = $stmt->fetch();
-    
-    if ($supplier) {
-        echo json_encode(['status' => 'success', 'data' => $supplier]);
-    } else {
-        echo json_encode(['status' => 'error', 'message' => 'Supplier not found']);
+
+    if (empty($id)) {
+        Utils::sendErrorResponse('Supplier ID is required');
+        return;
+    }
+
+    $sql = "SELECT 
+                SupplierID as id,
+                CONCAT('SUP-', SupplierID) as supplierId,
+                SupplierName as name,
+                ContactPerson as contactPerson,
+                Phone as phone,
+                Email as email,
+                Address as address,
+                DATE_FORMAT(CreatedDate, '%Y-%m-%d') as dateAdded
+            FROM suppliers 
+            WHERE SupplierID = ?";
+
+    try {
+        $supplier = $db->fetchOne($sql, [$id]);
+
+        if ($supplier) {
+            Utils::sendSuccessResponse('Supplier retrieved successfully', $supplier);
+        } else {
+            Utils::sendErrorResponse('Supplier not found');
+        }
+    } catch (Exception $e) {
+        Utils::sendErrorResponse('Failed to retrieve supplier: ' . $e->getMessage());
     }
 }
 
-function addSupplier() {
-    global $conn;
-    
+function addSupplier()
+{
+    global $db;
+
     $data = json_decode(file_get_contents('php://input'), true);
-    
+
     $name = $data['name'] ?? '';
     $contactPerson = $data['contactPerson'] ?? '';
     $phone = $data['phone'] ?? '';
     $email = $data['email'] ?? '';
     $address = $data['address'] ?? '';
-    
+
     if (empty($name) || empty($contactPerson) || empty($phone)) {
-        echo json_encode(['status' => 'error', 'message' => 'Required fields are missing']);
+        Utils::sendErrorResponse('Required fields are missing');
         return;
     }
-    
-    $stmt = $conn->prepare("INSERT INTO Suppliers 
-                            (SupplierName, ContactPerson, Phone, Email, Address)
-                            VALUES (:name, :contactPerson, :phone, :email, :address)");
-    
-    $stmt->bindParam(':name', $name);
-    $stmt->bindParam(':contactPerson', $contactPerson);
-    $stmt->bindParam(':phone', $phone);
-    $stmt->bindParam(':email', $email);
-    $stmt->bindParam(':address', $address);
-    
-    if ($stmt->execute()) {
-        $newId = $conn->lastInsertId();
-        echo json_encode(['status' => 'success', 'id' => $newId]);
-    } else {
-        echo json_encode(['status' => 'error', 'message' => 'Failed to add supplier']);
+
+    $sql = "INSERT INTO uppliers 
+            (SupplierName, ContactPerson, Phone, Email, Address)
+            VALUES (?, ?, ?, ?, ?)";
+
+    try {
+        $db->query($sql, [$name, $contactPerson, $phone, $email, $address]);
+        $newId = $db->lastInsertId();
+        Utils::sendSuccessResponse('Supplier added successfully', ['id' => $newId]);
+    } catch (Exception $e) {
+        Utils::sendErrorResponse('Failed to add supplier: ' . $e->getMessage());
     }
 }
 
-function updateSupplier() {
-    global $conn;
-    
+function updateSupplier()
+{
+    global $db;
+
     $data = json_decode(file_get_contents('php://input'), true);
-    
+
     $id = $data['id'] ?? 0;
     $name = $data['name'] ?? '';
     $contactPerson = $data['contactPerson'] ?? '';
     $phone = $data['phone'] ?? '';
     $email = $data['email'] ?? '';
     $address = $data['address'] ?? '';
-    
+
     if (empty($id) || empty($name) || empty($contactPerson) || empty($phone)) {
-        echo json_encode(['status' => 'error', 'message' => 'Required fields are missing']);
+        Utils::sendErrorResponse('Required fields are missing');
         return;
     }
-    
-    $stmt = $conn->prepare("UPDATE Suppliers SET
-                            SupplierName = :name,
-                            ContactPerson = :contactPerson,
-                            Phone = :phone,
-                            Email = :email,
-                            Address = :address
-                            WHERE SupplierID = :id");
-    
-    $stmt->bindParam(':id', $id);
-    $stmt->bindParam(':name', $name);
-    $stmt->bindParam(':contactPerson', $contactPerson);
-    $stmt->bindParam(':phone', $phone);
-    $stmt->bindParam(':email', $email);
-    $stmt->bindParam(':address', $address);
-    
-    if ($stmt->execute()) {
-        echo json_encode(['status' => 'success']);
-    } else {
-        echo json_encode(['status' => 'error', 'message' => 'Failed to update supplier']);
+
+    $sql = "UPDATE uppliers SET
+            SupplierName = ?,
+            ContactPerson = ?,
+            Phone = ?,
+            Email = ?,
+            Address = ?
+            WHERE SupplierID = ?";
+
+    try {
+        $db->query($sql, [$name, $contactPerson, $phone, $email, $address, $id]);
+        Utils::sendSuccessResponse('Supplier updated successfully');
+    } catch (Exception $e) {
+        Utils::sendErrorResponse('Failed to update supplier: ' . $e->getMessage());
     }
 }
 
-function deleteSupplier() {
-    global $conn;
-    
+function deleteSupplier()
+{
+    global $db;
+
     $id = $_GET['id'] ?? 0;
-    
+
     if (empty($id)) {
-        echo json_encode(['status' => 'error', 'message' => 'Supplier ID is missing']);
+        Utils::sendErrorResponse('Supplier ID is missing');
         return;
     }
-    
-    $stmt = $conn->prepare("DELETE FROM Suppliers WHERE SupplierID = :id");
-    $stmt->bindParam(':id', $id);
-    
-    if ($stmt->execute()) {
-        echo json_encode(['status' => 'success']);
-    } else {
-        echo json_encode(['status' => 'error', 'message' => 'Failed to delete supplier']);
+
+    $sql = "DELETE FROM suppliers WHERE SupplierID = ?";
+
+    try {
+        $db->query($sql, [$id]);
+        Utils::sendSuccessResponse('Supplier deleted successfully');
+    } catch (Exception $e) {
+        Utils::sendErrorResponse('Failed to delete supplier: ' . $e->getMessage());
     }
 }
-?>

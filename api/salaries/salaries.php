@@ -1,189 +1,158 @@
 <?php
-require_once 'connection.php';
 
+/**
+ * Salaries Backend API
+ * Uses centralized database and utilities
+ */
+
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../config/utils.php';
+
+// Set headers for API
 header('Content-Type: application/json');
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
+header("Access-Control-Allow-Headers: Content-Type");
+
+$db = Database::getInstance();
 
 $action = $_GET['action'] ?? '';
 
 try {
     switch ($action) {
         case 'getSalaries':
-            getSalaries($conn);
+            getSalaries();
             break;
         case 'getSalary':
-            getSalary($conn);
+            getSalary();
             break;
         case 'getEmployeeDetails':
-            getEmployeeDetails($conn);
+            getEmployeeDetails();
             break;
         case 'addSalary':
-            addSalary($conn);
+            addSalary();
             break;
         case 'updateSalary':
-            updateSalary($conn);
+            updateSalary();
             break;
         case 'deleteSalary':
-            deleteSalary($conn);
+            deleteSalary();
             break;
         default:
-            echo json_encode(['error' => 'Invalid action']);
+            Utils::sendErrorResponse('Invalid action');
             break;
     }
 } catch (Exception $e) {
-    echo json_encode(['error' => $e->getMessage()]);
+    Utils::sendErrorResponse($e->getMessage());
 }
 
-function getSalaries($conn) {
+function getSalaries()
+{
+    global $db;
+
     $search = $_GET['search'] ?? '';
     $employeeFilter = $_GET['employeeFilter'] ?? '';
-    
+
     $query = "SELECT s.SalaryID, s.EmployeeID, e.EmployeeName, 
                      s.Amount, s.AdvanceSalary, s.NetSalary,
                      s.PaymentMethod, s.PaymentDate
-              FROM Salaries s
+              FROM salaries s
               JOIN Employees e ON s.EmployeeID = e.EmployeeID
               WHERE 1=1";
-    
+
     $params = [];
-    $types = '';
-    
+
     if (!empty($search)) {
         $query .= " AND (s.SalaryID LIKE ? OR e.EmployeeName LIKE ? OR s.PaymentMethod LIKE ?)";
         $searchParam = "%$search%";
         $params = array_merge($params, [$searchParam, $searchParam, $searchParam]);
-        $types .= 'sss';
     }
-    
+
     if (!empty($employeeFilter)) {
         $query .= " AND s.EmployeeID = ?";
         $params[] = $employeeFilter;
-        $types .= 'i';
     }
-    
+
     $query .= " ORDER BY s.PaymentDate DESC";
-    
-    $stmt = $conn->prepare($query);
-    
-    if (!empty($params)) {
-        $stmt->bind_param($types, ...$params);
+
+    try {
+        $salaries = $db->fetchAll($query, $params);
+        Utils::sendSuccessResponse('Salaries retrieved successfully', $salaries);
+    } catch (Exception $e) {
+        Utils::sendErrorResponse('Failed to retrieve salaries: ' . $e->getMessage());
     }
-    
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    $salaries = [];
-    while ($row = $result->fetch_assoc()) {
-        $salaries[] = $row;
-    }
-    
-    echo json_encode($salaries);
 }
 
-function getSalary($conn) {
+function getSalary()
+{
+    global $db;
+
     $salaryId = $_GET['salaryId'] ?? '';
-    
+
     if (empty($salaryId)) {
-        throw new Exception('Salary ID is required');
-    }
-    
-    $query = "SELECT s.*, e.EmployeeName 
-              FROM Salaries s
-              JOIN Employees e ON s.EmployeeID = e.EmployeeID
-              WHERE s.SalaryID = ?";
-    
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param('i', $salaryId);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    if ($result->num_rows > 0) {
-        echo json_encode($result->fetch_assoc());
-    } else {
-        throw new Exception('Salary not found');
-    }
-}
-
-function getEmployeeDetails($conn) {
-    $employeeId = $_GET['employeeId'] ?? '';
-    
-    if (empty($employeeId)) {
-        throw new Exception('Employee ID is required');
-    }
-    
-    // This would come from your Employees table which should have salary info
-    $query = "SELECT EmployeeName, BaseSalary FROM Employees WHERE EmployeeID = ?";
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param('i', $employeeId);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    if ($result->num_rows > 0) {
-        $row = $result->fetch_assoc();
-        echo json_encode([
-            'employeeName' => $row['EmployeeName'],
-            'baseSalary' => $row['BaseSalary']
-        ]);
-    } else {
-        throw new Exception('Employee not found');
-    }
-}
-
-function addSalary($conn) {
-    $data = $_POST;
-    
-    // Validate required fields
-    $required = ['employeeId', 'amount', 'paymentMethod', 'paymentDate'];
-    foreach ($required as $field) {
-        if (empty($data[$field])) {
-            echo json_encode(['error' => "$field is required"]);
-            return;
-        }
-    }
-
-    // Calculate net salary
-    $advance = isset($data['advanceSalary']) ? floatval($data['advanceSalary']) : 0;
-    $amount = floatval($data['amount']);
-    $netSalary = $amount - $advance;
-    
-    // Prepare the query
-    $query = "INSERT INTO Salaries (EmployeeID, Amount, AdvanceSalary, NetSalary, 
-                                   PaymentMethod, PaymentDate)
-              VALUES (?, ?, ?, ?, ?, ?)";
-    
-    $stmt = $conn->prepare($query);
-    
-    // Bind parameters
-    $stmt->bind_param(
-        "idddss",
-        $data['employeeId'],
-        $amount,
-        $advance,
-        $netSalary,
-        $data['paymentMethod'],
-        $data['paymentDate']
-    );
-    
-    // Execute and respond
-    if ($stmt->execute()) {
-        echo json_encode(['success' => true, 'salaryId' => $conn->insert_id]);
-    } else {
-        echo json_encode(['error' => 'Failed to add salary: ' . $conn->error]);
-    }
-}
-
-function updateSalary($conn) {
-    $data = $_POST;
-    
-    // Validate required fields
-    if (empty($data['salaryId'])) {
-        echo json_encode(['error' => 'Salary ID is required']);
+        Utils::sendErrorResponse('Salary ID is required');
         return;
     }
-    
+
+    $query = "SELECT s.*, e.EmployeeName 
+              FROM salaries s
+              JOIN Employees e ON s.EmployeeID = e.EmployeeID
+              WHERE s.SalaryID = ?";
+
+    try {
+        $salary = $db->fetchOne($query, [$salaryId]);
+
+        if ($salary) {
+            Utils::sendSuccessResponse('Salary retrieved successfully', $salary);
+        } else {
+            Utils::sendErrorResponse('Salary not found');
+        }
+    } catch (Exception $e) {
+        Utils::sendErrorResponse('Failed to retrieve salary: ' . $e->getMessage());
+    }
+}
+
+function getEmployeeDetails()
+{
+    global $db;
+
+    $employeeId = $_GET['employeeId'] ?? '';
+
+    if (empty($employeeId)) {
+        Utils::sendErrorResponse('Employee ID is required');
+        return;
+    }
+
+    // This would come from your Employees table which should have salary info
+    $query = "SELECT EmployeeName, BaseSalary FROM employees WHERE EmployeeID = ?";
+
+    try {
+        $employee = $db->fetchOne($query, [$employeeId]);
+
+        if ($employee) {
+            Utils::sendSuccessResponse('Employee details retrieved successfully', [
+                'employeeName' => $employee['EmployeeName'],
+                'baseSalary' => $employee['BaseSalary']
+            ]);
+        } else {
+            Utils::sendErrorResponse('Employee not found');
+        }
+    } catch (Exception $e) {
+        Utils::sendErrorResponse('Failed to retrieve employee details: ' . $e->getMessage());
+    }
+}
+
+function addSalary()
+{
+    global $db;
+
+    $data = $_POST;
+
+    // Validate required fields
     $required = ['employeeId', 'amount', 'paymentMethod', 'paymentDate'];
     foreach ($required as $field) {
         if (empty($data[$field])) {
-            echo json_encode(['error' => "$field is required"]);
+            Utils::sendErrorResponse("$field is required");
             return;
         }
     }
@@ -192,50 +161,94 @@ function updateSalary($conn) {
     $advance = isset($data['advanceSalary']) ? floatval($data['advanceSalary']) : 0;
     $amount = floatval($data['amount']);
     $netSalary = $amount - $advance;
-    
+
     // Prepare the query
-    $query = "UPDATE Salaries 
+    $query = "INSERT INTO alaries (EmployeeID, Amount, AdvanceSalary, NetSalary, 
+                                   PaymentMethod, PaymentDate)
+              VALUES (?, ?, ?, ?, ?, ?)";
+
+    try {
+        $db->query($query, [
+            $data['employeeId'],
+            $amount,
+            $advance,
+            $netSalary,
+            $data['paymentMethod'],
+            $data['paymentDate']
+        ]);
+
+        $salaryId = $db->lastInsertId();
+        Utils::sendSuccessResponse('Salary added successfully', ['salaryId' => $salaryId]);
+    } catch (Exception $e) {
+        Utils::sendErrorResponse('Failed to add salary: ' . $e->getMessage());
+    }
+}
+
+function updateSalary()
+{
+    global $db;
+
+    $data = $_POST;
+
+    // Validate required fields
+    if (empty($data['salaryId'])) {
+        Utils::sendErrorResponse('Salary ID is required');
+        return;
+    }
+
+    $required = ['employeeId', 'amount', 'paymentMethod', 'paymentDate'];
+    foreach ($required as $field) {
+        if (empty($data[$field])) {
+            Utils::sendErrorResponse("$field is required");
+            return;
+        }
+    }
+
+    // Calculate net salary
+    $advance = isset($data['advanceSalary']) ? floatval($data['advanceSalary']) : 0;
+    $amount = floatval($data['amount']);
+    $netSalary = $amount - $advance;
+
+    // Prepare the query
+    $query = "UPDATE alaries 
               SET EmployeeID = ?, Amount = ?, AdvanceSalary = ?, NetSalary = ?,
                   PaymentMethod = ?, PaymentDate = ?
               WHERE SalaryID = ?";
-    
-    $stmt = $conn->prepare($query);
-    
-    // Bind parameters
-    $stmt->bind_param(
-        "idddssi",
-        $data['employeeId'],
-        $amount,
-        $advance,
-        $netSalary,
-        $data['paymentMethod'],
-        $data['paymentDate'],
-        $data['salaryId']
-    );
-    
-    // Execute and respond
-    if ($stmt->execute()) {
-        echo json_encode(['success' => true]);
-    } else {
-        echo json_encode(['error' => 'Failed to update salary: ' . $conn->error]);
+
+    try {
+        $db->query($query, [
+            $data['employeeId'],
+            $amount,
+            $advance,
+            $netSalary,
+            $data['paymentMethod'],
+            $data['paymentDate'],
+            $data['salaryId']
+        ]);
+
+        Utils::sendSuccessResponse('Salary updated successfully');
+    } catch (Exception $e) {
+        Utils::sendErrorResponse('Failed to update salary: ' . $e->getMessage());
     }
 }
 
-function deleteSalary($conn) {
+function deleteSalary()
+{
+    global $db;
+
     $salaryId = $_GET['salaryId'] ?? '';
-    
+
     if (empty($salaryId)) {
-        throw new Exception('Salary ID is required');
+        Utils::sendErrorResponse('Salary ID is required');
+        return;
     }
-    
-    $query = "DELETE FROM Salaries WHERE SalaryID = ?";
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param('i', $salaryId);
-    
-    if ($stmt->execute()) {
-        echo json_encode(['success' => true]);
-    } else {
-        throw new Exception('Failed to delete salary: ' . $conn->error);
+
+    $query = "DELETE FROM salaries WHERE SalaryID = ?";
+
+    try {
+        $db->query($query, [$salaryId]);
+        Utils::sendSuccessResponse('Salary deleted successfully');
+    } catch (Exception $e) {
+        Utils::sendErrorResponse('Failed to delete salary: ' . $e->getMessage());
     }
 }
-?>

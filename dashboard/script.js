@@ -31,39 +31,55 @@ document.getElementById('add-salary-btn').addEventListener('click', function() {
     salaryForm.style.display = salaryForm.style.display === 'none' ? 'block' : 'none';
 });
 
-// Sample Salary Data (Replace with real data from backend)
-const salaryData = [
-    { id: 1, employee: "Ahmed Ali", amount: "$1,200", date: "10/09/2023", status: "Paid" },
-    { id: 2, employee: "Aisha Mohamed", amount: "$1,500", date: "05/09/2023", status: "Paid" },
-    { id: 3, employee: "Omar Hassan", amount: "$1,000", date: "Pending", status: "Pending" },
-    { id: 4, employee: "Fatuma Abdi", amount: "$1,300", date: "01/09/2023", status: "Paid" },
-];
+// Dynamic salary data
+let salaryData = [];
+
+// Load salary data from API
+async function loadSalaryData() {
+    try {
+        const response = await fetch('/backend/api/salaries/salaries.php?action=getSalaries');
+        const data = await response.json();
+        if (data.success) {
+            salaryData = data.data;
+            renderSalaryTable();
+        }
+    } catch (error) {
+        console.error('Error loading salary data:', error);
+    }
+}
 
 // Render Salary Table
 function renderSalaryTable() {
     const tableBody = document.querySelector('#salary-table tbody');
+    if (!tableBody) return;
+    
     tableBody.innerHTML = '';
 
-    salaryData.forEach(salary => {
+    if (salaryData.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No salary data available</td></tr>';
+        return;
+    }
+
+    for (const salary of salaryData) {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${salary.id}</td>
-            <td>${salary.employee}</td>
-            <td>${salary.amount}</td>
-            <td>${salary.date}</td>
-            <td class="${salary.status.toLowerCase()}">${salary.status}</td>
+            <td>${salary.SalaryID || salary.id}</td>
+            <td>${salary.EmployeeName || salary.employee}</td>
+            <td>$${Number.parseFloat(salary.Amount || salary.amount).toFixed(2)}</td>
+            <td>${salary.PaymentDate || salary.date}</td>
+            <td class="${(salary.Status || salary.status).toLowerCase()}">${salary.Status || salary.status}</td>
             <td>
                 <button class="edit-btn"><i class="fas fa-edit"></i></button>
                 <button class="delete-btn"><i class="fas fa-trash"></i></button>
             </td>
         `;
         tableBody.appendChild(row);
-    });
+    }
 }
 
 // Initialize Table on Load
 document.addEventListener('DOMContentLoaded', function() {
-    renderSalaryTable();
+    loadSalaryData();
 });
 
 // Tooltip functionality

@@ -1,6 +1,20 @@
-<?php include 'connection.php';?>
+<?php
+
+/**
+ * Employees Management Page
+ * Uses centralized authentication system
+ */
+
+require_once __DIR__ . '/../config/auth.php';
+
+$auth = new Auth();
+$auth->requireAuth();
+
+$role = $auth->getUserRole(); // 'admin' or 'user'
+?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +22,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
     <div class="container">
         <!-- Sidebar -->
@@ -17,7 +32,7 @@
                 <span class="brand-name">BMMS</span>
             </div>
             <div class="sidebar-menu">
-                <a href="/backend/dashbood/dashbood.php" class="sidebar-link">
+                <a href="/backend/dashboard/dashboard.php" class="sidebar-link">
                     <i class="fas fa-tachometer-alt"></i>
                     <span>Dashboard</span>
                 </a>
@@ -58,13 +73,13 @@
                     <i class="fas fa-money-bill-wave"></i>
                     <span>Salaries</span>
                 </a>
-                
-             <!-- Inside your sidebar-menu div, add this link before the Settings link -->
-             <a href="/backend/signup/index.php" class="sidebar-link">
-    <i class="fas fa-user-plus"></i>
-    <span>Sign Up</span>
-</a>
-                 <nav class="sidebar">
+
+                <!-- Inside your sidebar-menu div, add this link before the Settings link -->
+                <a href="/backend/signup/index.php" class="sidebar-link">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Sign Up</span>
+                </a>
+                <nav class="sidebar">
                     <ul>
                         <li class="report-dropdown">
                             <a href="#" class="sidebar-link sidebar-report-btn">
@@ -77,20 +92,20 @@
                                 <li><a href="/backend/reports/items.php">Items Report</a></li>
                                 <li><a href="/backend/reports/orders.php">Orders Report</a></li>
                                 <li><a href="/backend/reports/salaries.php"> Salaries Report</a></li>
-                                 <li><a href="/backend/reports/transactions.php"> Transactions Report</a></li>
-                                 <li><a href="\backend\signup\backup.php"> backup </a></li>
+                                <li><a href="/backend/reports/transactions.php"> Transactions Report</a></li>
+                                <li><a href="\backend\signup\backup.php"> backup </a></li>
                             </ul>
                         </li>
                     </ul>
                 </nav>
-                <a href="/backend/Employees/logout.php" class="sidebar-link" >
+                <a href="/backend/dashboard/logout.php" class="sidebar-link">
                     <i class="fa-solid fa-right-from-bracket"></i>
                     <span>logout</span>
                 </a>
 
-         </div>
+            </div>
         </div>
-        
+
         <!-- Main Content -->
         <div class="main-content">
             <div class="header">
@@ -103,7 +118,7 @@
                     </button>
                 </div>
             </div>
-            
+
             <!-- Search and Filter -->
             <div class="search-filter">
                 <div class="search-box">
@@ -118,7 +133,7 @@
                     <option value="Warehouse">Warehouse</option>
                 </select>
             </div>
-            
+
             <!-- Employees Table -->
             <table class="employees-table">
                 <thead>
@@ -138,105 +153,10 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>EMP-1001</td>
-                        <td>Ahmed Mohamed</td>
-                        <td>Manager</td>
-                        <td>$1,500.00</td>
-                        <td>$1,650.00</td>
-                        <td>+252612345678</td>
-                        <td>ahmed@example.com</td>
-                        <td>cabdiqani maxamed</td>
-                        <td>Mogadishu, Somalia</td>
-                        <td>2025-05-15</td>
-                        <td><span class="status-active">Active</span></td>
-                        <td class="action-cell">
-                            <button class="action-btn view-btn" onclick="viewEmployee('EMP-1001')">
-                                <i class="fas fa-eye"></i> View
-                            </button>
-                            <button class="action-btn edit-btn" onclick="editEmployee('EMP-1001')">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
-                            <button class="action-btn delete-btn" onclick="deleteEmployee('EMP-1001')">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>EMP-1002</td>
-                        <td>Fatima Ali</td>
-                        <td>Sales</td>
-                        <td>$1,200.00</td>
-                        <td>$1,320.00</td>
-                        <td>+252612345679</td>
-                        <td>fatima@example.com</td>
-                        <td>cabdiqani maxamed</td>
-                        <td>Mogadishu, Somalia</td>
-                        <td>2025-05-15</td>
-                        <td><span class="status-active">Active</span></td>
-                        <td class="action-cell">
-                            <button class="action-btn view-btn" onclick="viewEmployee('EMP-1002')">
-                                <i class="fas fa-eye"></i> View
-                            </button>
-                            <button class="action-btn edit-btn" onclick="editEmployee('EMP-1002')">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
-                            <button class="action-btn delete-btn" onclick="deleteEmployee('EMP-1002')">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>EMP-1003</td>
-                        <td>Omar Hassan</td>
-                        <td>Accountant</td>
-                        <td>$1,300.00</td>
-                        <td>$1,430.00</td>
-                        <td>+252612345680</td>
-                        <td>omar@example.com</td>
-                        <td>cabdiqani maxamed</td>
-                        <td>Mogadishu, Somalia</td>
-                        <td>2025-05-15</td>
-                        <td><span class="status-active">Active</span></td>
-                        <td class="action-cell">
-                            <button class="action-btn view-btn" onclick="viewEmployee('EMP-1003')">
-                                <i class="fas fa-eye"></i> View
-                            </button>
-                            <button class="action-btn edit-btn" onclick="editEmployee('EMP-1003')">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
-                            <button class="action-btn delete-btn" onclick="deleteEmployee('EMP-1003')">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>EMP-1004</td>
-                        <td>Aisha Abdi</td>
-                        <td>Warehouse</td>
-                        <td>$1,100.00</td>
-                        <td>$1,210.00</td>
-                        <td>+252612345681</td>
-                        <td>aisha@example.com</td>
-                        <td>cabdiqani maxamed</td>
-                        <td>Mogadishu, Somalia</td>
-                        <td>2025-05-15</td>
-                        <td><span class="status-inactive">Inactive</span></td>
-                        <td class="action-cell">
-                            <button class="action-btn view-btn" onclick="viewEmployee('EMP-1004')">
-                                <i class="fas fa-eye"></i> View
-                            </button>
-                            <button class="action-btn edit-btn" onclick="editEmployee('EMP-1004')">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
-                            <button class="action-btn delete-btn" onclick="deleteEmployee('EMP-1004')">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                        </td>
-                    </tr>
+                    <!-- Data will be loaded dynamically via JavaScript -->
                 </tbody>
             </table>
-            
+
             <!-- Pagination -->
             <div class="pagination">
                 <button class="page-btn"><i class="fas fa-angle-left"></i></button>
@@ -247,7 +167,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Add/Edit Employee Modal -->
     <div class="modal" id="employeeModal">
         <div class="modal-content">
@@ -257,12 +177,12 @@
             </div>
             <form id="employeeForm">
                 <input type="hidden" id="employeeId">
-                
+
                 <div class="form-group">
                     <label for="employeeName">Employee Name</label>
                     <input type="text" id="employeeName" required>
                 </div>
-                
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="position">Position</label>
@@ -283,7 +203,7 @@
                         </select>
                     </div>
                 </div>
-                
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="baseSalary">Base Salary ($)</label>
@@ -294,13 +214,13 @@
                         <input type="number" id="expectedSalary" step="0.01" readonly>
                     </div>
                 </div>
-                
+
                 <div class="form-group">
                     <button type="button" class="btn btn-primary" id="calculateBtn">
                         <i class="fas fa-calculator"></i> Calculate Expected Salary
                     </button>
                 </div>
-                
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="phone">Phone</label>
@@ -311,26 +231,26 @@
                         <input type="email" id="email">
                     </div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="guarantor">Guarantor</label>
                     <input type="text" id="guarantor">
                 </div>
 
 
-                
+
                 <div class="form-group">
                     <label for="address">Address</label>
                     <textarea id="address" rows="3"></textarea>
                 </div>
 
-                       <!-- Add this form-group right after the customer details section in the items modal -->
-                       <div class="form-group">
-                        <label for="DateAdded">Date Added</label>
-                        <input type="date" id="DateAdded" required>
-                    </div>
-                    
-                
+                <!-- Add this form-group right after the customer details section in the items modal -->
+                <div class="form-group">
+                    <label for="DateAdded">Date Added</label>
+                    <input type="date" id="DateAdded" required>
+                </div>
+
+
                 <div class="form-actions">
                     <button type="button" class="btn btn-danger" id="cancelBtn">Cancel</button>
                     <button type="submit" class="btn btn-success" id="saveBtn">Save</button>
@@ -338,7 +258,7 @@
             </form>
         </div>
     </div>
-    
+
     <!-- View Employee Modal -->
     <div class="modal" id="viewModal">
         <div class="modal-content">
@@ -375,7 +295,7 @@
                     <strong>Status:</strong> <span id="viewStatus" class="status-active">Active</span>
                 </div>
                 <div class="detail-row">
-                    <strong>Address:</strong> 
+                    <strong>Address:</strong>
                     <p id="viewAddress">123 Main Street, Mogadishu, Somalia</p>
                 </div>
             </div>
@@ -384,7 +304,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Delete Confirmation Modal -->
     <div class="modal" id="deleteModal">
         <div class="modal-content">
@@ -423,7 +343,8 @@
             }
         });
     </script>
-    
+
     <script src="script.js"></script>
 </body>
+
 </html>

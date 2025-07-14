@@ -43,7 +43,8 @@ function loadCustomers() {
     fetch('/backend/api/customers/customers.php?action=getCustomers')
         .then(response => response.json())
         .then(data => {
-            renderCustomersTable(data);
+            
+            renderCustomersTable(data.data);
         })
         .catch(error => {
             console.error('Error loading customers:', error);
@@ -54,8 +55,8 @@ function loadCustomers() {
 function renderCustomersTable(customers) {
     customersTable.innerHTML = '';
     
-    // biome-ignore lint/complexity/noForEach: <explanation>
-        customers.forEach(customer => {
+
+        for (const customer of customers) {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${customer.CustomerID}</td>
@@ -80,7 +81,7 @@ function renderCustomersTable(customers) {
             </td>
         `;
         customersTable.appendChild(row);
-    });
+    }
 }
 
 function openAddCustomerModal() {
@@ -189,13 +190,14 @@ function viewOrderHistory(id) {
             if (orders.length === 0) {
                 orderHistoryBody.innerHTML = `<tr><td colspan="5" style="text-align: center;">No order history found</td></tr>`;
             } else {
+                // biome-ignore lint/complexity/noForEach: <explanation>
                 orders.forEach(order => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${order.OrderID}</td>
                         <td>${order.OrderDate}</td>
                         <td>${order.ItemsCount}</td>
-                        <td>$${parseFloat(order.Total).toFixed(2)}</td>
+                        <td>$${Number.parseFloat(order.Total).toFixed(2)}</td>
                         <td>${order.Status}</td>
                     `;
                     orderHistoryBody.appendChild(row);
@@ -310,47 +312,7 @@ window.addEventListener('click', (e) => {
 
 
 
-function viewOrderHistory(id) {
-    currentCustomerToViewHistory = id;
-    
-    // Get customer name for display
-    fetch(`/backend/api/customers/customers.php?action=getCustomer&id=${id}`)
-        .then(response => response.json())
-        .then(customer => {
-            document.getElementById('historyCustomerName').textContent = `${customer.Name} (${customer.CustomerID})`;
-            
-            // Get order history
-            return fetch(`/backend/api/customers/customers.php?action=getOrderHistory&id=${id}`);
-        })
-        .then(response => response.json())
-        .then(orders => {
-            const orderHistoryBody = document.getElementById('orderHistoryBody');
-            orderHistoryBody.innerHTML = "";
-            
-            if (orders.length === 0) {
-                orderHistoryBody.innerHTML = `<tr><td colspan="6" style="text-align: center;">No order history found</td></tr>`;
-            } else {
-                orders.forEach(order => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${order.OrderID}</td>
-                        <td>${order.OrderDate}</td>
-                        <td>$${parseFloat(order.Total).toFixed(2)}</td>
-                        <td>$${parseFloat(order.PaidAmount).toFixed(2)}</td>
-                        <td>${order.TransactionsCount} transaction(s)</td>
-                        <td>${order.Status}</td>
-                    `;
-                    orderHistoryBody.appendChild(row);
-                });
-            }
-            
-            historyModal.style.display = "flex";
-        })
-        .catch(error => {
-            console.error('Error loading order history:', error);
-            alert('Failed to load order history');
-        });
-}
+
 
 
 
@@ -378,6 +340,6 @@ function openSignUpModal(e) {
 
 
 
-document.getElementById("signUpBtn").addEventListener("click", function (e) {
+document.getElementById("signUpBtn").addEventListener("click", (e) => {
     console.log("Button clicked");
 });

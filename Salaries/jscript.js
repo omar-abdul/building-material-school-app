@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', loadSalaries);
 
 // Functions
 function loadSalaries() {
-    fetch('backend.php?action=getSalaries')
+    fetch('/backend/api/salaries/salaries.php?action=getSalaries')
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -123,7 +123,7 @@ function openAddSalaryModal() {
 }
 
 function editSalary(id) {
-    fetch(`backend.php?action=getSalary&salaryId=${id}`)
+    fetch(`/backend/api/salaries/salaries.php?action=getSalary&salaryId=${id}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -154,7 +154,7 @@ function editSalary(id) {
 }
 
 function viewSalary(id) {
-    fetch(`backend.php?action=getSalary&salaryId=${id}`)
+    fetch(`/backend/api/salaries/salaries.php?action=getSalary&salaryId=${id}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -190,7 +190,7 @@ function viewSalary(id) {
 
 function deleteSalary(id) {
     currentSalaryToDelete = id;
-    fetch(`backend.php?action=getSalary&salaryId=${id}`)
+    fetch(`/backend/api/salaries/salaries.php?action=getSalary&salaryId=${id}`)
         .then(response => response.json())
         .then(data => {
             document.getElementById('deleteSalaryId').textContent = `SAL-${data.SalaryID}`;
@@ -211,7 +211,7 @@ function fetchEmployeeDetails() {
         return;
     }
     
-    fetch(`backend.php?action=getEmployeeDetails&employeeId=${employeeId}`)
+    fetch(`/backend/api/salaries/salaries.php?action=getEmployeeDetails&employeeId=${employeeId}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -292,7 +292,7 @@ function saveSalary(e) {
     }
     
     // Determine URL and method
-    const url = `backend.php?action=${id ? 'updateSalary' : 'addSalary'}`;
+    const url = `/backend/api/salaries/salaries.php?action=${id ? 'updateSalary' : 'addSalary'}`;
     
     // Send request
     fetch(url, {
@@ -328,7 +328,7 @@ function filterSalaries() {
     const searchTerm = searchInput.value;
     const employeeFilterValue = employeeFilter.value;
     
-    fetch(`backend.php?action=getSalaries&search=${encodeURIComponent(searchTerm)}&employeeFilter=${encodeURIComponent(employeeFilterValue)}`)
+    fetch(`/backend/api/salaries/salaries.php?action=getSalaries&search=${encodeURIComponent(searchTerm)}&employeeFilter=${encodeURIComponent(employeeFilterValue)}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -346,7 +346,7 @@ function filterSalaries() {
 function confirmDelete() {
     if (!currentSalaryToDelete) return;
     
-    fetch(`backend.php?action=deleteSalary&salaryId=${currentSalaryToDelete}`)
+    fetch(`/backend/api/salaries/salaries.php?action=deleteSalary&salaryId=${currentSalaryToDelete}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');

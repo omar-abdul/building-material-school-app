@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', loadInventory);
 
 // Functions
 function loadInventory() {
-    fetch('backend.php?action=get_inventory')
+    fetch('/backend/api/inventory/inventory.php?action=getInventory')
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
@@ -56,7 +56,7 @@ document.getElementById('itemId').addEventListener('change', function() {
         const cleanItemId = itemId.replace('ITM-', '');
         
         // U dir backend query si aad u hesho details-ka alaabta
-        fetch(`backend.php?action=getItemDetails&item_id=${cleanItemId}`)
+        fetch(`/backend/api/inventory/inventory.php?action=getItemDetails&item_id=${cleanItemId}`)
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
@@ -87,11 +87,11 @@ $('#item_id_input').on('change', function () {
     const itemId = $(this).val();
 
     $.ajax({
-        url: 'backend.php',
+        url: '/backend/api/inventory/inventory.php',
         type: 'GET',
-        data: { item_id: itemId },
+        data: { action: 'getItemDetails', item_id: itemId },
         dataType: 'json',
-        success: function (response) {
+        success: (response) => {
             if (response.error) {
                 alert(response.error);
             } else {
@@ -281,7 +281,7 @@ function addInventoryItem() {
         Quantity: document.getElementById('quantity').value
     };
     
-    fetch('backend.php?action=addInventory', {
+    fetch('/backend/api/inventory/inventory.php?action=addInventory', {
         method: 'POST',
         body: JSON.stringify(formData)
     })
@@ -347,7 +347,7 @@ function openAddInventoryModal() {
 }
 
 function editInventory(id) {
-    fetch(`backend.php?action=get_inventory_item&id=${id}`)
+    fetch(`/backend/api/inventory/inventory.php?action=get_inventory_item&id=${id}`)
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
@@ -379,7 +379,7 @@ function editInventory(id) {
 }
 
 function viewInventory(id) {
-    fetch(`backend.php?action=get_inventory_item&id=${id}`)
+    fetch(`/backend/api/inventory/inventory.php?action=get_inventory_item&id=${id}`)
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
@@ -410,7 +410,7 @@ function deleteInventory(id) {
 
 function confirmDelete() {
     if (currentInventoryToDelete) {
-        fetch(`backend.php?action=delete_inventory&id=${currentInventoryToDelete}`)
+        fetch(`/backend/api/inventory/inventory.php?action=delete_inventory&id=${currentInventoryToDelete}`)
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
@@ -444,7 +444,7 @@ function saveInventory(e) {
         quantity: quantity
     };
     
-    const url = id ? 'backend.php?action=update_inventory' : 'backend.php?action=add_inventory';
+    const url = id ? '/backend/api/inventory/inventory.php?action=update_inventory' : '/backend/api/inventory/inventory.php?action=add_inventory';
     const method = 'POST';
     
     fetch(url, {
@@ -479,7 +479,7 @@ function saveInventory(e) {
 function filterInventory() {
     const searchTerm = searchInput.value.toLowerCase();
     
-    fetch(`backend.php?action=get_inventory&search=${searchTerm}`)
+    fetch(`/backend/api/inventory/inventory.php?action=get_inventory&search=${searchTerm}`)
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {

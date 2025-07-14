@@ -1,107 +1,119 @@
 <?php
-require_once 'connection.php';
 
+/**
+ * Transactions Backend API
+ * Uses centralized database and utilities
+ */
+
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../config/utils.php';
+
+// Set headers for API
 header('Content-Type: application/json');
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
+header("Access-Control-Allow-Headers: Content-Type");
+
+$db = Database::getInstance();
 
 $action = $_GET['action'] ?? '';
 
 try {
     switch ($action) {
         case 'getTransactions':
-            getTransactions($conn);
+            getTransactions();
             break;
         case 'getTransaction':
-            getTransaction($conn);
+            getTransaction();
             break;
         case 'getOrderDetails':
-            getOrderDetails($conn);
+            getOrderDetails();
             break;
         case 'addTransaction':
-            addTransaction($conn);
+            addTransaction();
             break;
         case 'updateTransaction':
-            updateTransaction($conn);
+            updateTransaction();
             break;
         case 'deleteTransaction':
-            deleteTransaction($conn);
+            deleteTransaction();
             break;
         default:
-            echo json_encode(['error' => 'Invalid action']);
+            Utils::sendErrorResponse('Invalid action');
             break;
     }
 } catch (Exception $e) {
-    echo json_encode(['error' => $e->getMessage()]);
+    Utils::sendErrorResponse($e->getMessage());
 }
 
-function getTransactions($conn) {
+function getTransactions()
+{
+    global $db;
+
     $search = $_GET['search'] ?? '';
     $paymentMethod = $_GET['paymentMethod'] ?? '';
-    
+
     $query = "SELECT t.TransactionID, t.OrderID, o.CustomerID, c.CustomerName, 
                      t.PaymentMethod, t.Amount AS AmountPaid, 
-                     (o.TotalAmount - t.Amount) AS Balance,
+                     (orderTotal.TotalAmount - t.Amount) AS Balance,
                      t.TransactionDate, t.Status
-              FROM Transactions t
-              JOIN Orders o ON t.OrderID = o.OrderID
-              JOIN Customers c ON o.CustomerID = c.CustomerID
+              FROM transactions t
+              JOIN (
+                  SELECT OrderID, SUM(TotalAmount) as TotalAmount 
+                  FROM orders 
+                  GROUP BY OrderID
+              ) orderTotal ON t.OrderID = orderTotal.OrderID
+              JOIN orders o ON t.OrderID = o.OrderID
+              JOIN customers c ON o.CustomerID = c.CustomerID
               WHERE 1=1";
-    
+
     $params = [];
-    $types = '';
-    
+
     if (!empty($search)) {
         $query .= " AND (t.TransactionID LIKE ? OR o.OrderID LIKE ? OR c.CustomerName LIKE ?)";
         $searchParam = "%$search%";
         $params = array_merge($params, [$searchParam, $searchParam, $searchParam]);
-        $types .= 'sss';
     }
-    
+
     if (!empty($paymentMethod)) {
         $query .= " AND t.PaymentMethod = ?";
         $params[] = $paymentMethod;
-        $types .= 's';
     }
-    
-    $query .= " ORDER BY t.TransactionDate DESC";
-    
-    $stmt = $conn->prepare($query);
-    
-    if (!empty($params)) {
-        $stmt->bind_param($types, ...$params);
+
+    $query .= " GROUP BY t.TransactionID, t.OrderID, o.CustomerID, c.CustomerName, t.PaymentMethod, t.Amount, orderTotal.TotalAmount, t.TransactionDate, t.Status ORDER BY t.TransactionDate DESC";
+
+    try {
+        $transactions = $db->fetchAll($query, $params);
+        Utils::sendSuccessResponse('Transactions retrieved successfully', $transactions);
+    } catch (Exception $e) {
+        Utils::sendErrorResponse('Failed to retrieve transactions: ' . $e->getMessage());
     }
-    
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    $transactions = [];
-    while ($row = $result->fetch_assoc()) {
-        $transactions[] = $row;
-    }
-    
-    echo json_encode($transactions);
 }
 
-function getTransaction($conn) {
+function getTransaction()
+{
+    global $db;
+
     $transactionId = $_GET['transactionId'] ?? '';
-    
+
     if (empty($transactionId)) {
         throw new Exception('Transaction ID is required');
     }
-    
-    $query = "SELECT t.*, o.CustomerID, c.CustomerName, o.TotalAmount
-              FROM Transactions t
-              JOIN Orders o ON t.OrderID = o.OrderID
-              JOIN Customers c ON o.CustomerID = c.CustomerID
+
+    $query = "SELECT t.*, o.CustomerID, c.CustomerName, orderTotal.TotalAmount
+              FROM transactions t
+              JOIN (
+                  SELECT OrderID, SUM(TotalAmount) as TotalAmount 
+                  FROM orders 
+                  GROUP BY OrderID
+              ) orderTotal ON t.OrderID = orderTotal.OrderID
+              JOIN orders o ON t.OrderID = o.OrderID
+              JOIN customers c ON o.CustomerID = c.CustomerID
               WHERE t.TransactionID = ?";
-    
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param('i', $transactionId);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    if ($result->num_rows > 0) {
-        $transaction = $result->fetch_assoc();
-        
+
+    $transaction = $db->fetchOne($query, [$transactionId]);
+
+    if ($transaction) {
         // Calculate discount if any
         $discountPercentage = 0;
         $discountAmount = 0;
@@ -109,44 +121,47 @@ function getTransaction($conn) {
             $discountAmount = $transaction['TotalAmount'] - $transaction['Amount'];
             $discountPercentage = ($discountAmount / $transaction['TotalAmount']) * 100;
         }
-        
+
         $transaction['DiscountPercentage'] = round($discountPercentage, 2);
         $transaction['DiscountAmount'] = round($discountAmount, 2);
-        
+
         echo json_encode($transaction);
     } else {
         throw new Exception('Transaction not found');
     }
 }
 
-function getOrderDetails($conn) {
+function getOrderDetails()
+{
+    global $db;
+
     $orderId = $_GET['orderId'] ?? '';
-    
+
     if (empty($orderId)) {
         throw new Exception('Order ID is required');
     }
-    
-    $query = "SELECT o.OrderID, o.CustomerID, c.CustomerName, o.TotalAmount
-              FROM Orders o
-              JOIN Customers c ON o.CustomerID = c.CustomerID
-              WHERE o.OrderID = ?";
-    
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param('i', $orderId);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    if ($result->num_rows > 0) {
-        $order = $result->fetch_assoc();
+
+    $query = "SELECT o.OrderID, o.CustomerID, c.CustomerName, SUM(o.TotalAmount) as TotalAmount
+              FROM orders o
+              JOIN customers c ON o.CustomerID = c.CustomerID
+              WHERE o.OrderID = ?
+              GROUP BY o.OrderID, o.CustomerID, c.CustomerName";
+
+    $order = $db->fetchOne($query, [$orderId]);
+
+    if ($order) {
         echo json_encode($order);
     } else {
         throw new Exception('Order not found');
     }
 }
 
-function addTransaction($conn) {
+function addTransaction()
+{
+    global $db;
+
     $data = $_POST;
-    
+
     // Validate required fields
     $required = ['orderId', 'paymentMethod', 'amount', 'status'];
     foreach ($required as $field) {
@@ -156,60 +171,53 @@ function addTransaction($conn) {
         }
     }
 
-    // Prepare the query
-    $query = "INSERT INTO Transactions (OrderID, PaymentMethod, Amount, Balance, Status, TransactionDate) 
-              VALUES (?, ?, ?, ?, ?, ?)";
-    
-    $stmt = $conn->prepare($query);
-    
     // Calculate balance (get order total first)
-    $orderQuery = "SELECT TotalAmount FROM Orders WHERE OrderID = ?";
-    $orderStmt = $conn->prepare($orderQuery);
-    $orderStmt->bind_param('i', $data['orderId']);
-    $orderStmt->execute();
-    $orderResult = $orderStmt->get_result();
-    
-    if ($orderResult->num_rows === 0) {
+    $order = $db->fetchOne("SELECT SUM(TotalAmount) as TotalAmount FROM orders WHERE OrderID = ?", [$data['orderId']]);
+
+    if (!$order) {
         echo json_encode(['error' => 'Order not found']);
         return;
     }
-    
-    $order = $orderResult->fetch_assoc();
+
     $totalAmount = $order['TotalAmount'];
     $amountPaid = $data['amount'];
     $balance = $totalAmount - $amountPaid;
-    
+
     // Set transaction date (use current date if not provided)
     $transactionDate = !empty($data['transactionDate']) ? $data['transactionDate'] : date('Y-m-d H:i:s');
-    
-    // Bind parameters
-    $stmt->bind_param(
-        "isdsss",
-        $data['orderId'],
-        $data['paymentMethod'],
-        $amountPaid,
-        $balance,
-        $data['status'],
-        $transactionDate
-    );
-    
-    // Execute and respond
-    if ($stmt->execute()) {
-        echo json_encode(['success' => true, 'transactionId' => $conn->insert_id]);
-    } else {
-        echo json_encode(['error' => 'Failed to add transaction: ' . $conn->error]);
+
+    // Insert transaction
+    $query = "INSERT INTO transactions (OrderID, PaymentMethod, Amount, Balance, Status, TransactionDate) 
+              VALUES (?, ?, ?, ?, ?, ?)";
+
+    try {
+        $db->query($query, [
+            $data['orderId'],
+            $data['paymentMethod'],
+            $amountPaid,
+            $balance,
+            $data['status'],
+            $transactionDate
+        ]);
+
+        echo json_encode(['success' => true, 'transactionId' => $db->lastInsertId()]);
+    } catch (Exception $e) {
+        echo json_encode(['error' => 'Failed to add transaction: ' . $e->getMessage()]);
     }
 }
 
-function updateTransaction($conn) {
+function updateTransaction()
+{
+    global $db;
+
     $data = $_POST;
-    
+
     // Validate required fields
     if (empty($data['transactionId'])) {
         echo json_encode(['error' => 'Transaction ID is required']);
         return;
     }
-    
+
     $required = ['orderId', 'paymentMethod', 'amount', 'status'];
     foreach ($required as $field) {
         if (empty($data[$field])) {
@@ -218,65 +226,54 @@ function updateTransaction($conn) {
         }
     }
 
-    // Prepare the query
-    $query = "UPDATE Transactions 
-              SET OrderID = ?, PaymentMethod = ?, Amount = ?, Balance = ?, Status = ?, TransactionDate = ?
-              WHERE TransactionID = ?";
-    
-    $stmt = $conn->prepare($query);
-    
     // Calculate balance (get order total first)
-    $orderQuery = "SELECT TotalAmount FROM Orders WHERE OrderID = ?";
-    $orderStmt = $conn->prepare($orderQuery);
-    $orderStmt->bind_param('i', $data['orderId']);
-    $orderStmt->execute();
-    $orderResult = $orderStmt->get_result();
-    
-    if ($orderResult->num_rows === 0) {
+    $order = $db->fetchOne("SELECT SUM(TotalAmount) as TotalAmount FROM orders WHERE OrderID = ?", [$data['orderId']]);
+
+    if (!$order) {
         echo json_encode(['error' => 'Order not found']);
         return;
     }
-    
-    $order = $orderResult->fetch_assoc();
+
     $totalAmount = $order['TotalAmount'];
     $amountPaid = $data['amount'];
     $balance = $totalAmount - $amountPaid;
-    
-    // Bind parameters
-    $stmt->bind_param(
-        "isdsssi",
-        $data['orderId'],
-        $data['paymentMethod'],
-        $amountPaid,
-        $balance,
-        $data['status'],
-        $data['transactionDate'],
-        $data['transactionId']
-    );
-    
-    // Execute and respond
-    if ($stmt->execute()) {
+
+    // Update transaction
+    $query = "UPDATE transactions 
+              SET OrderID = ?, PaymentMethod = ?, Amount = ?, Balance = ?, Status = ?, TransactionDate = ?
+              WHERE TransactionID = ?";
+
+    try {
+        $db->query($query, [
+            $data['orderId'],
+            $data['paymentMethod'],
+            $amountPaid,
+            $balance,
+            $data['status'],
+            $data['transactionDate'],
+            $data['transactionId']
+        ]);
+
         echo json_encode(['success' => true]);
-    } else {
-        echo json_encode(['error' => 'Failed to update transaction: ' . $conn->error]);
+    } catch (Exception $e) {
+        echo json_encode(['error' => 'Failed to update transaction: ' . $e->getMessage()]);
     }
 }
 
-function deleteTransaction($conn) {
+function deleteTransaction()
+{
+    global $db;
+
     $transactionId = $_GET['transactionId'] ?? '';
-    
+
     if (empty($transactionId)) {
         throw new Exception('Transaction ID is required');
     }
-    
-    $query = "DELETE FROM Transactions WHERE TransactionID = ?";
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param('i', $transactionId);
-    
-    if ($stmt->execute()) {
+
+    try {
+        $db->query("DELETE FROM transactions WHERE TransactionID = ?", [$transactionId]);
         echo json_encode(['success' => true]);
-    } else {
-        throw new Exception('Failed to delete transaction: ' . $conn->error);
+    } catch (Exception $e) {
+        throw new Exception('Failed to delete transaction: ' . $e->getMessage());
     }
 }
-?>

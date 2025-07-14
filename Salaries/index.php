@@ -1,6 +1,20 @@
-<?php include 'connection.php';?>
+<?php
+
+/**
+ * Salaries Management Page
+ * Uses centralized authentication system
+ */
+
+require_once __DIR__ . '/../config/auth.php';
+
+$auth = new Auth();
+$auth->requireAuth();
+
+$role = $auth->getUserRole(); // 'admin' or 'user'
+?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +22,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="steyle.css">
 </head>
+
 <body>
     <div class="container">
         <!-- Sidebar -->
@@ -17,10 +32,10 @@
                 <span class="brand-name">BMMS</span>
             </div>
             <div class="sidebar-menu">
-                <a href="/backend/dashbood/dashbood.php" class="sidebar-link">
+                <a href="/backend/dashboard/dashboard.php" class="sidebar-link">
                     <i class="fas fa-tachometer-alt"></i>
                     <span>Dashboard</span>
-                    </a>
+                </a>
                 <a href="/backend/Categories/index.php" class="sidebar-link">
                     <i class="fas fa-tags"></i>
                     <span>Categories</span>
@@ -57,12 +72,12 @@
                     <i class="fas fa-money-bill-wave"></i>
                     <span>Salaries</span>
                 </a>
-             <!-- Inside your sidebar-menu div, add this link before the Settings link -->
-             <a href="/backend/signup/index.php" class="sidebar-link">
-    <i class="fas fa-user-plus"></i>
-    <span>Sign Up</span>
-</a>
-            <nav class="sidebar">
+                <!-- Inside your sidebar-menu div, add this link before the Settings link -->
+                <a href="/backend/signup/index.php" class="sidebar-link">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Sign Up</span>
+                </a>
+                <nav class="sidebar">
                     <ul>
                         <li class="report-dropdown">
                             <a href="#" class="sidebar-link sidebar-report-btn">
@@ -75,20 +90,20 @@
                                 <li><a href="/backend/reports/items.php">Items Report</a></li>
                                 <li><a href="/backend/reports/orders.php">Orders Report</a></li>
                                 <li><a href="/backend/reports/salaries.php"> Salaries Report</a></li>
-                                 <li><a href="/backend/reports/transactions.php"> Transactions Report</a></li>
-                                 <li><a href="\backend\signup\backup.php"> backup </a></li>
+                                <li><a href="/backend/reports/transactions.php"> Transactions Report</a></li>
+                                <li><a href="\backend\signup\backup.php"> backup </a></li>
                             </ul>
                         </li>
                     </ul>
-            </nav>
-            <a href="/backend/Salaries/logout.php" class="sidebar-link" >
+                </nav>
+                <a href="/backend/dashboard/logout.php" class="sidebar-link">
                     <i class="fa-solid fa-right-from-bracket"></i>
                     <span>logout</span>
                 </a>
 
+            </div>
         </div>
-        </div>
-        
+
         <!-- Main Content -->
         <div class="main-content">
             <div class="header">
@@ -101,7 +116,7 @@
                     </button>
                 </div>
             </div>
-            
+
             <!-- Search and Filter -->
             <div class="search-filter">
                 <div class="search-box">
@@ -116,7 +131,7 @@
                     <option value="EMP-1004">Aisha Abdi</option>
                 </select>
             </div>
-            
+
             <!-- Salaries Table -->
             <table class="salaries-table">
                 <thead>
@@ -219,7 +234,7 @@
                     </tr>
                 </tbody>
             </table>
-            
+
             <!-- Pagination -->
             <div class="pagination">
                 <button class="page-btn"><i class="fas fa-angle-left"></i></button>
@@ -230,7 +245,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Add/Edit Salary Modal -->
     <div class="modal" id="salaryModal">
         <div class="modal-content">
@@ -240,12 +255,12 @@
             </div>
             <form id="salaryForm">
                 <input type="hidden" id="salaryId">
-                
+
                 <div class="form-group">
                     <label for="employeeId">Employee ID</label>
                     <input type="text" id="employeeId" required>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="employeeName">Employee Name</label>
                     <input type="text" id="employeeName" readonly>
@@ -254,7 +269,7 @@
                     <label for="Basesalary">Base salary</label>
                     <input type="text" id="Basesalary" readonly>
                 </div>
-                
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="amount">Amount ($)</label>
@@ -265,13 +280,13 @@
                         <input type="number" id="advanceSalary" step="0.01" value="0.00">
                     </div>
                 </div>
-                
+
                 <div class="form-group">
                     <button type="button" class="btn btn-primary" id="calculateBtn">
                         <i class="fas fa-calculator"></i> Calculate Net Salary
                     </button>
                 </div>
-                
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="netSalary">Net Salary ($)</label>
@@ -288,12 +303,12 @@
                         </select>
                     </div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="paymentDate">Payment Date</label>
                     <input type="date" id="paymentDate" required>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="status">Status</label>
                     <select id="status" required>
@@ -302,7 +317,7 @@
                         <option value="Cancelled">Cancelled</option>
                     </select>
                 </div>
-                
+
                 <div class="form-actions">
                     <button type="button" class="btn btn-danger" id="cancelBtn">Cancel</button>
                     <button type="submit" class="btn btn-success" id="saveBtn">Save</button>
@@ -310,7 +325,7 @@
             </form>
         </div>
     </div>
-    
+
     <!-- View Salary Modal -->
     <div class="modal" id="viewModal">
         <div class="modal-content">
@@ -352,7 +367,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Delete Confirmation Modal -->
     <div class="modal" id="deleteModal">
         <div class="modal-content">
@@ -393,7 +408,8 @@
             }
         });
     </script>
-    
+
     <script src="jscript.js"></script>
 </body>
+
 </html>

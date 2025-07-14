@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', loadEmployees);
 
 // Functions
 function loadEmployees() {
-    fetch('backend.php')
+    fetch('/backend/api/employees/employees.php?action=getEmployees')
         .then(response => response.json())
         .then(data => {
             employeesTable.innerHTML = '';
@@ -90,7 +90,7 @@ function openAddEmployeeModal() {
 }
 
 function editEmployee(id) {
-    fetch(`backend.php?id=${id}`)
+    fetch(`/backend/api/employees/employees.php?action=getEmployee&id=${id}`)
         .then(response => response.json())
         .then(employee => {
             document.getElementById('modalTitle').textContent = "Edit Employee";
@@ -110,7 +110,7 @@ function editEmployee(id) {
 }
 
 function viewEmployee(id) {
-    fetch(`backend.php?id=${id}`)
+    fetch(`/backend/api/employees/employees.php?action=getEmployee&id=${id}`)
         .then(response => response.json())
         .then(employee => {
             document.getElementById('viewId').textContent = employee.id;
@@ -139,7 +139,7 @@ function deleteEmployee(id) {
 
 function confirmDelete() {
     if (currentEmployeeToDelete) {
-        fetch(`backend.php?id=${currentEmployeeToDelete}`, {
+        fetch(`/backend/api/employees/employees.php?action=deleteEmployee&id=${currentEmployeeToDelete}`, {
             method: 'DELETE'
         })
         .then(response => response.json())
@@ -199,7 +199,7 @@ function saveEmployee(e) {
         address: address
     };
     
-    fetch('backend.php', {
+    fetch('/backend/api/employees/employees.php?action=saveEmployee', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -283,7 +283,7 @@ async function confirmDelete() {
     if (!currentEmployeeToDelete) return;
     
     try {
-        const response = await fetch('backend.php', {
+        const response = await fetch('/backend/api/employees/employees.php?action=deleteEmployee', {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: `id=${currentEmployeeToDelete}`
