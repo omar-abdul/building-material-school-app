@@ -73,7 +73,7 @@ function renderTransactions(transactions) {
         return;
     }
     
-    transactions.forEach(transaction => {
+    for (const transaction of transactions) {
         const row = document.createElement('tr');
         
         // Calculate discount if any
@@ -81,7 +81,7 @@ function renderTransactions(transactions) {
         let discountAmount = 0;
         if (transaction.Balance < 0) {
             discountAmount = Math.abs(transaction.Balance);
-            discountPercentage = (discountAmount / (parseFloat(transaction.AmountPaid) + discountAmount)) * 100;
+            discountPercentage = (discountAmount / (Number.parseFloat(transaction.AmountPaid) + discountAmount)) * 100;
         }
         
         row.innerHTML = `
@@ -90,8 +90,8 @@ function renderTransactions(transactions) {
             <td>CUST-${transaction.CustomerID}</td>
             <td>${transaction.CustomerName}</td>
             <td>${transaction.PaymentMethod}</td>
-            <td>$${parseFloat(transaction.AmountPaid).toFixed(2)}</td>
-            <td>$${Math.max(0, parseFloat(transaction.Balance)).toFixed(2)}</td>
+            <td>$${Number.parseFloat(transaction.AmountPaid).toFixed(2)}</td>
+            <td>$${Math.max(0, Number.parseFloat(transaction.Balance)).toFixed(2)}</td>
             <td>${discountPercentage.toFixed(2)}% ($${discountAmount.toFixed(2)})</td>
             <td>${formatDate(transaction.TransactionDate)}</td>
             <td><span class="status-${transaction.Status.toLowerCase()}">${transaction.Status}</span></td>
@@ -109,7 +109,7 @@ function renderTransactions(transactions) {
         `;
         
         transactionsTable.appendChild(row);
-    });
+    }
 }
 
 function formatDate(dateString) {
@@ -221,9 +221,9 @@ function viewTransaction(id) {
             document.getElementById('viewCustomerId').textContent = `CUST-${data.CustomerID}`;
             document.getElementById('viewCustomerName').textContent = data.CustomerName;
             document.getElementById('viewPaymentMethod').textContent = data.PaymentMethod;
-            document.getElementById('viewTotalAmount').textContent = `$${parseFloat(data.TotalAmount).toFixed(2)}`;
-            document.getElementById('viewAmountPaid').textContent = `$${parseFloat(data.Amount).toFixed(2)}`;
-            document.getElementById('viewBalance').textContent = `$${Math.max(0, parseFloat(data.Balance)).toFixed(2)}`;
+            document.getElementById('viewTotalAmount').textContent = `$${Number.parseFloat(data.TotalAmount).toFixed(2)}`;
+            document.getElementById('viewAmountPaid').textContent = `$${Number.parseFloat(data.Amount).toFixed(2)}`;
+            document.getElementById('viewBalance').textContent = `$${Math.max(0, Number.parseFloat(data.Balance)).toFixed(2)}`;
             document.getElementById('viewDiscount').textContent = `${discountPercentage.toFixed(2)}% ($${discountAmount.toFixed(2)})`;
             document.getElementById('viewStatus').textContent = data.Status;
             document.getElementById('viewDate').textContent = formatDate(data.TransactionDate);
@@ -257,8 +257,8 @@ function deleteTransaction(id) {
 }
 
 function applyDiscount() {
-    const totalAmount = parseFloat(document.getElementById('totalAmount').value) || 0;
-    const discountPercentage = parseFloat(document.getElementById('discountPercentage').value) || 0;
+    const totalAmount = Number.parseFloat(document.getElementById('totalAmount').value) || 0;
+    const discountPercentage = Number.parseFloat(document.getElementById('discountPercentage').value) || 0;
     
     if (!totalAmount) {
         alert("Please select an order first");
@@ -278,7 +278,7 @@ function applyDiscount() {
     document.getElementById('totalAmount').value = newTotal.toFixed(2);
     
     // If amount paid was already entered, recalculate balance
-    const amountPaid = parseFloat(document.getElementById('amountPaid').value) || 0;
+    const amountPaid = Number.parseFloat(document.getElementById('amountPaid').value) || 0;
     if (amountPaid > 0) {
         const balance = newTotal - amountPaid;
         document.getElementById('balance').value = balance.toFixed(2);
@@ -286,8 +286,8 @@ function applyDiscount() {
 }
 
 function calculateBalance() {
-    const totalAmount = parseFloat(document.getElementById('totalAmount').value) || 0;
-    const amountPaid = parseFloat(document.getElementById('amountPaid').value) || 0;
+    const totalAmount = Number.parseFloat(document.getElementById('totalAmount').value) || 0;
+    const amountPaid = Number.parseFloat(document.getElementById('amountPaid').value) || 0;
     
     if (!totalAmount) {
         alert("Please select an order first");
@@ -313,7 +313,7 @@ function calculateBalance() {
 }
 
 function markAsPaid() {
-    const totalAmount = parseFloat(document.getElementById('totalAmount').value) || 0;
+    const totalAmount = Number.parseFloat(document.getElementById('totalAmount').value) || 0;
     
     if (!totalAmount) {
         alert("Please select an order first");
@@ -332,16 +332,16 @@ function saveTransaction(e) {
     const id = document.getElementById('transactionId').value;
     const orderId = document.getElementById('orderId').value;
     const paymentMethod = document.getElementById('paymentMethod').value;
-    const totalAmount = parseFloat(document.getElementById('totalAmount').value);
-    const amountPaid = parseFloat(document.getElementById('amountPaid').value) || 0;
-    const balance = parseFloat(document.getElementById('balance').value) || 0;
-    const discountPercentage = parseFloat(document.getElementById('discountPercentage').value) || 0;
-    const discountAmount = parseFloat(document.getElementById('discountAmount').value) || 0;
+    const totalAmount = Number.parseFloat(document.getElementById('totalAmount').value);
+    const amountPaid = Number.parseFloat(document.getElementById('amountPaid').value) || 0;
+    const balance = Number.parseFloat(document.getElementById('balance').value) || 0;
+    const discountPercentage = Number.parseFloat(document.getElementById('discountPercentage').value) || 0;
+    const discountAmount = Number.parseFloat(document.getElementById('discountAmount').value) || 0;
     const status = document.getElementById('transactionStatus').value;
     const transactionDate = document.getElementById('transactionDate').value;
     
     // Validate required fields
-    if (!orderId || !paymentMethod || isNaN(totalAmount) || !status || !transactionDate) {
+    if (!orderId || !paymentMethod || Number.isNaN(totalAmount) || !status || !transactionDate) {
         alert("Please fill in all required fields with valid values");
         return;
     }

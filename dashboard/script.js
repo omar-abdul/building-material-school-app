@@ -4,17 +4,17 @@ function toggleDropdown() {
   }
 
 // Hide loader when page is loaded
-window.addEventListener('load', function() {
+window.addEventListener('load', () => {
     document.querySelector('.loader').style.display = 'none';
 });
 
 // Toggle sidebar
-document.querySelector('.toggle-sidebar').addEventListener('click', function() {
+document.querySelector('.toggle-sidebar').addEventListener('click', () => {
     document.querySelector('.sidebar').classList.toggle('collapsed');
 });
 
 // Toggle sidebar from header button
-document.querySelector('.bar-item').addEventListener('click', function() {
+document.querySelector('.bar-item').addEventListener('click', () => {
     document.querySelector('.sidebar').classList.toggle('collapsed');
 });
 
@@ -26,7 +26,7 @@ document.querySelector('.heart').addEventListener('click', function() {
 });
 
 // Toggle Salary Form
-document.getElementById('add-salary-btn').addEventListener('click', function() {
+document.getElementById('add-salary-btn').addEventListener('click', () => {
     const salaryForm = document.getElementById('salary-form');
     salaryForm.style.display = salaryForm.style.display === 'none' ? 'block' : 'none';
 });
@@ -78,34 +78,34 @@ function renderSalaryTable() {
 }
 
 // Initialize Table on Load
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', () => {
     loadSalaryData();
 });
 
 // Tooltip functionality
 const tipTops = document.querySelectorAll('.tipTop');
-tipTops.forEach(tip => {
+for (const tip of tipTops) {
     tip.addEventListener('mouseover', function() {
         this.setAttribute('data-tooltip', this.style.width);
     });
-});
+}
 
 
  // Toggle dropdown when clicking the report button
- document.querySelector('.sidebar-report-btn').addEventListener('click', function(e) {
+ document.querySelector('.sidebar-report-btn').addEventListener('click', (e) => {
     e.preventDefault();
     const dropdown = this.closest('.report-dropdown');
     dropdown.classList.toggle('active');
 });
 
 // Close dropdown when clicking outside 
-document.addEventListener('click', function(e) {
+document.addEventListener('click', (e) => {
     // Check if the click was outside the dropdown menu
-    if (!e.target.closest('.sidebar-report-btn') && !e.target.closest('.report-dropdown-content')) {
+    if (!e.target.closest('.sidebar-report-btn') && !e.target.closest('.sidebar-report-dropdown-content')) {
         // If click was outside, remove the 'active' class to hide the dropdown
-        document.querySelectorAll('.report-dropdown').forEach(dropdown => {
+        for (const dropdown of document.querySelectorAll('.report-dropdown')) {
             dropdown.classList.remove('active');
-        });
+        }
     }
 });
 
