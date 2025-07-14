@@ -16,25 +16,65 @@ const itemsList = document.getElementById('itemsList');
 const searchInput = document.getElementById('searchInput');
 const statusFilter = document.getElementById('statusFilter');
 
-// Sample data for demo purposes
-const sampleCustomers = {
-    'CUST-001': 'Ahmed Mohamed',
-    'CUST-002': 'Fatima Hassan',
-    'CUST-003': 'Mohamed Abdi'
-};
+// Dynamic data storage
+let customersData = {};
+let employeesData = {};
+let itemsData = {};
 
-const sampleEmployees = {
-    'EMP-001': 'Omar Ali',
-    'EMP-002': 'Ali Abdi',
-    'EMP-003': 'Hassan Omar'
-};
+// Load data on page load
+document.addEventListener('DOMContentLoaded', () => {
+    loadCustomers();
+    loadEmployees();
+    loadItems();
+});
 
-const sampleItems = {
-    'ITM-001': { name: 'Laptop', price: 500 },
-    'ITM-002': { name: 'Smartphone', price: 300 },
-    'ITM-003': { name: 'Monitor', price: 250 },
-    'ITM-004': { name: 'Keyboard', price: 50 }
-};
+// Load customers from API
+async function loadCustomers() {
+    try {
+        const response = await fetch('/backend/api/customers/customers.php?action=getCustomers');
+        const data = await response.json();
+        if (data.success) {
+            customersData = {};
+            for (const customer of data.data) {
+                customersData[customer.CustomerID] = customer.Name;
+            }
+        }
+    } catch (error) {
+        console.error('Error loading customers:', error);
+    }
+}
+
+// Load employees from API
+async function loadEmployees() {
+    try {
+        const response = await fetch('/backend/api/employees/employees.php?action=getEmployees');
+        const data = await response.json();
+        if (data.success) {
+            employeesData = {};
+            for (const employee of data.data) {
+                employeesData[employee.EmployeeID] = employee.EmployeeName;
+            }
+        }
+    } catch (error) {
+        console.error('Error loading employees:', error);
+    }
+}
+
+// Load items from API
+async function loadItems() {
+    try {
+        const response = await fetch('/backend/api/items/items.php?action=getItems');
+        const data = await response.json();
+        if (data.success) {
+            itemsData = {};
+            for (const item of data.data) {
+                itemsData[item.ItemID] = { name: item.ItemName, price: item.Price };
+            }
+        }
+    } catch (error) {
+        console.error('Error loading items:', error);
+    }
+}
 
 // Current order items
 let currentOrderItems = [];
@@ -56,17 +96,17 @@ statusFilter.addEventListener('change', filterOrders);
 // Auto-fill customer/employee/item names when IDs are entered
 document.getElementById('customerId').addEventListener('change', function() {
     const customerId = this.value;
-    document.getElementById('customerName').value = sampleCustomers[customerId] || '';
+    document.getElementById('customerName').value = customersData[customerId] || '';
 });
 
 document.getElementById('employeeId').addEventListener('change', function() {
     const employeeId = this.value;
-    document.getElementById('employeeName').value = sampleEmployees[employeeId] || '';
+    document.getElementById('employeeName').value = employeesData[employeeId] || '';
 });
 
 document.getElementById('itemId').addEventListener('change', function() {
     const itemId = this.value;
-    const item = sampleItems[itemId];
+    const item = itemsData[itemId];
     if (item) {
         document.getElementById('itemName').value = item.name;
         document.getElementById('unitPrice').value = item.price;

@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', loadTransactions);
 
 // Functions
 function loadTransactions() {
-    fetch('backend.php?action=getTransactions')
+    fetch('/backend/api/transactions/transactions.php?action=getTransactions')
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -139,7 +139,7 @@ function fetchOrderDetails() {
         return;
     }
     
-    fetch(`backend.php?action=getOrderDetails&orderId=${orderId}`)
+    fetch(`/backend/api/transactions/transactions.php?action=getOrderDetails&orderId=${orderId}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -162,7 +162,7 @@ function fetchOrderDetails() {
 }
 
 function editTransaction(id) {
-    fetch(`backend.php?action=getTransaction&transactionId=${id}`)
+    fetch(`/backend/api/transactions/transactions.php?action=getTransaction&transactionId=${id}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -195,7 +195,7 @@ function editTransaction(id) {
 }
 
 function viewTransaction(id) {
-    fetch(`backend.php?action=getTransaction&transactionId=${id}`)
+    fetch(`/backend/api/transactions/transactions.php?action=getTransaction&transactionId=${id}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -243,7 +243,7 @@ function viewTransaction(id) {
 
 function deleteTransaction(id) {
     currentTransactionToDelete = id;
-    fetch(`backend.php?action=getTransaction&transactionId=${id}`)
+    fetch(`/backend/api/transactions/transactions.php?action=getTransaction&transactionId=${id}`)
         .then(response => response.json())
         .then(data => {
             document.getElementById('deleteTransactionId').textContent = `TRX-${data.TransactionID}`;
@@ -360,7 +360,7 @@ function saveTransaction(e) {
     }
     
     // Determine URL and method
-    const url = `backend.php?action=${id ? 'updateTransaction' : 'addTransaction'}`;
+    const url = `/backend/api/transactions/transactions.php?action=${id ? 'updateTransaction' : 'addTransaction'}`;
     
     // Send request
     fetch(url, {
@@ -396,7 +396,7 @@ function filterTransactions() {
     const searchTerm = searchInput.value;
     const paymentMethodFilterValue = paymentMethodFilter.value;
     
-    fetch(`backend.php?action=getTransactions&search=${encodeURIComponent(searchTerm)}&paymentMethod=${encodeURIComponent(paymentMethodFilterValue)}`)
+    fetch(`/backend/api/transactions/transactions.php?action=getTransactions&search=${encodeURIComponent(searchTerm)}&paymentMethod=${encodeURIComponent(paymentMethodFilterValue)}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -414,7 +414,7 @@ function filterTransactions() {
 function confirmDelete() {
     if (!currentTransactionToDelete) return;
     
-    fetch(`backend.php?action=deleteTransaction&transactionId=${currentTransactionToDelete}`)
+    fetch(`/backend/api/transactions/transactions.php?action=deleteTransaction&transactionId=${currentTransactionToDelete}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');

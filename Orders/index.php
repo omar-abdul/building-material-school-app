@@ -1,17 +1,20 @@
 <?php
-include 'connection.php';
-// dashboard.php - Dashboard Page
-session_start();
 
-if (!isset($_SESSION['username'])) {
-    header('Location: index.php');
-    exit();
-}
+/**
+ * Orders Management Page
+ * Uses centralized authentication system
+ */
 
-$role = $_SESSION['role']; // 'admin' or 'user'
+require_once __DIR__ . '/../config/auth.php';
+
+$auth = new Auth();
+$auth->requireAuth();
+
+$role = $auth->getUserRole(); // 'admin' or 'user'
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -19,8 +22,9 @@ $role = $_SESSION['role']; // 'admin' or 'user'
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="orders.css">
 </head>
+
 <body>
-<div class="container">
+    <div class="container">
         <!-- Sidebar -->
         <div class="sidebar">
             <div class="brand">
@@ -28,28 +32,28 @@ $role = $_SESSION['role']; // 'admin' or 'user'
                 <span class="brand-name">BMMS</span>
             </div>
             <div class="sidebar-menu">
-            <a href="/backend/dashboard/dashboard.php" class="sidebar-link">
+                <a href="/backend/dashboard/dashboard.php" class="sidebar-link">
                     <i class="fas fa-tachometer-alt"></i>
                     <span>Dashboard</span>
                 </a>
                 <?php if ($role === 'admin'): ?>
-                </a>
-                <a href="/backend/Categories/index.php" class="sidebar-link">
-                    <i class="fas fa-tags"></i>
-                    <span>Categories</span>
-                </a>
-                <a href="/backend/Suppliers/index.php" class="sidebar-link">
-                    <i class="fas fa-file-invoice-dollar"></i>
-                    <span>suppliers</span>
-                </a>
-                <a href="/backend/Employees/index.php" class="sidebar-link">
-                    <i class="fas fa-users"></i>
-                    <span>Employees</span>
-                </a>
-                <a href="/backend/Customers/index.php" class="sidebar-link">
-                    <i class="fas fa-exchange-alt"></i>
-                    <span>customers</span>
-                </a>
+                    </a>
+                    <a href="/backend/Categories/index.php" class="sidebar-link">
+                        <i class="fas fa-tags"></i>
+                        <span>Categories</span>
+                    </a>
+                    <a href="/backend/Suppliers/index.php" class="sidebar-link">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        <span>suppliers</span>
+                    </a>
+                    <a href="/backend/Employees/index.php" class="sidebar-link">
+                        <i class="fas fa-users"></i>
+                        <span>Employees</span>
+                    </a>
+                    <a href="/backend/Customers/index.php" class="sidebar-link">
+                        <i class="fas fa-exchange-alt"></i>
+                        <span>customers</span>
+                    </a>
                 <?php endif; ?>
                 <a href="/backend/Items/index.php" class="sidebar-link ">
                     <i class="fas fa-boxes"></i>
@@ -64,21 +68,21 @@ $role = $_SESSION['role']; // 'admin' or 'user'
                     <span>orders</span>
                 </a>
                 <?php if ($role === 'admin'): ?>
-                <a href="/backend/Transactions/index.php" class="sidebar-link">
-                    <i class="fas fa-warehouse"></i>
-                    <span>transactions</span>
-                </a>
-                <a href="/backend/Salaries/index.php" class="sidebar-link ">
-                    <i class="fas fa-money-bill-wave"></i>
-                    <span>Salaries</span>
-                </a>
-            <!-- Inside your sidebar-menu div, add this link before the Settings link -->
-            <a href="/backend/signup/index.php" class="sidebar-link">
-    <i class="fas fa-user-plus"></i>
-    <span>Sign Up</span>
-</a>
-<?php endif; ?>
-              <nav class="sidebar">
+                    <a href="/backend/Transactions/index.php" class="sidebar-link">
+                        <i class="fas fa-warehouse"></i>
+                        <span>transactions</span>
+                    </a>
+                    <a href="/backend/Salaries/index.php" class="sidebar-link ">
+                        <i class="fas fa-money-bill-wave"></i>
+                        <span>Salaries</span>
+                    </a>
+                    <!-- Inside your sidebar-menu div, add this link before the Settings link -->
+                    <a href="/backend/signup/index.php" class="sidebar-link">
+                        <i class="fas fa-user-plus"></i>
+                        <span>Sign Up</span>
+                    </a>
+                <?php endif; ?>
+                <nav class="sidebar">
                     <ul>
                         <li class="report-dropdown">
                             <a href="#" class="sidebar-link sidebar-report-btn">
@@ -91,23 +95,23 @@ $role = $_SESSION['role']; // 'admin' or 'user'
                                 <li><a href="/backend/reports/items.php">Items Report</a></li>
                                 <li><a href="/backend/reports/orders.php">Orders Report</a></li>
                                 <?php if ($role === 'admin'): ?>
-                                <li><a href="/backend/reports/salaries.php"> Salaries Report</a></li>
-                                 <li><a href="/backend/reports/transactions.php"> Transactions Report</a></li>
-                                 <li><a href="\backend\signup\backup.php"> backup </a></li>
-                                 <?php endif; ?>
+                                    <li><a href="/backend/reports/salaries.php"> Salaries Report</a></li>
+                                    <li><a href="/backend/reports/transactions.php"> Transactions Report</a></li>
+                                    <li><a href="\backend\signup\backup.php"> backup </a></li>
+                                <?php endif; ?>
                             </ul>
                         </li>
                     </ul>
-              </nav>
+                </nav>
 
-              <a href="/backend/dashboard/logout.php" class="sidebar-link" >
+                <a href="/backend/dashboard/logout.php" class="sidebar-link">
                     <i class="fa-solid fa-right-from-bracket"></i>
                     <span>logout</span>
                 </a>
 
             </div>
         </div>
-        
+
         <!-- Main Content -->
         <div class="main-content">
             <div class="header">
@@ -120,7 +124,7 @@ $role = $_SESSION['role']; // 'admin' or 'user'
                     </button>
                 </div>
             </div>
-            
+
             <!-- Search and Filter -->
             <div class="search-filter">
                 <div class="search-box">
@@ -135,7 +139,7 @@ $role = $_SESSION['role']; // 'admin' or 'user'
                     <option value="Cancelled">Cancelled</option>
                 </select>
             </div>
-            
+
             <!-- Orders Table -->
             <table class="orders-table">
                 <thead>
@@ -151,49 +155,10 @@ $role = $_SESSION['role']; // 'admin' or 'user'
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>ORD-1001</td>
-                        <td>Ahmed Mohamed (CUST-001)</td>
-                        <td>3 items</td>
-                        <td>Omar Ali (EMP-001)</td>
-                        <td></td>
-                        <td><span class="status-pending">Pending</span></td>
-                        <td>2025-05-15</td>
-                        <td class="action-cell">
-                            <button class="action-btn view-btn" onclick="viewOrder('ORD-1001')">
-                                <i class="fas fa-eye"></i> View
-                            </button>
-                            <button class="action-btn edit-btn" onclick="editOrder('ORD-1001')">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
-                            <button class="action-btn delete-btn" onclick="deleteOrder('ORD-1001')">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>ORD-1002</td>
-                        <td>Fatima Hassan (CUST-002)</td>
-                        <td>2 items</td>
-                        <td>Ali Abdi (EMP-002)</td>
-                        <td></td>
-                        <td><span class="status-processing">Processing</span></td>
-                        <td>2025-05-16</td>
-                        <td class="action-cell">
-                            <button class="action-btn view-btn" onclick="viewOrder('ORD-1002')">
-                                <i class="fas fa-eye"></i> View
-                            </button>
-                            <button class="action-btn edit-btn" onclick="editOrder('ORD-1002')">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
-                            <button class="action-btn delete-btn" onclick="deleteOrder('ORD-1002')">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                        </td>
-                    </tr>
+                    <!-- Data will be loaded dynamically via JavaScript -->
                 </tbody>
             </table>
-            
+
             <!-- Pagination -->
             <div class="pagination">
                 <button class="page-btn"><i class="fas fa-angle-left"></i></button>
@@ -204,7 +169,7 @@ $role = $_SESSION['role']; // 'admin' or 'user'
             </div>
         </div>
     </div>
-    
+
     <!-- Add/Edit Order Modal -->
     <div class="modal" id="orderModal">
         <div class="modal-content">
@@ -214,7 +179,7 @@ $role = $_SESSION['role']; // 'admin' or 'user'
             </div>
             <form id="orderForm">
                 <input type="hidden" id="orderId">
-                
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="customerId">Customer ID</label>
@@ -225,7 +190,7 @@ $role = $_SESSION['role']; // 'admin' or 'user'
                         <input type="text" id="customerName" readonly>
                     </div>
                 </div>
-                
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="employeeId">Employee ID</label>
@@ -236,7 +201,7 @@ $role = $_SESSION['role']; // 'admin' or 'user'
                         <input type="text" id="employeeName" readonly>
                     </div>
                 </div>
-                
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="status">Status</label>
@@ -252,9 +217,9 @@ $role = $_SESSION['role']; // 'admin' or 'user'
                         <input type="date" id="orderDate" required>
                     </div>
                 </div>
-                
+
                 <h4>Order Items</h4>
-                
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="itemId">Item ID</label>
@@ -265,7 +230,7 @@ $role = $_SESSION['role']; // 'admin' or 'user'
                         <input type="text" id="itemName" readonly>
                     </div>
                 </div>
-                
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="quantity">Quantity</label>
@@ -281,11 +246,11 @@ $role = $_SESSION['role']; // 'admin' or 'user'
                         </button>
                     </div>
                 </div>
-                
+
                 <div class="items-list" id="itemsList">
                     <div class="no-items">No items added to this order</div>
                 </div>
-                
+
                 <div class="summary-row">
                     <span>Total Items:</span>
                     <span id="totalItems">0</span>
@@ -294,7 +259,7 @@ $role = $_SESSION['role']; // 'admin' or 'user'
                     <span>Total Amount:</span>
                     <span id="totalAmount">$0.00</span>
                 </div>
-                
+
                 <div class="form-actions">
                     <button type="button" class="btn btn-danger" id="cancelBtn">Cancel</button>
                     <button type="submit" class="btn btn-success" id="saveBtn">Save Order</button>
@@ -306,8 +271,8 @@ $role = $_SESSION['role']; // 'admin' or 'user'
 
 
 
-    
-    
+
+
     <!-- View Order Modal -->
     <div class="modal" id="viewModal">
         <div class="modal-content">
@@ -331,7 +296,7 @@ $role = $_SESSION['role']; // 'admin' or 'user'
                 <div class="detail-row">
                     <strong>Order Date:</strong> <span id="viewOrderDate">2025-05-15</span>
                 </div>
-                
+
                 <h4 style="margin-top: 20px;">Order Items</h4>
                 <table style="width: 100%; margin-top: 10px;">
                     <thead>
@@ -363,7 +328,7 @@ $role = $_SESSION['role']; // 'admin' or 'user'
                         </tr>
                     </tbody>
                 </table>
-                
+
                 <div class="summary-row">
                     <strong>Total Items:</strong> <span>3</span>
                 </div>
@@ -376,7 +341,7 @@ $role = $_SESSION['role']; // 'admin' or 'user'
             </div>
         </div>
     </div>
-    
+
     <!-- Delete Confirmation Modal -->
     <div class="modal" id="deleteModal">
         <div class="modal-content">
@@ -398,21 +363,20 @@ $role = $_SESSION['role']; // 'admin' or 'user'
 
 
     <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const reportLinks = document.querySelectorAll('.report-dropdown-content a');
+            const reportContainer = document.getElementById('report-frame');
+            const dashboardWidgets = document.getElementById('dashboard-boxes');
 
-  document.addEventListener('DOMContentLoaded', function () {
-    const reportLinks = document.querySelectorAll('.report-dropdown-content a');
-    const reportContainer = document.getElementById('report-frame');
-    const dashboardWidgets = document.getElementById('dashboard-boxes');
-
-    reportLinks.forEach(link => {
-      link.addEventListener('click', function () {
-        if (reportContainer && dashboardWidgets) {
-          reportContainer.style.display = 'block';
-          dashboardWidgets.style.display = 'none';
-        }
-      });
-    });
-  });
+            reportLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    if (reportContainer && dashboardWidgets) {
+                        reportContainer.style.display = 'block';
+                        dashboardWidgets.style.display = 'none';
+                    }
+                });
+            });
+        });
 
         // Toggle dropdown when clicking the report button
         document.querySelector('.sidebar-report-btn').addEventListener('click', function(e) {
@@ -431,8 +395,9 @@ $role = $_SESSION['role']; // 'admin' or 'user'
                 });
             }
         });
-</script>
+    </script>
 
     <script src="orders.js"></script>
 </body>
+
 </html>

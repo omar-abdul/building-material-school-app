@@ -1,7 +1,20 @@
+<?php
 
-<?php include 'connection.php';?>
+/**
+ * Transactions Management Page
+ * Uses centralized authentication system
+ */
+
+require_once __DIR__ . '/../config/auth.php';
+
+$auth = new Auth();
+$auth->requireAuth();
+
+$role = $auth->getUserRole(); // 'admin' or 'user'
+?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,6 +22,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
     <div class="container">
         <!-- Sidebar -->
@@ -18,7 +32,7 @@
                 <span class="brand-name">BMMS</span>
             </div>
             <div class="sidebar-menu">
-                <a href="/backend/dashbood/dashbood.php" class="sidebar-link">
+                <a href="/backend/dashboard/dashboard.php" class="sidebar-link">
                     <i class="fas fa-tachometer-alt"></i>
                     <span>Dashboard</span>
                 </a>
@@ -61,9 +75,9 @@
                 </a>
                 <!-- Inside your sidebar-menu div, add this link before the Settings link -->
                 <a href="/backend/signup/index.php" class="sidebar-link">
-    <i class="fas fa-user-plus"></i>
-    <span>Sign Up</span>
-</a>
+                    <i class="fas fa-user-plus"></i>
+                    <span>Sign Up</span>
+                </a>
                 <nav class="sidebar">
                     <ul>
                         <li class="report-dropdown">
@@ -77,13 +91,13 @@
                                 <li><a href="/backend/reports/items.php">Items Report</a></li>
                                 <li><a href="/backend/reports/orders.php">Orders Report</a></li>
                                 <li><a href="/backend/reports/salaries.php"> Salaries Report</a></li>
-                                 <li><a href="/backend/reports/transactions.php"> Transactions Report</a></li>
-                                 <li><a href="\backend\signup\backup.php"> backup </a></li>
+                                <li><a href="/backend/reports/transactions.php"> Transactions Report</a></li>
+                                <li><a href="\backend\signup\backup.php"> backup </a></li>
                             </ul>
                         </li>
                     </ul>
-            </nav>
-            <a href="/backend/Transactions/logout.php" class="sidebar-link" >
+                </nav>
+                <a href="/backend/dashboard/logout.php" class="sidebar-link">
                     <i class="fa-solid fa-right-from-bracket"></i>
                     <span>logout</span>
                 </a>
@@ -93,7 +107,7 @@
 
             </div>
         </div>
-        
+
         <!-- Main Content -->
         <div class="main-content">
             <div class="header">
@@ -106,7 +120,7 @@
                     </button>
                 </div>
             </div>
-            
+
             <!-- Search and Filter -->
             <div class="search-filter">
                 <div class="search-box">
@@ -121,7 +135,7 @@
                     <option value="Credit">Credit</option>
                 </select>
             </div>
-            
+
             <!-- Transactions Table -->
             <table class="transactions-table">
                 <thead>
@@ -140,101 +154,10 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>TRX-1001</td>
-                        <td>ORD-5001</td>
-                        <td>CUST-2001</td>
-                        <td>Ahmed Mohamed</td>
-                        <td>Cash</td>
-                        <td>$500.00</td>
-                        <td>$0.00</td>
-                        <td>5%</td>
-                        <td>2023-05-15</td>
-                        <td><span class="status-paid">Paid</span></td>
-                        <td class="action-cell">
-                            <button class="action-btn view-btn" onclick="viewTransaction('TRX-1001')">
-                                <i class="fas fa-eye"></i> View
-                            </button>
-                            <button class="action-btn edit-btn" onclick="editTransaction('TRX-1001')">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
-                            <button class="action-btn delete-btn" onclick="deleteTransaction('TRX-1001')">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>TRX-1002</td>
-                        <td>ORD-5002</td>
-                        <td>CUST-2002</td>
-                        <td>Fatima Ali</td>
-                        <td>Bank</td>
-                        <td>$750.00</td>
-                        <td>$250.00</td>
-                        <td>0%</td>
-                        <td>2023-05-16</td>
-                        <td><span class="status-partial">Partial</span></td>
-                        <td class="action-cell">
-                            <button class="action-btn view-btn" onclick="viewTransaction('TRX-1002')">
-                                <i class="fas fa-eye"></i> View
-                            </button>
-                            <button class="action-btn edit-btn" onclick="editTransaction('TRX-1002')">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
-                            <button class="action-btn delete-btn" onclick="deleteTransaction('TRX-1002')">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>TRX-1003</td>
-                        <td>ORD-5003</td>
-                        <td>CUST-2003</td>
-                        <td>Omar Hassan</td>
-                        <td>Online</td>
-                        <td>$1,200.00</td>
-                        <td>$0.00</td>
-                        <td>10%</td>
-                        <td>2023-05-17</td>
-                        <td><span class="status-paid">Paid</span></td>
-                        <td class="action-cell">
-                            <button class="action-btn view-btn" onclick="viewTransaction('TRX-1003')">
-                                <i class="fas fa-eye"></i> View
-                            </button>
-                            <button class="action-btn edit-btn" onclick="editTransaction('TRX-1003')">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
-                            <button class="action-btn delete-btn" onclick="deleteTransaction('TRX-1003')">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>TRX-1004</td>
-                        <td>ORD-5004</td>
-                        <td>CUST-2004</td>
-                        <td>Aisha Abdi</td>
-                        <td>Credit</td>
-                        <td>$0.00</td>
-                        <td>$800.00</td>
-                        <td>0%</td>
-                        <td>2023-05-18</td>
-                        <td><span class="status-unpaid">Unpaid</span></td>
-                        <td class="action-cell">
-                            <button class="action-btn view-btn" onclick="viewTransaction('TRX-1004')">
-                                <i class="fas fa-eye"></i> View
-                            </button>
-                            <button class="action-btn edit-btn" onclick="editTransaction('TRX-1004')">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
-                            <button class="action-btn delete-btn" onclick="deleteTransaction('TRX-1004')">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                        </td>
-                    </tr>
+                    <!-- Data will be loaded dynamically via JavaScript -->
                 </tbody>
             </table>
-            
+
             <!-- Pagination -->
             <div class="pagination">
                 <button class="page-btn"><i class="fas fa-angle-left"></i></button>
@@ -245,7 +168,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Add/Edit Transaction Modal -->
     <div class="modal" id="transactionModal">
         <div class="modal-content">
@@ -255,13 +178,13 @@
             </div>
             <form id="transactionForm">
                 <input type="hidden" id="transactionId">
-                
+
                 <div class="form-group">
                     <label for="orderId">Order ID</label>
-                    <input type="text" id="orderId"  required>
+                    <input type="text" id="orderId" required>
                 </div>
-        
-                
+
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="totalAmount">Total Amount ($)</label>
@@ -273,15 +196,15 @@
                     </div>
                 </div>
                 <!-- Add this form-group right after the payment method section in the transaction modal -->
-<div class="form-group">
-    <label for="transactionStatus">Status</label>
-    <select id="transactionStatus" required>
-        <option value="Paid">Paid</option>
-        <option value="Partial">Partial</option>
-        <option value="Unpaid">Unpaid</option>
-    </select>
-</div>
-                
+                <div class="form-group">
+                    <label for="transactionStatus">Status</label>
+                    <select id="transactionStatus" required>
+                        <option value="Paid">Paid</option>
+                        <option value="Partial">Partial</option>
+                        <option value="Unpaid">Unpaid</option>
+                    </select>
+                </div>
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="paymentMethod">Payment Method</label>
@@ -298,7 +221,7 @@
                         <input type="number" id="balance" step="0.01" readonly>
                     </div>
                 </div>
-                
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="discountPercentage">Discount (%)</label>
@@ -311,13 +234,13 @@
                 </div>
 
 
-                   <!-- Add this form-group right after the customer details section in the transaction modal -->
-<div class="form-group">
-    <label for="transactionDate">Transaction Date</label>
-    <input type="date" id="transactionDate" required>
-</div>
+                <!-- Add this form-group right after the customer details section in the transaction modal -->
+                <div class="form-group">
+                    <label for="transactionDate">Transaction Date</label>
+                    <input type="date" id="transactionDate" required>
+                </div>
 
-                
+
                 <div class="form-group button-group">
                     <button type="button" class="btn btn-primary" id="applyDiscountBtn">
                         <i class="fas fa-percentage"></i> Apply Discount
@@ -329,7 +252,7 @@
                         <i class="fas fa-check-circle"></i> Mark as Paid
                     </button>
                 </div>
-                
+
                 <div class="form-actions">
                     <button type="button" class="btn btn-danger" id="cancelBtn">Cancel</button>
                     <button type="submit" class="btn btn-success" id="saveBtn">Save</button>
@@ -337,7 +260,7 @@
             </form>
         </div>
     </div>
-    
+
     <!-- View Transaction Modal -->
     <div class="modal" id="viewModal">
         <div class="modal-content">
@@ -385,7 +308,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Delete Confirmation Modal -->
     <div class="modal" id="deleteModal">
         <div class="modal-content">
@@ -405,7 +328,7 @@
     </div>
 
 
-    
+
 
     <script>
         // Toggle dropdown when clicking the report button
@@ -428,7 +351,8 @@
     </script>
 
 
-    
+
     <script src="script.js"></script>
 </body>
+
 </html>

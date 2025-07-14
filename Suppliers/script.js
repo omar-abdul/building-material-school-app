@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', loadSuppliers);
 
 // Functions
 function loadSuppliers() {
-    fetch('backend.php?action=get_suppliers')
+    fetch('/backend/api/suppliers/suppliers.php?action=getSuppliers')
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
@@ -91,7 +91,7 @@ function openAddSupplierModal() {
 }
 
 function editSupplier(id) {
-    fetch(`backend.php?action=get_supplier&id=${id}`)
+    fetch(`/backend/api/suppliers/suppliers.php?action=getSupplier&id=${id}`)
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
@@ -112,7 +112,7 @@ function editSupplier(id) {
 }
 
 function viewSupplier(id) {
-    fetch(`backend.php?action=get_supplier&id=${id}`)
+    fetch(`/backend/api/suppliers/suppliers.php?action=getSupplier&id=${id}`)
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
@@ -133,7 +133,7 @@ function viewSupplier(id) {
 
 function deleteSupplier(id) {
     currentSupplierToDelete = id;
-    fetch(`backend.php?action=get_supplier&id=${id}`)
+    fetch(`/backend/api/suppliers/suppliers.php?action=getSupplier&id=${id}`)
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
@@ -150,7 +150,7 @@ function deleteSupplier(id) {
 
 function confirmDelete() {
     if (currentSupplierToDelete) {
-        fetch(`backend.php?action=delete_supplier&id=${currentSupplierToDelete}`, {
+        fetch(`/backend/api/suppliers/suppliers.php?action=deleteSupplier&id=${currentSupplierToDelete}`, {
             method: 'GET'
         })
         .then(response => response.json())
@@ -183,7 +183,7 @@ function saveSupplier(e) {
         return;
     }
     
-    const url = id ? 'backend.php?action=update_supplier' : 'backend.php?action=add_supplier';
+    const url = id ? '/backend/api/suppliers/suppliers.php?action=updateSupplier' : '/backend/api/suppliers/suppliers.php?action=addSupplier';
     const method = 'POST';
     
     fetch(url, {
@@ -215,7 +215,7 @@ function saveSupplier(e) {
 function filterSuppliers() {
     const searchTerm = searchInput.value.trim();
     
-    fetch(`backend.php?action=get_suppliers&search=${encodeURIComponent(searchTerm)}`)
+    fetch(`/backend/api/suppliers/suppliers.php?action=getSuppliers&search=${encodeURIComponent(searchTerm)}`)
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {

@@ -1,11 +1,11 @@
 <?php
+
 /**
  * Items Management Page
  * Uses centralized authentication system
  */
 
 require_once __DIR__ . '/../config/auth.php';
-require_once 'connection.php';
 
 $auth = new Auth();
 $auth->requireAuth();
@@ -14,6 +14,7 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -21,6 +22,7 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
     <div class="container">
         <!-- Sidebar -->
@@ -35,23 +37,23 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
                     <span>Dashboard</span>
                 </a>
                 <?php if ($role === 'admin'): ?>
-                </a>
-                <a href="/backend/Categories/index.php" class="sidebar-link">
-                    <i class="fas fa-tags"></i>
-                    <span>Categories</span>
-                </a>
-                <a href="/backend/Suppliers/index.php" class="sidebar-link">
-                    <i class="fas fa-file-invoice-dollar"></i>
-                    <span>suppliers</span>
-                </a>
-                <a href="/backend/Employees/index.php" class="sidebar-link">
-                    <i class="fas fa-users"></i>
-                    <span>Employees</span>
-                </a>
-                <a href="/backend/Customers/index.php" class="sidebar-link">
-                    <i class="fas fa-exchange-alt"></i>
-                    <span>customers</span>
-                </a>
+                    </a>
+                    <a href="/backend/Categories/index.php" class="sidebar-link">
+                        <i class="fas fa-tags"></i>
+                        <span>Categories</span>
+                    </a>
+                    <a href="/backend/Suppliers/index.php" class="sidebar-link">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        <span>suppliers</span>
+                    </a>
+                    <a href="/backend/Employees/index.php" class="sidebar-link">
+                        <i class="fas fa-users"></i>
+                        <span>Employees</span>
+                    </a>
+                    <a href="/backend/Customers/index.php" class="sidebar-link">
+                        <i class="fas fa-exchange-alt"></i>
+                        <span>customers</span>
+                    </a>
                 <?php endif; ?>
                 <a href="/backend/Items/index.php" class="sidebar-link active">
                     <i class="fas fa-boxes"></i>
@@ -66,21 +68,21 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
                     <span>orders</span>
                 </a>
                 <?php if ($role === 'admin'): ?>
-                <a href="/backend/Transactions/index.php" class="sidebar-link">
-                    <i class="fas fa-warehouse"></i>
-                    <span>transactions</span>
-                </a>
-                <a href="/backend/Salaries/index.php" class="sidebar-link ">
-                    <i class="fas fa-money-bill-wave"></i>
-                    <span>Salaries</span>
-                </a>
-            <!-- Inside your sidebar-menu div, add this link before the Settings link -->
-            <a href="/backend/signup/index.php" class="sidebar-link">
-    <i class="fas fa-user-plus"></i>
-    <span>Sign Up</span>
-</a>
-<?php endif; ?>
-              <nav class="sidebar">
+                    <a href="/backend/Transactions/index.php" class="sidebar-link">
+                        <i class="fas fa-warehouse"></i>
+                        <span>transactions</span>
+                    </a>
+                    <a href="/backend/Salaries/index.php" class="sidebar-link ">
+                        <i class="fas fa-money-bill-wave"></i>
+                        <span>Salaries</span>
+                    </a>
+                    <!-- Inside your sidebar-menu div, add this link before the Settings link -->
+                    <a href="/backend/signup/index.php" class="sidebar-link">
+                        <i class="fas fa-user-plus"></i>
+                        <span>Sign Up</span>
+                    </a>
+                <?php endif; ?>
+                <nav class="sidebar">
                     <ul>
                         <li class="report-dropdown">
                             <a href="#" class="sidebar-link sidebar-report-btn">
@@ -93,23 +95,23 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
                                 <li><a href="/backend/reports/items.php">Items Report</a></li>
                                 <li><a href="/backend/reports/orders.php">Orders Report</a></li>
                                 <?php if ($role === 'admin'): ?>
-                                <li><a href="/backend/reports/salaries.php"> Salaries Report</a></li>
-                                 <li><a href="/backend/reports/transactions.php"> Transactions Report</a></li>
-                                 <li><a href="\backend\signup\backup.php"> backup </a></li>
-                                 <?php endif; ?>
+                                    <li><a href="/backend/reports/salaries.php"> Salaries Report</a></li>
+                                    <li><a href="/backend/reports/transactions.php"> Transactions Report</a></li>
+                                    <li><a href="\backend\signup\backup.php"> backup </a></li>
+                                <?php endif; ?>
                             </ul>
                         </li>
                     </ul>
-              </nav>
+                </nav>
 
-              <a href="/backend/dashboard/logout.php" class="sidebar-link" >
+                <a href="/backend/dashboard/logout.php" class="sidebar-link">
                     <i class="fa-solid fa-right-from-bracket"></i>
                     <span>logout</span>
                 </a>
 
             </div>
         </div>
-        
+
         <!-- Main Content -->
         <div class="main-content">
             <div class="header">
@@ -122,7 +124,7 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
                     </button>
                 </div>
             </div>
-            
+
             <!-- Search and Filter -->
             <div class="search-filter">
                 <div class="search-box">
@@ -136,7 +138,7 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
                     <option value="Office Supplies">Office Supplies</option>
                 </select>
             </div>
-            
+
             <!-- Items Table -->
             <table class="items-table">
                 <thead>
@@ -152,66 +154,10 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>ITM-1001</td>
-                        <td>Laptop Dell XPS 15</td>
-                        <td>Electronics</td>
-                        <td>Tech Suppliers Inc.</td>
-                        <td>Ahmed Mohamed</td>
-                        <td>2025-05-15</td>
-                        <td class="action-cell">
-                            <button class="action-btn view-btn" onclick="viewItem('ITM-1001')">
-                                <i class="fas fa-eye"></i> View
-                            </button>
-                            <button class="action-btn edit-btn" onclick="editItem('ITM-1001')">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
-                            <button class="action-btn delete-btn" onclick="deleteItem('ITM-1001')">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>ITM-1002</td>
-                        <td>Office Chair</td>
-                        <td>Furniture</td>
-                        <td>Furniture World</td>
-                        <td>Fatima Ali</td>
-                        <td>2025-05-16</td>
-                        <td class="action-cell">
-                            <button class="action-btn view-btn" onclick="viewItem('ITM-1002')">
-                                <i class="fas fa-eye"></i> View
-                            </button>
-                            <button class="action-btn edit-btn" onclick="editItem('ITM-1002')">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
-                            <button class="action-btn delete-btn" onclick="deleteItem('ITM-1002')">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>ITM-1003</td>
-                        <td>Printer HP LaserJet</td>
-                        <td>Electronics</td>
-                        <td>Office Equipment Co.</td>
-                        <td>Omar Hassan</td>
-                        <td>2025-05-17</td>
-                        <td class="action-cell">
-                            <button class="action-btn view-btn" onclick="viewItem('ITM-1003')">
-                                <i class="fas fa-eye"></i> View
-                            </button>
-                            <button class="action-btn edit-btn" onclick="editItem('ITM-1003')">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
-                            <button class="action-btn delete-btn" onclick="deleteItem('ITM-1003')">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                        </td>
-                    </tr>
+                    <!-- Data will be loaded dynamically via JavaScript -->
                 </tbody>
             </table>
-            
+
             <!-- Pagination -->
             <div class="pagination">
                 <button class="page-btn"><i class="fas fa-angle-left"></i></button>
@@ -222,85 +168,85 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
             </div>
         </div>
     </div>
-    
+
     <!-- Add/Edit Item Modal -->
-<div class="modal" id="itemModal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 class="modal-title" id="modalTitle">Add New Item</h3>
-            <button class="close-btn" id="closeModal">&times;</button>
+    <div class="modal" id="itemModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Add New Item</h3>
+                <button class="close-btn" id="closeModal">&times;</button>
+            </div>
+            <form id="itemForm">
+                <input type="hidden" id="itemId">
+
+                <div class="form-group">
+                    <label for="itemName">Item Name</label>
+                    <input type="text" id="itemName" required>
+                </div>
+                <!-- Added Price field -->
+                <div class="form-group">
+                    <label for="itemPrice">Price ($)</label>
+                    <input type="number" step="0.01" min="0" id="itemPrice" placeholder="0.00" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="categoryId">Category ID</label>
+                        <input type="text" id="categoryId" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="categoryName">Category Name</label>
+                        <input type="text" id="categoryName" readonly>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="supplierId">Supplier ID</label>
+                        <input type="text" id="supplierId" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="supplierName">Supplier Name</label>
+                        <input type="text" id="supplierName" readonly>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="employeeId">Registered By (Employee ID)</label>
+                        <input type="text" id="employeeId" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="employeeName">Employee Name</label>
+                        <input type="text" id="employeeName" readonly>
+                    </div>
+                </div>
+
+                <!-- Note Field -->
+                <div class="form-group">
+                    <label for="note">Note</label>
+                    <input type="text" id="note" placeholder="Enter any notes about the item">
+                </div>
+
+                <!-- Description Field -->
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" rows="3" placeholder="Enter detailed description of the item"></textarea>
+                </div>
+
+                <!-- Created Date Field -->
+                <div class="form-group">
+                    <label for="createdDate">Created Date</label>
+                    <input type="date" id="createdDate" required>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-danger" id="cancelBtn">Cancel</button>
+                    <button type="submit" class="btn btn-success" id="saveBtn">Save</button>
+                </div>
+            </form>
         </div>
-        <form id="itemForm">
-            <input type="hidden" id="itemId">
-            
-            <div class="form-group">
-                <label for="itemName">Item Name</label>
-                <input type="text" id="itemName" required>
-            </div>
-              <!-- Added Price field -->
-              <div class="form-group">
-                <label for="itemPrice">Price ($)</label>
-                <input type="number" step="0.01" min="0" id="itemPrice" placeholder="0.00" required>
-              </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="categoryId">Category ID</label>
-                    <input type="text" id="categoryId" required>
-                </div>
-                <div class="form-group">
-                    <label for="categoryName">Category Name</label>
-                    <input type="text" id="categoryName" readonly>
-                </div>
-            </div>
-            
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="supplierId">Supplier ID</label>
-                    <input type="text" id="supplierId" required>
-                </div>
-                <div class="form-group">
-                    <label for="supplierName">Supplier Name</label>
-                    <input type="text" id="supplierName" readonly>
-                </div>
-            </div>
-            
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="employeeId">Registered By (Employee ID)</label>
-                    <input type="text" id="employeeId" required>
-                </div>
-                <div class="form-group">
-                    <label for="employeeName">Employee Name</label>
-                    <input type="text" id="employeeName" readonly>
-                </div>
-            </div>
-            
-            <!-- Note Field -->
-            <div class="form-group">
-                <label for="note">Note</label>
-                <input type="text" id="note" placeholder="Enter any notes about the item">
-            </div>
-            
-            <!-- Description Field -->
-            <div class="form-group">
-                <label for="description">Description</label>
-                <textarea id="description" rows="3" placeholder="Enter detailed description of the item"></textarea>
-            </div>
-            
-            <!-- Created Date Field -->
-            <div class="form-group">
-                <label for="createdDate">Created Date</label>
-                <input type="date" id="createdDate" required>
-            </div>
-            
-            <div class="form-actions">
-                <button type="button" class="btn btn-danger" id="cancelBtn">Cancel</button>
-                <button type="submit" class="btn btn-success" id="saveBtn">Save</button>
-            </div>
-        </form>
     </div>
-</div>
-    
+
     <!-- View Item Modal -->
     <div class="modal" id="viewModal">
         <div class="modal-content">
@@ -316,8 +262,8 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
                     <strong>Item Name:</strong> <span id="viewName">Laptop Dell XPS 15</span>
                 </div>
                 <div class="detail-row">
-                <strong>Price:</strong> <span id="viewPrice"></span>
-            </div>
+                    <strong>Price:</strong> <span id="viewPrice"></span>
+                </div>
                 <div class="detail-row">
                     <strong>Category:</strong> <span id="viewCategory">Electronics</span>
                 </div>
@@ -331,7 +277,7 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
                     <strong>Note:</strong> <span id="viewNote">High-performance laptop for executives</span>
                 </div>
                 <div class="detail-row">
-                    <strong>Description:</strong> 
+                    <strong>Description:</strong>
                     <p id="viewDescription">Dell XPS 15 with 16GB RAM, 1TB SSD, and 4K display. Perfect for graphic design and video editing.</p>
                 </div>
                 <div class="detail-row">
@@ -343,7 +289,7 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
             </div>
         </div>
     </div>
-    
+
     <!-- Delete Confirmation Modal -->
     <div class="modal" id="deleteModal">
         <div class="modal-content">
@@ -364,4 +310,5 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
 
     <script src="script.js"></script>
 </body>
+
 </html>

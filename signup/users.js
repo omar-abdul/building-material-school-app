@@ -108,7 +108,7 @@ function confirmDelete() {
         formData.append('action', 'delete_user');
         formData.append('id', currentUserToDelete);
         
-        fetch('backend.php', {
+        fetch('/backend/api/auth/users.php', {
             method: 'POST',
             body: formData
         })
@@ -215,7 +215,7 @@ function saveUser(e) {
         formData.append('confirmPassword', confirmPassword);
     }
     
-    fetch('backend.php', {
+    fetch('/backend/api/auth/users.php', {
         method: 'POST',
         body: formData
     })
@@ -291,7 +291,7 @@ function loadUsers() {
     formData.append('search', search);
     formData.append('roleFilter', role);
     
-    fetch('backend.php', {
+    fetch('/backend/api/auth/users.php', {
         method: 'POST',
         body: formData
     })
@@ -343,7 +343,7 @@ function fetchUserById(id, callback) {
     formData.append('action', 'get_user');
     formData.append('id', id);
     
-    fetch('backend.php', {
+    fetch('/backend/api/auth/users.php', {
         method: 'POST',
         body: formData
     })

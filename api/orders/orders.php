@@ -1,11 +1,26 @@
 <?php
-include 'connection.php';
+
+/**
+ * Orders Backend API
+ * Uses centralized database and utilities
+ */
+
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../config/utils.php';
+
+// Set headers for API
 header('Content-Type: application/json');
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
+header("Access-Control-Allow-Headers: Content-Type");
+
+$db = Database::getInstance();
 
 // Helper function to get the next OrderID
-function getNextOrderID($conn) {
-    $stmt = $conn->query("SELECT MAX(OrderID) as max_id FROM Orders");
-    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+function getNextOrderID()
+{
+    global $db;
+    $result = $db->fetchOne("SELECT MAX(OrderID) as max_id FROM orders");
     return ($result['max_id'] ? $result['max_id'] + 1 : 1);
 }
 
@@ -16,28 +31,29 @@ function getNextOrderID($conn) {
 /**
  * Check if item has sufficient inventory
  */
-function checkInventory($conn, $itemId, $quantity) {
-    $stmt = $conn->prepare("SELECT Quantity FROM Inventory WHERE ItemID = ?");
-    $stmt->execute([$itemId]);
-    $inventory = $stmt->fetch(PDO::FETCH_ASSOC);
-    
+function checkInventory($itemId, $quantity)
+{
+    global $db;
+    $inventory = $db->fetchOne("SELECT Quantity FROM inventory WHERE ItemID = ?", [$itemId]);
+
     if (!$inventory) {
         throw new Exception("Alaabta lama helin (ID: $itemId)");
     }
-    
+
     if ($inventory['Quantity'] < $quantity) {
         throw new Exception("Alaab ma filnayn! ID: $itemId, Hadda: {$inventory['Quantity']}, La baahay: $quantity");
     }
-    
+
     return true;
 }
 
 /**
  * Update inventory after order
  */
-function updateInventory($conn, $itemId, $quantity) {
-    $stmt = $conn->prepare("UPDATE Inventory SET Quantity = Quantity - ? WHERE ItemID = ?");
-    return $stmt->execute([$quantity, $itemId]);
+function updateInventory($itemId, $quantity)
+{
+    global $db;
+    return $db->query("UPDATE inventory SET Quantity = Quantity - ? WHERE ItemID = ?", [$quantity, $itemId]);
 }
 
 // ==============================================
@@ -47,9 +63,7 @@ function updateInventory($conn, $itemId, $quantity) {
 // Get customer details by ID
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['customer_id'])) {
     $customerId = $_GET['customer_id'];
-    $stmt = $conn->prepare("SELECT * FROM Customers WHERE CustomerID = ?");
-    $stmt->execute([$customerId]);
-    $customer = $stmt->fetch(PDO::FETCH_ASSOC);
+    $customer = $db->fetchOne("SELECT * FROM customers WHERE CustomerID = ?", [$customerId]);
 
     echo json_encode($customer ?: ['error' => 'Customer not found']);
     exit;
@@ -58,9 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['customer_id'])) {
 // Get employee details by ID
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['employee_id'])) {
     $employeeId = $_GET['employee_id'];
-    $stmt = $conn->prepare("SELECT * FROM Employees WHERE EmployeeID = ?");
-    $stmt->execute([$employeeId]);
-    $employee = $stmt->fetch(PDO::FETCH_ASSOC);
+    $employee = $db->fetchOne("SELECT * FROM employees WHERE EmployeeID = ?", [$employeeId]);
 
     echo json_encode($employee ?: ['error' => 'Employee not found']);
     exit;
@@ -69,15 +81,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['employee_id'])) {
 // Get item details by ID (including inventory)
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['item_id'])) {
     $itemId = $_GET['item_id'];
-    
-    $stmt = $conn->prepare("
+
+    $item = $db->fetchOne("
         SELECT i.*, inv.Quantity 
-        FROM Items i
-        LEFT JOIN Inventory inv ON i.ItemID = inv.ItemID
+        FROM items i
+        LEFT JOIN inventory inv ON i.ItemID = inv.ItemID
         WHERE i.ItemID = ?
-    ");
-    $stmt->execute([$itemId]);
-    $item = $stmt->fetch(PDO::FETCH_ASSOC);
+    ", [$itemId]);
 
     echo json_encode($item ?: ['error' => 'Item not found']);
     exit;
@@ -88,20 +98,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = json_decode(file_get_contents('php://input'), true);
 
     try {
-        $conn->beginTransaction();
+        $db->getConnection()->beginTransaction();
 
         // 1. Validate all items have sufficient inventory FIRST
         foreach ($data['items'] as $item) {
-            checkInventory($conn, $item['item_id'], $item['quantity']);
+            checkInventory($item['item_id'], $item['quantity']);
         }
 
         // 2. Process order creation/update
         if (empty($data['order_id'])) {
-            $orderId = getNextOrderID($conn);
+            $orderId = getNextOrderID();
         } else {
             $orderId = $data['order_id'];
-            $stmt = $conn->prepare("DELETE FROM Orders WHERE OrderID = ?");
-            $stmt->execute([$orderId]);
+            // Delete existing order entries for this OrderID
+            $db->query("DELETE FROM orders WHERE OrderID = ?", [$orderId]);
         }
 
         // 3. Insert items and update inventory
@@ -110,11 +120,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $itemTotal = $item['quantity'] * $item['unitPrice'];
             $totalAmount += $itemTotal;
 
-            // Insert order item
-            $stmt = $conn->prepare("INSERT INTO Orders 
+            // Insert order item (OrderEntryID is auto-increment)
+            $db->query("INSERT INTO orders 
                 (OrderID, CustomerID, EmployeeID, ItemID, Quantity, UnitPrice, OrderDate, TotalAmount, Status) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", [
                 $orderId,
                 $data['customer_id'],
                 $data['employee_id'],
@@ -127,17 +136,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
 
             // Update inventory
-            updateInventory($conn, $item['item_id'], $item['quantity']);
+            updateInventory($item['item_id'], $item['quantity']);
         }
 
-        $conn->commit();
+        $db->getConnection()->commit();
         echo json_encode([
-            'success' => true, 
+            'success' => true,
             'order_id' => $orderId,
             'message' => 'Dalabka si guul leh ayaa loo kaydiyay oo inventory-ga waa la cusboonaysiiyay'
         ]);
     } catch (Exception $e) {
-        $conn->rollBack();
+        $db->getConnection()->rollBack();
         echo json_encode([
             'error' => $e->getMessage(),
             'code' => 'INVENTORY_ERROR'
@@ -151,30 +160,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE' && isset($_GET['order_id'])) {
     $orderId = $_GET['order_id'];
 
     try {
-        $conn->beginTransaction();
-        
+        $db->getConnection()->beginTransaction();
+
         // 1. Get all items from the order first
-        $stmt = $conn->prepare("SELECT ItemID, Quantity FROM Orders WHERE OrderID = ?");
-        $stmt->execute([$orderId]);
-        $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
+        $items = $db->fetchAll("SELECT ItemID, Quantity FROM orders WHERE OrderID = ?", [$orderId]);
+
         // 2. Restore inventory for each item
         foreach ($items as $item) {
-            $stmt = $conn->prepare("UPDATE Inventory SET Quantity = Quantity + ? WHERE ItemID = ?");
-            $stmt->execute([$item['Quantity'], $item['ItemID']]);
+            $db->query("UPDATE inventory SET Quantity = Quantity + ? WHERE ItemID = ?", [$item['Quantity'], $item['ItemID']]);
         }
-        
-        // 3. Now delete the order
-        $stmt = $conn->prepare("DELETE FROM Orders WHERE OrderID = ?");
-        $stmt->execute([$orderId]);
-        
-        $conn->commit();
+
+        // 3. Now delete the order entries
+        $db->query("DELETE FROM orders WHERE OrderID = ?", [$orderId]);
+
+        $db->getConnection()->commit();
         echo json_encode([
             'success' => true,
             'message' => 'Dalabka si guul leh ayaa loo tirtiray oo inventory-ga waa la soo celiyay'
         ]);
     } catch (Exception $e) {
-        $conn->rollBack();
+        $db->getConnection()->rollBack();
         echo json_encode(['error' => $e->getMessage()]);
     }
     exit;
@@ -184,30 +189,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE' && isset($_GET['order_id'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['order_id'])) {
     $orderId = $_GET['order_id'];
 
-    $stmt = $conn->prepare("
+    // Get order summary
+    $order = $db->fetchOne("
         SELECT o.OrderID, o.CustomerID, c.CustomerName, o.EmployeeID, e.EmployeeName,
-               o.OrderDate, o.Status, SUM(o.Quantity * o.UnitPrice) as TotalAmount
-        FROM Orders o
-        LEFT JOIN Customers c ON o.CustomerID = c.CustomerID
-        LEFT JOIN Employees e ON o.EmployeeID = e.EmployeeID
+               o.OrderDate, o.Status, SUM(o.TotalAmount) as TotalAmount
+        FROM orders o
+        LEFT JOIN customers c ON o.CustomerID = c.CustomerID
+        LEFT JOIN employees e ON o.EmployeeID = e.EmployeeID
         WHERE o.OrderID = ?
-        GROUP BY o.OrderID
-    ");
-    $stmt->execute([$orderId]);
-    $order = $stmt->fetch(PDO::FETCH_ASSOC);
+        GROUP BY o.OrderID, o.CustomerID, c.CustomerName, o.EmployeeID, e.EmployeeName, o.OrderDate, o.Status
+    ", [$orderId]);
 
     if ($order) {
-        $stmt = $conn->prepare("
+        // Get individual order items
+        $items = $db->fetchAll("
             SELECT o.ItemID, i.ItemName, o.Quantity, o.UnitPrice, 
-                   (o.Quantity * o.UnitPrice) as TotalAmount,
+                   o.TotalAmount,
                    inv.Quantity as CurrentInventory
-            FROM Orders o
-            JOIN Items i ON o.ItemID = i.ItemID
-            LEFT JOIN Inventory inv ON i.ItemID = inv.ItemID
+            FROM orders o
+            JOIN items i ON o.ItemID = i.ItemID
+            LEFT JOIN inventory inv ON i.ItemID = inv.ItemID
             WHERE o.OrderID = ?
-        ");
-        $stmt->execute([$orderId]);
-        $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        ", [$orderId]);
 
         $order['items'] = $items;
         $order['total_items'] = count($items);
@@ -225,11 +228,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $query = "
         SELECT o.OrderID, c.CustomerName, e.EmployeeName,
                COUNT(o.ItemID) as ItemsCount,
-               SUM(o.Quantity * o.UnitPrice) as TotalAmount,
+               SUM(o.TotalAmount) as TotalAmount,
                o.Status, o.OrderDate
-        FROM Orders o
-        LEFT JOIN Customers c ON o.CustomerID = c.CustomerID
-        LEFT JOIN Employees e ON o.EmployeeID = e.EmployeeID
+        FROM orders o
+        LEFT JOIN customers c ON o.CustomerID = c.CustomerID
+        LEFT JOIN employees e ON o.EmployeeID = e.EmployeeID
         WHERE 1=1
     ";
 
@@ -247,15 +250,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $params[] = "%$searchTerm%";
     }
 
-    $query .= " GROUP BY o.OrderID ORDER BY o.OrderDate DESC";
+    $query .= " GROUP BY o.OrderID, c.CustomerName, e.EmployeeName, o.Status, o.OrderDate ORDER BY o.OrderDate DESC";
 
-    $stmt = $conn->prepare($query);
-    $stmt->execute($params);
-    $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $orders = $db->fetchAll($query, $params);
 
     echo json_encode($orders);
     exit;
 }
 
 echo json_encode(['error' => 'Invalid request']);
-?>

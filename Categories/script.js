@@ -18,7 +18,7 @@ const categoriesTable = document.querySelector('.categories-table tbody');
 let currentCategoryToDelete = null;
 
 // Initialize the page
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', () => {
     loadCategories();
     
     // Toggle dropdown when clicking the report button
@@ -43,7 +43,7 @@ searchInput.addEventListener('input', filterCategories);
 
 // Functions
 function loadCategories(search = '') {
-    fetch(`backend.php?action=get_categories&search=${encodeURIComponent(search)}`)
+    fetch(`/backend/api/categories/categories.php?action=getCategories&search=${encodeURIComponent(search)}`)
         .then(response => response.json())
         .then(data => {
             if (data.error) {
@@ -53,7 +53,7 @@ function loadCategories(search = '') {
             
             categoriesTable.innerHTML = '';
             
-            data.forEach(category => {
+            for (const category of data.data) {
                 const row = document.createElement('tr');
                 row.setAttribute('data-id', category.CategoryID); // Add data-id attribute
                 row.innerHTML = `
@@ -74,7 +74,7 @@ function loadCategories(search = '') {
                     </td>
                 `;
                 categoriesTable.appendChild(row);
-            });
+            }
         })
         .catch(error => {
             console.error('Error:', error);
@@ -118,7 +118,7 @@ function viewItems(id) {
     const categoryName = row.cells[1].textContent;
     document.getElementById('categoryNameTitle').textContent = categoryName;
     
-    fetch(`backend.php?action=get_category_items&category_id=${id}`)
+    fetch(`/backend/api/categories/categories.php?action=getCategoryItems&category_id=${id}`)
         .then(response => {
             if (!response.ok) {
                 return response.json().then(err => { throw new Error(err.error) });
@@ -136,23 +136,23 @@ function viewItems(id) {
             if (data.length === 0) {
                 itemsListBody.innerHTML = '<tr><td colspan="4">No items found in this category</td></tr>';
             } else {
-                data.forEach(item => {
+                for (const item of data) {
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${item.ItemID}</td>
                         <td>${item.ItemName}</td>
-                        <td>$${(parseFloat(item.Price) || 0).toFixed(2)}</td>
+                        <td>$${(Number.parseFloat(item.Price) || 0).toFixed(2)}</td>
                         <td>${item.StockQuantity || 0}</td>
                     `;
                     itemsListBody.appendChild(row);
-                });
+                }
             }
             
             viewItemsModal.style.display = "flex";
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error loading items: ' + error.message);
+            alert(`Error loading items: ${error.message}`);
         });
 }
 
@@ -174,7 +174,7 @@ function confirmDelete() {
     const formData = new FormData();
     formData.append('category_id', currentCategoryToDelete);
     
-    fetch('backend.php?action=delete_category', {
+    fetch('/backend/api/categories/categories.php?action=deleteCategory', {
         method: 'POST',
         body: formData
     })
@@ -212,7 +212,7 @@ function saveCategory(e) {
     formData.append('category_name', name);
     formData.append('description', description);
     
-    fetch('backend.php?action=save_category', {
+    fetch('/backend/api/categories/categories.php?action=saveCategory', {
         method: 'POST',
         body: formData
     })
