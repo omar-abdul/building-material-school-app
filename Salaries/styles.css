@@ -1,0 +1,45 @@
+/* Salaries Module Specific Styles */
+
+/* Import base styles */
+@import url('../base/styles.css');
+
+/* Salaries specific table styles */
+.salary-table {
+    /* Inherits from base table styles */
+}
+
+/* Salaries specific modal styles */
+.salary-modal .modal-content {
+    /* Inherits from base modal styles */
+}
+
+/* Salaries specific form styles */
+.salary-form .form-group {
+    /* Inherits from base form styles */
+}
+
+/* Salaries specific button styles */
+.salary-form .btn {
+    /* Inherits from base button styles */
+}
+
+/* Salaries specific status styles */
+.paid {
+    /* Inherits from base status styles */
+}
+
+.pending {
+    /* Inherits from base status styles */
+}
+
+/* Salaries specific responsive styles */
+@media (max-width: 768px) {
+    .salary-table {
+        font-size: 12px;
+    }
+    
+    .salary-table th,
+    .salary-table td {
+        padding: 8px 10px;
+    }
+} 

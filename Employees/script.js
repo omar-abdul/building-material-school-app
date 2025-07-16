@@ -16,6 +16,11 @@ const searchInput = document.getElementById('searchInput');
 const positionFilter = document.getElementById('positionFilter');
 const employeesTable = document.querySelector('.employees-table tbody');
 
+// Form elements for dynamic calculation
+const baseSalaryInput = document.getElementById('baseSalary');
+const salaryIncreaseInput = document.getElementById('salaryIncrease');
+const expectedSalaryInput = document.getElementById('expectedSalary');
+
 // Current employee to be deleted
 let currentEmployeeToDelete = null;
 
@@ -33,42 +38,50 @@ calculateBtn.addEventListener('click', calculateExpectedSalary);
 searchInput.addEventListener('input', filterEmployees);
 positionFilter.addEventListener('change', filterEmployees);
 
+// Dynamic calculation event listeners
+baseSalaryInput.addEventListener('input', calculateExpectedSalary);
+salaryIncreaseInput.addEventListener('input', calculateExpectedSalary);
+
 // Load employees when page loads
 document.addEventListener('DOMContentLoaded', loadEmployees);
 
 // Functions
 function loadEmployees() {
-    fetch('/backend/api/employees/employees.php?action=getEmployees')
+    fetch('/backend/api/employees/employees.php')
         .then(response => response.json())
         .then(data => {
-            employeesTable.innerHTML = '';
-            for (const employee of data) {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${employee.id}</td>
-                    <td>${employee.name}</td>
-                    <td>${employee.position}</td>
-                    <td>$${Number.parseFloat(employee.baseSalary).toFixed(2)}</td>
-                    <td>$${Number.parseFloat(employee.expectedSalary).toFixed(2)}</td>
-                    <td>${employee.phone}</td>
-                    <td>${employee.email}</td>
-                    <td>${employee.guarantor}</td>
-                    <td>${employee.address}</td>
-                    <td>${employee.dateAdded.split(' ')[0]}</td>
-                    <td><span class="status-active">${employee.status}</span></td>
-                    <td class="action-cell">
-                        <button class="action-btn view-btn" onclick="viewEmployee('${employee.id}')">
-                            <i class="fas fa-eye"></i> View
-                        </button>
-                        <button class="action-btn edit-btn" onclick="editEmployee('${employee.id}')">
-                            <i class="fas fa-edit"></i> Edit
-                        </button>
-                        <button class="action-btn delete-btn" onclick="deleteEmployee('${employee.id}')">
-                            <i class="fas fa-trash"></i> Delete
-                        </button>
-                    </td>
-                `;
-                employeesTable.appendChild(row);
+            if (data.success) {
+                employeesTable.innerHTML = '';
+                for (const employee of data.data) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${employee.id}</td>
+                        <td>${employee.name}</td>
+                        <td>${employee.position}</td>
+                        <td>$${Number.parseFloat(employee.baseSalary).toFixed(2)}</td>
+                        <td>$${Number.parseFloat(employee.expectedSalary).toFixed(2)}</td>
+                        <td>${employee.phone}</td>
+                        <td>${employee.email}</td>
+                        <td>${employee.guarantor}</td>
+                        <td>${employee.address}</td>
+                        <td>${employee.dateAdded.split(' ')[0]}</td>
+                        <td><span class="status-active">${employee.status}</span></td>
+                        <td class="action-cell">
+                            <button class="action-btn view-btn" onclick="viewEmployee('${employee.id}')">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                            <button class="action-btn edit-btn" onclick="editEmployee('${employee.id}')">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button class="action-btn delete-btn" onclick="deleteEmployee('${employee.id}')">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </td>
+                    `;
+                    employeesTable.appendChild(row);
+                }
+            } else {
+                console.error('Error loading employees:', data.message);
             }
         })
         .catch(error => console.error('Error:', error));
@@ -81,6 +94,7 @@ function openAddEmployeeModal() {
     document.getElementById('position').value = "";
     document.getElementById('status').value = "Active";
     document.getElementById('baseSalary').value = "";
+    document.getElementById('salaryIncrease').value = "";
     document.getElementById('expectedSalary').value = "";
     document.getElementById('phone').value = "";
     document.getElementById('email').value = "";
@@ -90,57 +104,89 @@ function openAddEmployeeModal() {
 }
 
 function editEmployee(id) {
-    fetch(`/backend/api/employees/employees.php?action=getEmployee&id=${id}`)
+    fetch(`/backend/api/employees/employees.php?id=${id}`)
         .then(response => response.json())
-        .then(employee => {
-            document.getElementById('modalTitle').textContent = "Edit Employee";
-            document.getElementById('employeeId').value = employee.id;
-            document.getElementById('employeeName').value = employee.name;
-            document.getElementById('position').value = employee.position;
-            document.getElementById('status').value = employee.status;
-            document.getElementById('baseSalary').value = employee.baseSalary;
-            document.getElementById('expectedSalary').value = employee.expectedSalary;
-            document.getElementById('phone').value = employee.phone;
-            document.getElementById('email').value = employee.email;
-            document.getElementById('guarantor').value = employee.guarantor;
-            document.getElementById('address').value = employee.address;
-            employeeModal.style.display = "flex";
+        .then(data => {
+            if (data.success) {
+                const employee = data.data;
+                document.getElementById('modalTitle').textContent = "Edit Employee";
+                document.getElementById('employeeId').value = employee.id;
+                document.getElementById('employeeName').value = employee.name;
+                document.getElementById('position').value = employee.position;
+                document.getElementById('status').value = employee.status;
+                document.getElementById('baseSalary').value = employee.baseSalary;
+                
+                // Calculate and set the percentage increase
+                const baseSalary = Number.parseFloat(employee.baseSalary);
+                const expectedSalary = Number.parseFloat(employee.expectedSalary);
+                const percentageIncrease = ((expectedSalary - baseSalary) / baseSalary) * 100;
+                document.getElementById('salaryIncrease').value = percentageIncrease.toFixed(1);
+                
+                document.getElementById('expectedSalary').value = employee.expectedSalary;
+                document.getElementById('phone').value = employee.phone;
+                document.getElementById('email').value = employee.email;
+                document.getElementById('guarantor').value = employee.guarantor;
+                document.getElementById('address').value = employee.address;
+                employeeModal.style.display = "flex";
+            } else {
+                console.error('Error loading employee:', data.message);
+            }
         })
         .catch(error => console.error('Error:', error));
 }
 
 function viewEmployee(id) {
-    fetch(`/backend/api/employees/employees.php?action=getEmployee&id=${id}`)
+    fetch(`/backend/api/employees/employees.php?id=${id}`)
         .then(response => response.json())
-        .then(employee => {
-            document.getElementById('viewId').textContent = employee.id;
-            document.getElementById('viewName').textContent = employee.name;
-            document.getElementById('viewPosition').textContent = employee.position;
-            document.getElementById('viewBaseSalary').textContent = `$${Number.parseFloat(employee.baseSalary).toFixed(2)}`;
-            document.getElementById('viewExpectedSalary').textContent = `$${Number.parseFloat(employee.expectedSalary).toFixed(2)}`;
-            document.getElementById('viewPhone').textContent = employee.phone;
-            document.getElementById('viewEmail').textContent = employee.email;
-            document.getElementById('viewGuarantor').textContent = employee.guarantor;
-            document.getElementById('viewStatus').textContent = employee.status;
-            document.getElementById('viewStatus').className = employee.status === "Active" ? "status-active" : "status-inactive";
-            document.getElementById('viewAddress').textContent = employee.address;
-            viewModal.style.display = "flex";
+        .then(data => {
+            if (data.success) {
+                const employee = data.data;
+                document.getElementById('viewId').textContent = employee.id;
+                document.getElementById('viewName').textContent = employee.name;
+                document.getElementById('viewPosition').textContent = employee.position;
+                document.getElementById('viewBaseSalary').textContent = `$${Number.parseFloat(employee.baseSalary).toFixed(2)}`;
+                document.getElementById('viewExpectedSalary').textContent = `$${Number.parseFloat(employee.expectedSalary).toFixed(2)}`;
+                document.getElementById('viewPhone').textContent = employee.phone;
+                document.getElementById('viewEmail').textContent = employee.email;
+                document.getElementById('viewGuarantor').textContent = employee.guarantor;
+                document.getElementById('viewStatus').textContent = employee.status;
+                document.getElementById('viewStatus').className = employee.status === "Active" ? "status-active" : "status-inactive";
+                document.getElementById('viewAddress').textContent = employee.address;
+                viewModal.style.display = "flex";
+            } else {
+                console.error('Error loading employee:', data.message);
+            }
         })
         .catch(error => console.error('Error:', error));
 }
 
 function deleteEmployee(id) {
     currentEmployeeToDelete = id;
-    const employeeName = document.querySelector(`tr td:first-child:contains('${id}')`).nextElementSibling.textContent;
+    
+    // Find the row with this employee ID and get the name
+    const rows = document.querySelectorAll('.employees-table tbody tr');
+    let employeeName = '';
+    for (const row of rows) {
+        if (row.cells[0].textContent === id) {
+            employeeName = row.cells[1].textContent;
+            break;
+        }
+    }
+    
     document.getElementById('deleteEmployeeId').textContent = id;
     document.getElementById('deleteEmployeeName').textContent = employeeName;
     deleteModal.style.display = "flex";
 }
 
 function confirmDelete() {
+    console.log(currentEmployeeToDelete);
     if (currentEmployeeToDelete) {
-        fetch(`/backend/api/employees/employees.php?action=deleteEmployee&id=${currentEmployeeToDelete}`, {
-            method: 'DELETE'
+        fetch('/backend/api/employees/employees.php', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ id: currentEmployeeToDelete })
         })
         .then(response => response.json())
         .then(data => {
@@ -148,7 +194,7 @@ function confirmDelete() {
                 loadEmployees(); // Refresh the table
                 closeModals();
             } else {
-                alert('Error deleting employee');
+                alert(`Error deleting employee: ${data.message}`);
             }
         })
         .catch(error => console.error('Error:', error));
@@ -156,18 +202,16 @@ function confirmDelete() {
 }
 
 function calculateExpectedSalary() {
-    const position = document.getElementById('position').value;
-    const baseSalary = Number.parseFloat(document.getElementById('baseSalary').value) || 0;
+    const baseSalary = Number.parseFloat(baseSalaryInput.value) || 0;
+    const salaryIncrease = Number.parseFloat(salaryIncreaseInput.value) || 0;
     
-    if (!position) {
-        alert("Please select a position first");
+    if (baseSalary <= 0) {
+        expectedSalaryInput.value = "";
         return;
     }
     
-    const increasePercentage = 10; // Default 10% increase for all positions
-    
-    const expectedSalary = baseSalary + (baseSalary * (increasePercentage / 100));
-    document.getElementById('expectedSalary').value = expectedSalary.toFixed(2);
+    const expectedSalary = baseSalary + (baseSalary * (salaryIncrease / 100));
+    expectedSalaryInput.value = expectedSalary.toFixed(2);
 }
 
 function saveEmployee(e) {
@@ -178,12 +222,14 @@ function saveEmployee(e) {
     const position = document.getElementById('position').value;
     const status = document.getElementById('status').value;
     const baseSalary = Number.parseFloat(document.getElementById('baseSalary').value);
+    const salaryIncrease = Number.parseFloat(document.getElementById('salaryIncrease').value);
+    const expectedSalary = Number.parseFloat(document.getElementById('expectedSalary').value);
     const phone = document.getElementById('phone').value;
     const email = document.getElementById('email').value;
     const guarantor = document.getElementById('guarantor').value;
     const address = document.getElementById('address').value;
     
-    if (!name || !position || !baseSalary || !phone) {
+    if (!name || !position || !baseSalary || !salaryIncrease || !expectedSalary || !phone) {
         alert("Please fill in all required fields");
         return;
     }
@@ -193,14 +239,18 @@ function saveEmployee(e) {
         name: name,
         position: position,
         baseSalary: baseSalary,
+        expectedSalary: expectedSalary,
         phone: phone,
         email: email,
         guarantor: guarantor,
         address: address
     };
     
-    fetch('/backend/api/employees/employees.php?action=saveEmployee', {
-        method: 'POST',
+    const method = id ? 'PUT' : 'POST';
+    const url = '/backend/api/employees/employees.php';
+    
+    fetch(url, {
+        method: method,
         headers: {
             'Content-Type': 'application/json',
         },
@@ -212,7 +262,7 @@ function saveEmployee(e) {
             loadEmployees(); // Refresh the table
             closeModals();
         } else {
-            alert('Error saving employee');
+            alert(`Error saving employee: ${data.message}`);
         }
     })
     .catch(error => console.error('Error:', error));

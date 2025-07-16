@@ -299,7 +299,7 @@ function addInventory()
         return;
     }
 
-    $sql = "INSERT INTO nventory (ItemID, Quantity) VALUES (?, ?)";
+    $sql = "INSERT INTO inventory (ItemID, Quantity) VALUES (?, ?)";
 
     try {
         $db->query($sql, [$itemId, $quantity]);
@@ -325,7 +325,7 @@ function updateInventory()
         return;
     }
 
-    $sql = "UPDATE nventory SET Quantity = ? WHERE InventoryID = ?";
+    $sql = "UPDATE inventory SET Quantity = ? WHERE InventoryID = ?";
 
     try {
         $db->query($sql, [$quantity, $inventoryId]);

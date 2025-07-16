@@ -15,77 +15,41 @@ header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
 header("Access-Control-Allow-Headers: Content-Type");
 
 $db = Database::getInstance();
-$action = $_GET['action'] ?? '';
 
-try {
-    switch ($action) {
-        case 'getItems':
-            getItems();
-            break;
-        case 'getItem':
-            getItem();
-            break;
-        case 'getCategoryDetails':
-            getCategoryDetails();
-            break;
-        case 'getSupplierDetails':
-            getSupplierDetails();
-            break;
-        case 'getEmployeeDetails':
-            getEmployeeDetails();
-            break;
-        case 'addItem':
-            addItem();
-            break;
-        case 'updateItem':
-            updateItem();
-            break;
-        case 'deleteItem':
-            deleteItem();
-            break;
-        default:
-            Utils::sendErrorResponse('Invalid action');
-            break;
-    }
-} catch (Exception $e) {
-    Utils::logError('Items API Error: ' . $e->getMessage());
-    Utils::sendErrorResponse($e->getMessage());
-}
-
-function getItems()
-{
-    global $db;
-
-    $search = $_GET['search'] ?? '';
-    $categoryFilter = $_GET['categoryFilter'] ?? '';
-
-    $query = "SELECT i.ItemID, i.ItemName, i.Price,
-                     i.CategoryID, c.CategoryName, 
-                     i.SupplierID, s.SupplierName, 
-                     i.RegisteredByEmployeeID, e.EmployeeName,
-                     i.Note, i.Description, i.CreatedDate 
-              FROM items i
-              JOIN categories c ON i.CategoryID = c.CategoryID
-              JOIN suppliers s ON i.SupplierID = s.SupplierID
-              JOIN Employees e ON i.RegisteredByEmployeeID = e.EmployeeID
-              WHERE 1=1";
-
-    $params = [];
-
-    if (!empty($search)) {
-        $query .= " AND (i.ItemName LIKE ? OR i.Description LIKE ? OR c.CategoryName LIKE ? OR s.SupplierName LIKE ?)";
-        $searchParam = "%$search%";
-        $params = array_merge($params, [$searchParam, $searchParam, $searchParam, $searchParam]);
-    }
-
-    if (!empty($categoryFilter)) {
-        $query .= " AND c.CategoryName = ?";
-        $params[] = $categoryFilter;
-    }
-
-    $query .= " ORDER BY i.CreatedDate DESC";
-
+// Get all items
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && !isset($_GET['itemId']) && !isset($_GET['categoryId']) && !isset($_GET['supplierId']) && !isset($_GET['employeeId'])) {
     try {
+        $search = $_GET['search'] ?? '';
+        $categoryFilter = $_GET['categoryFilter'] ?? '';
+
+        $query = "SELECT i.ItemID, i.ItemName, i.Price,
+                         i.CategoryID, c.CategoryName, 
+                         i.SupplierID, s.SupplierName, 
+                         i.RegisteredByEmployeeID, e.EmployeeName,
+                         i.Note, i.Description, i.CreatedDate,
+                         COALESCE(inv.Quantity, 0) as Quantity
+                  FROM items i
+                  JOIN categories c ON i.CategoryID = c.CategoryID
+                  JOIN suppliers s ON i.SupplierID = s.SupplierID
+                  JOIN employees e ON i.RegisteredByEmployeeID = e.EmployeeID
+                  LEFT JOIN inventory inv ON i.ItemID = inv.ItemID
+                  WHERE 1=1";
+
+        $params = [];
+
+        if (!empty($search)) {
+            $query .= " AND (i.ItemName LIKE ? OR i.Description LIKE ? OR c.CategoryName LIKE ? OR s.SupplierName LIKE ?)";
+            $searchParam = "%$search%";
+            $params = array_merge($params, [$searchParam, $searchParam, $searchParam, $searchParam]);
+        }
+
+        if (!empty($categoryFilter)) {
+            $query .= " AND c.CategoryName = ?";
+            $params[] = $categoryFilter;
+        }
+
+        $query .= " ORDER BY i.CreatedDate DESC";
+
         $items = $db->fetchAll($query, $params);
         Utils::sendSuccessResponse('Items retrieved successfully', $items);
     } catch (Exception $e) {
@@ -93,25 +57,25 @@ function getItems()
     }
 }
 
-function getItem()
-{
-    global $db;
-
-    $itemId = $_GET['itemId'] ?? '';
-
-    if (empty($itemId)) {
-        Utils::sendErrorResponse('Item ID is required');
-        return;
-    }
-
-    $query = "SELECT i.*, c.CategoryName, s.SupplierName, e.EmployeeName 
-              FROM items i
-              JOIN categories c ON i.CategoryID = c.CategoryID
-              JOIN suppliers s ON i.SupplierID = s.SupplierID
-              JOIN Employees e ON i.RegisteredByEmployeeID = e.EmployeeID
-              WHERE i.ItemID = ?";
-
+// Get single item
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['itemId'])) {
     try {
+        $itemId = $_GET['itemId'];
+
+        if (empty($itemId)) {
+            Utils::sendErrorResponse('Item ID is required');
+            return;
+        }
+
+        $query = "SELECT i.*, c.CategoryName, s.SupplierName, e.EmployeeName,
+                         COALESCE(inv.Quantity, 0) as Quantity
+                  FROM items i
+                  JOIN categories c ON i.CategoryID = c.CategoryID
+                  JOIN suppliers s ON i.SupplierID = s.SupplierID
+                  JOIN employees e ON i.RegisteredByEmployeeID = e.EmployeeID
+                  LEFT JOIN inventory inv ON i.ItemID = inv.ItemID
+                  WHERE i.ItemID = ?";
+
         $item = $db->fetchOne($query, [$itemId]);
 
         if ($item) {
@@ -124,20 +88,17 @@ function getItem()
     }
 }
 
-function getCategoryDetails()
-{
-    global $db;
-
-    $categoryId = $_GET['categoryId'] ?? '';
-
-    if (empty($categoryId)) {
-        Utils::sendErrorResponse('Category ID is required');
-        return;
-    }
-
-    $query = "SELECT CategoryName FROM categories WHERE CategoryID = ?";
-
+// Get category details
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['categoryId'])) {
     try {
+        $categoryId = $_GET['categoryId'];
+
+        if (empty($categoryId)) {
+            Utils::sendErrorResponse('Category ID is required');
+            return;
+        }
+
+        $query = "SELECT CategoryName FROM categories WHERE CategoryID = ?";
         $category = $db->fetchOne($query, [$categoryId]);
 
         if ($category) {
@@ -150,20 +111,17 @@ function getCategoryDetails()
     }
 }
 
-function getSupplierDetails()
-{
-    global $db;
-
-    $supplierId = $_GET['supplierId'] ?? '';
-
-    if (empty($supplierId)) {
-        Utils::sendErrorResponse('Supplier ID is required');
-        return;
-    }
-
-    $query = "SELECT SupplierName FROM suppliers WHERE SupplierID = ?";
-
+// Get supplier details
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['supplierId'])) {
     try {
+        $supplierId = $_GET['supplierId'];
+
+        if (empty($supplierId)) {
+            Utils::sendErrorResponse('Supplier ID is required');
+            return;
+        }
+
+        $query = "SELECT SupplierName FROM suppliers WHERE SupplierID = ?";
         $supplier = $db->fetchOne($query, [$supplierId]);
 
         if ($supplier) {
@@ -176,20 +134,17 @@ function getSupplierDetails()
     }
 }
 
-function getEmployeeDetails()
-{
-    global $db;
-
-    $employeeId = $_GET['employeeId'] ?? '';
-
-    if (empty($employeeId)) {
-        Utils::sendErrorResponse('Employee ID is required');
-        return;
-    }
-
-    $query = "SELECT EmployeeName FROM employees WHERE EmployeeID = ?";
-
+// Get employee details
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['employeeId'])) {
     try {
+        $employeeId = $_GET['employeeId'];
+
+        if (empty($employeeId)) {
+            Utils::sendErrorResponse('Employee ID is required');
+            return;
+        }
+
+        $query = "SELECT EmployeeName FROM employees WHERE EmployeeID = ?";
         $employee = $db->fetchOne($query, [$employeeId]);
 
         if ($employee) {
@@ -202,137 +157,163 @@ function getEmployeeDetails()
     }
 }
 
-function addItem()
-{
-    global $db;
-
-    $json = file_get_contents('php://input');
-    $data = json_decode($json, true);
-
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        $data = $_POST;
-    }
-
-    $required = ['ItemName', 'Price', 'CategoryID', 'SupplierID', 'RegisteredByEmployeeID'];
-    foreach ($required as $field) {
-        if (empty($data[$field])) {
-            Utils::sendErrorResponse("$field is required");
-            return;
-        }
-    }
-
-    $itemName = trim($data['ItemName']);
-    $price = (float) $data['Price'];
-    $categoryId = (int) $data['CategoryID'];
-    $supplierId = (int) $data['SupplierID'];
-    $employeeId = (int) $data['RegisteredByEmployeeID'];
-    $note = isset($data['Note']) ? trim($data['Note']) : '';
-    $description = isset($data['Description']) ? trim($data['Description']) : '';
-    $createdDate = isset($data['CreatedDate']) ? $data['CreatedDate'] : date('Y-m-d H:i:s');
-
-    $query = "INSERT INTO tems (ItemName, Price, CategoryID, SupplierID, RegisteredByEmployeeID, Note, Description, CreatedDate) 
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-
+// Add new item
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
-        $db->query($query, [
-            $itemName,
-            $price,
-            $categoryId,
-            $supplierId,
-            $employeeId,
-            $note,
-            $description,
-            $createdDate
-        ]);
+        $data = json_decode(file_get_contents('php://input'), true);
 
-        $itemId = $db->lastInsertId();
-        Utils::sendSuccessResponse('Item added successfully', ['item_id' => $itemId]);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $data = $_POST;
+        }
+
+        $required = ['ItemName', 'Price', 'CategoryID', 'SupplierID', 'RegisteredByEmployeeID'];
+        foreach ($required as $field) {
+            if (empty($data[$field])) {
+                Utils::sendErrorResponse("$field is required");
+                return;
+            }
+        }
+
+        $itemName = trim($data['ItemName']);
+        $price = (float) $data['Price'];
+        $quantity = (int) ($data['Quantity'] ?? 0);
+        $categoryId = (int) $data['CategoryID'];
+        $supplierId = (int) $data['SupplierID'];
+        $employeeId = (int) $data['RegisteredByEmployeeID'];
+        $note = isset($data['Note']) ? trim($data['Note']) : '';
+        $description = isset($data['Description']) ? trim($data['Description']) : '';
+        $createdDate = isset($data['CreatedDate']) ? $data['CreatedDate'] : date('Y-m-d H:i:s');
+
+        // Start transaction
+        $db->beginTransaction();
+
+        try {
+            // Insert item
+            $query = "INSERT INTO items (ItemName, Price, CategoryID, SupplierID, RegisteredByEmployeeID, Note, Description, CreatedDate) 
+                      VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+
+            $db->query($query, [
+                $itemName,
+                $price,
+                $categoryId,
+                $supplierId,
+                $employeeId,
+                $note,
+                $description,
+                $createdDate
+            ]);
+
+            $itemId = $db->lastInsertId();
+
+            // Insert inventory record if quantity > 0
+            if ($quantity > 0) {
+                $inventoryQuery = "INSERT INTO inventory (ItemID, Quantity, LastUpdated) VALUES (?, ?, ?)";
+                $db->query($inventoryQuery, [$itemId, $quantity, $createdDate]);
+            }
+
+            $db->commit();
+            Utils::sendSuccessResponse('Item added successfully', ['item_id' => $itemId]);
+        } catch (Exception $e) {
+            $db->rollback();
+            throw $e;
+        }
     } catch (Exception $e) {
         Utils::sendErrorResponse('Failed to add item: ' . $e->getMessage());
     }
 }
 
-function updateItem()
-{
-    global $db;
+// Update item
+if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
+    try {
+        $data = json_decode(file_get_contents('php://input'), true);
 
-    $json = file_get_contents('php://input');
-    $data = json_decode($json, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $data = $_POST;
+        }
 
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        $data = $_POST;
-    }
-
-    if (empty($data['ItemID'])) {
-        Utils::sendErrorResponse('Item ID is required');
-        return;
-    }
-
-    $required = ['ItemName', 'Price', 'CategoryID', 'SupplierID', 'RegisteredByEmployeeID'];
-    foreach ($required as $field) {
-        if (empty($data[$field])) {
-            Utils::sendErrorResponse("$field is required");
+        if (empty($data['ItemID'])) {
+            Utils::sendErrorResponse('Item ID is required');
             return;
         }
-    }
 
-    $itemId = (int) $data['ItemID'];
-    $itemName = trim($data['ItemName']);
-    $price = (float) $data['Price'];
-    $categoryId = (int) $data['CategoryID'];
-    $supplierId = (int) $data['SupplierID'];
-    $employeeId = (int) $data['RegisteredByEmployeeID'];
-    $note = isset($data['Note']) ? trim($data['Note']) : '';
-    $description = isset($data['Description']) ? trim($data['Description']) : '';
-    $createdDate = isset($data['CreatedDate']) ? $data['CreatedDate'] : date('Y-m-d H:i:s');
+        $required = ['ItemName', 'Price', 'CategoryID', 'SupplierID', 'RegisteredByEmployeeID'];
+        foreach ($required as $field) {
+            if (empty($data[$field])) {
+                Utils::sendErrorResponse("$field is required");
+                return;
+            }
+        }
 
-    $query = "UPDATE tems 
-              SET ItemName = ?, Price = ?, CategoryID = ?, SupplierID = ?, 
-                  RegisteredByEmployeeID = ?, Note = ?, Description = ?, 
-                  CreatedDate = ?
-              WHERE ItemID = ?";
+        $itemId = (int) $data['ItemID'];
+        $itemName = trim($data['ItemName']);
+        $price = (float) $data['Price'];
+        $quantity = (int) ($data['Quantity'] ?? 0);
+        $categoryId = (int) $data['CategoryID'];
+        $supplierId = (int) $data['SupplierID'];
+        $employeeId = (int) $data['RegisteredByEmployeeID'];
+        $note = isset($data['Note']) ? trim($data['Note']) : '';
+        $description = isset($data['Description']) ? trim($data['Description']) : '';
+        $createdDate = isset($data['CreatedDate']) ? $data['CreatedDate'] : date('Y-m-d H:i:s');
 
-    try {
-        $db->query($query, [
-            $itemName,
-            $price,
-            $categoryId,
-            $supplierId,
-            $employeeId,
-            $note,
-            $description,
-            $createdDate,
-            $itemId
-        ]);
+        // Start transaction
+        $db->beginTransaction();
 
-        Utils::sendSuccessResponse('Item updated successfully');
+        try {
+            // Update item
+            $query = "UPDATE items 
+                      SET ItemName = ?, Price = ?, CategoryID = ?, SupplierID = ?, 
+                          RegisteredByEmployeeID = ?, Note = ?, Description = ?, 
+                          CreatedDate = ?
+                      WHERE ItemID = ?";
+
+            $db->query($query, [
+                $itemName,
+                $price,
+                $categoryId,
+                $supplierId,
+                $employeeId,
+                $note,
+                $description,
+                $createdDate,
+                $itemId
+            ]);
+
+            // Update or insert inventory record
+            $checkInventoryQuery = "SELECT InventoryID FROM inventory WHERE ItemID = ?";
+            $existingInventory = $db->fetchOne($checkInventoryQuery, [$itemId]);
+
+            if ($existingInventory) {
+                // Update existing inventory record
+                $updateInventoryQuery = "UPDATE inventory SET Quantity = ?, LastUpdated = ? WHERE ItemID = ?";
+                $db->query($updateInventoryQuery, [$quantity, date('Y-m-d H:i:s'), $itemId]);
+            } else {
+                // Insert new inventory record
+                $insertInventoryQuery = "INSERT INTO inventory (ItemID, Quantity, LastUpdated) VALUES (?, ?, ?)";
+                $db->query($insertInventoryQuery, [$itemId, $quantity, date('Y-m-d H:i:s')]);
+            }
+
+            $db->commit();
+            Utils::sendSuccessResponse('Item updated successfully');
+        } catch (Exception $e) {
+            $db->rollback();
+            throw $e;
+        }
     } catch (Exception $e) {
         Utils::sendErrorResponse('Failed to update item: ' . $e->getMessage());
     }
 }
 
-function deleteItem()
-{
-    global $db;
-
-    // Read JSON data if sent
-    $json = file_get_contents('php://input');
-    $data = json_decode($json, true);
-
-    // If no JSON, use GET
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        $itemId = $_GET['itemId'] ?? '';
-    } else {
-        $itemId = $data['itemId'] ?? '';
-    }
-
-    // Ensure itemID is provided
-    if (empty($itemId)) {
-        Utils::sendErrorResponse('Item ID is required');
-        return;
-    }
-
+// Delete item
+if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
     try {
+        $data = json_decode(file_get_contents('php://input'), true);
+        $itemId = isset($data['itemId']) ? $data['itemId'] : ($_GET['itemId'] ?? '');
+
+        if (empty($itemId)) {
+            Utils::sendErrorResponse('Item ID is required');
+            return;
+        }
+
         // 1. First check if item exists
         $checkQuery = "SELECT ItemID FROM items WHERE ItemID = ?";
         $item = $db->fetchOne($checkQuery, [$itemId]);

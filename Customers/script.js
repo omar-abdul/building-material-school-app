@@ -40,11 +40,15 @@ document.addEventListener('DOMContentLoaded', loadCustomers);
 
 // Functions
 function loadCustomers() {
-    fetch('/backend/api/customers/customers.php?action=getCustomers')
+    fetch('/backend/api/customers/customers.php')
         .then(response => response.json())
         .then(data => {
-            
-            renderCustomersTable(data.data);
+            if (data.success) {
+                renderCustomersTable(data.data);
+            } else {
+                console.error('Error loading customers:', data.message);
+                alert('Failed to load customers');
+            }
         })
         .catch(error => {
             console.error('Error loading customers:', error);
@@ -55,8 +59,7 @@ function loadCustomers() {
 function renderCustomersTable(customers) {
     customersTable.innerHTML = '';
     
-
-        for (const customer of customers) {
+    for (const customer of customers) {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${customer.CustomerID}</td>
@@ -95,16 +98,22 @@ function openAddCustomerModal() {
 }
 
 function editCustomer(id) {
-    fetch(`/backend/api/customers/customers.php?action=getCustomer&id=${id}`)
+    fetch(`/backend/api/customers/customers.php?id=${id}`)
         .then(response => response.json())
-        .then(customer => {
-            document.getElementById('modalTitle').textContent = "Edit Customer";
-            document.getElementById('customerId').value = customer.CustomerID;
-            document.getElementById('customerName').value = customer.Name;
-            document.getElementById('phone').value = customer.Phone;
-            document.getElementById('email').value = customer.Email || "";
-            document.getElementById('address').value = customer.Address || "";
-            customerModal.style.display = "flex";
+        .then(data => {
+            if (data.success) {
+                const customer = data.data;
+                document.getElementById('modalTitle').textContent = "Edit Customer";
+                document.getElementById('customerId').value = customer.CustomerID;
+                document.getElementById('customerName').value = customer.Name;
+                document.getElementById('phone').value = customer.Phone;
+                document.getElementById('email').value = customer.Email || "";
+                document.getElementById('address').value = customer.Address || "";
+                customerModal.style.display = "flex";
+            } else {
+                console.error('Error loading customer:', data.message);
+                alert('Failed to load customer details');
+            }
         })
         .catch(error => {
             console.error('Error loading customer:', error);
@@ -113,15 +122,21 @@ function editCustomer(id) {
 }
 
 function viewCustomer(id) {
-    fetch(`/backend/api/customers/customers.php?action=getCustomer&id=${id}`)
+    fetch(`/backend/api/customers/customers.php?id=${id}`)
         .then(response => response.json())
-        .then(customer => {
-            document.getElementById('viewId').textContent = customer.CustomerID;
-            document.getElementById('viewName').textContent = customer.Name;
-            document.getElementById('viewPhone').textContent = customer.Phone;
-            document.getElementById('viewEmail').textContent = customer.Email || "N/A";
-            document.getElementById('viewAddress').textContent = customer.Address || "N/A";
-            viewModal.style.display = "flex";
+        .then(data => {
+            if (data.success) {
+                const customer = data.data;
+                document.getElementById('viewId').textContent = customer.CustomerID;
+                document.getElementById('viewName').textContent = customer.Name;
+                document.getElementById('viewPhone').textContent = customer.Phone;
+                document.getElementById('viewEmail').textContent = customer.Email || "N/A";
+                document.getElementById('viewAddress').textContent = customer.Address || "N/A";
+                viewModal.style.display = "flex";
+            } else {
+                console.error('Error loading customer:', data.message);
+                alert('Failed to load customer details');
+            }
         })
         .catch(error => {
             console.error('Error loading customer:', error);
@@ -132,12 +147,18 @@ function viewCustomer(id) {
 function deleteCustomer(id) {
     currentCustomerToDelete = id;
     // Get customer name for display in confirmation
-    fetch(`/backend/api/customers/customers.php?action=getCustomer&id=${id}`)
+    fetch(`/backend/api/customers/customers.php?id=${id}`)
         .then(response => response.json())
-        .then(customer => {
-            document.getElementById('deleteCustomerId').textContent = customer.CustomerID;
-            document.getElementById('deleteCustomerName').textContent = customer.Name;
-            deleteModal.style.display = "flex";
+        .then(data => {
+            if (data.success) {
+                const customer = data.data;
+                document.getElementById('deleteCustomerId').textContent = customer.CustomerID;
+                document.getElementById('deleteCustomerName').textContent = customer.Name;
+                deleteModal.style.display = "flex";
+            } else {
+                console.error('Error loading customer:', data.message);
+                alert('Failed to load customer details');
+            }
         })
         .catch(error => {
             console.error('Error loading customer:', error);
@@ -147,8 +168,12 @@ function deleteCustomer(id) {
 
 function confirmDelete() {
     if (currentCustomerToDelete) {
-        fetch(`/backend/api/customers/customers.php?action=deleteCustomer&id=${currentCustomerToDelete}`, {
-            method: 'GET'
+        fetch('/backend/api/customers/customers.php', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ id: currentCustomerToDelete })
         })
         .then(response => response.json())
         .then(data => {
@@ -156,7 +181,7 @@ function confirmDelete() {
                 alert('Customer deleted successfully');
                 loadCustomers(); // Refresh the table
             } else {
-                alert('Failed to delete customer');
+                alert(`Failed to delete customer: ${data.message}`);
             }
             currentCustomerToDelete = null;
             closeModals();
@@ -174,36 +199,43 @@ function viewOrderHistory(id) {
     currentCustomerToViewHistory = id;
     
     // Get customer name for display
-    fetch(`/backend/api/customers/customers.php?action=getCustomer&id=${id}`)
+    fetch(`/backend/api/customers/customers.php?id=${id}`)
         .then(response => response.json())
-        .then(customer => {
-            document.getElementById('historyCustomerName').textContent = `${customer.Name} (${customer.CustomerID})`;
-            
-            // Get order history
-            return fetch(`/backend/api/customers/customers.php?action=getOrderHistory&id=${id}`);
+        .then(data => {
+            if (data.success) {
+                const customer = data.data;
+                document.getElementById('historyCustomerName').textContent = `${customer.Name} (${customer.CustomerID})`;
+                
+                // Get order history
+                return fetch(`/backend/api/customers/customers.php?id=${id}&history=true`);
+            }
+            throw new Error(data.message);
         })
         .then(response => response.json())
-        .then(orders => {
-            const orderHistoryBody = document.getElementById('orderHistoryBody');
-            orderHistoryBody.innerHTML = "";
-            
-            if (orders.length === 0) {
-                orderHistoryBody.innerHTML = `<tr><td colspan="5" style="text-align: center;">No order history found</td></tr>`;
-            } else {
-                for (const order of orders) {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${order.OrderID}</td>
-                        <td>${order.OrderDate}</td>
-                        <td>${order.ItemsCount}</td>
-                        <td>$${Number.parseFloat(order.Total).toFixed(2)}</td>
-                        <td>${order.Status}</td>
-                    `;
-                    orderHistoryBody.appendChild(row);
+        .then(data => {
+            if (data.success) {
+                const orderHistoryBody = document.getElementById('orderHistoryBody');
+                orderHistoryBody.innerHTML = "";
+                
+                if (data.data.length === 0) {
+                    orderHistoryBody.innerHTML = `<tr><td colspan="5" style="text-align: center;">No order history found</td></tr>`;
+                } else {
+                    for (const order of data.data) {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${order.OrderID}</td>
+                            <td>${order.OrderDate}</td>
+                            <td>${order.TransactionsCount || 0}</td>
+                            <td>$${Number.parseFloat(order.Total).toFixed(2)}</td>
+                            <td>${order.Status}</td>
+                        `;
+                        orderHistoryBody.appendChild(row);
+                    }
                 }
+                
+                historyModal.style.display = "flex";
             }
-            
-            historyModal.style.display = "flex";
+            throw new Error(data.message);
         })
         .catch(error => {
             console.error('Error loading order history:', error);
@@ -244,8 +276,8 @@ function saveCustomer(e) {
         address: address
     };
     
-    const url = id ? '/backend/api/customers/customers.php?action=updateCustomer' : '/backend/api/customers/customers.php?action=addCustomer';
-    const method = 'POST';
+    const method = id ? 'PUT' : 'POST';
+    const url = '/backend/api/customers/customers.php';
     
     if (id) {
         customerData.id = id;
@@ -265,7 +297,7 @@ function saveCustomer(e) {
             loadCustomers(); // Refresh the table
             closeModals();
         } else {
-            throw new Error(data.error || 'Operation failed');
+            throw new Error(data.message || 'Operation failed');
         }
     })
     .catch(error => {
@@ -282,10 +314,15 @@ function filterCustomers() {
         return;
     }
     
-    fetch(`/backend/api/customers/customers.php?action=searchCustomers&term=${encodeURIComponent(searchTerm)}`)
+    fetch(`/backend/api/customers/customers.php?term=${encodeURIComponent(searchTerm)}`)
         .then(response => response.json())
         .then(data => {
-            renderCustomersTable(data);
+            if (data.success) {
+                renderCustomersTable(data.data);
+            } else {
+                console.error('Error searching customers:', data.message);
+                alert('Failed to search customers');
+            }
         })
         .catch(error => {
             console.error('Error searching customers:', error);
@@ -308,15 +345,6 @@ window.addEventListener('click', (e) => {
     if (e.target === historyModal) historyModal.style.display = "none";
 });
 
-
-
-
-
-
-
-
-
-
 // These elements and event listeners are already in your code
 const signUpBtn = document.getElementById('signUpBtn');
 const signUpModal = document.getElementById('signUpModal');
@@ -336,8 +364,6 @@ function openSignUpModal(e) {
     document.getElementById('signUpConfirmPassword').value = "";
     signUpModal.style.display = "flex";
 }
-
-
 
 document.getElementById("signUpBtn").addEventListener("click", (e) => {
     console.log("Button clicked");

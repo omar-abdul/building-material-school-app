@@ -18,105 +18,21 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BMMS - Orders Management</title>
+    <title>BMMS - Sales Orders Management</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="orders.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
     <div class="container">
         <!-- Sidebar -->
-        <div class="sidebar">
-            <div class="brand">
-                <i class="fas fa-building"></i>
-                <span class="brand-name">BMMS</span>
-            </div>
-            <div class="sidebar-menu">
-                <a href="/backend/dashboard/dashboard.php" class="sidebar-link">
-                    <i class="fas fa-tachometer-alt"></i>
-                    <span>Dashboard</span>
-                </a>
-                <?php if ($role === 'admin'): ?>
-                    </a>
-                    <a href="/backend/Categories/index.php" class="sidebar-link">
-                        <i class="fas fa-tags"></i>
-                        <span>Categories</span>
-                    </a>
-                    <a href="/backend/Suppliers/index.php" class="sidebar-link">
-                        <i class="fas fa-file-invoice-dollar"></i>
-                        <span>suppliers</span>
-                    </a>
-                    <a href="/backend/Employees/index.php" class="sidebar-link">
-                        <i class="fas fa-users"></i>
-                        <span>Employees</span>
-                    </a>
-                    <a href="/backend/Customers/index.php" class="sidebar-link">
-                        <i class="fas fa-exchange-alt"></i>
-                        <span>customers</span>
-                    </a>
-                <?php endif; ?>
-                <a href="/backend/Items/index.php" class="sidebar-link ">
-                    <i class="fas fa-boxes"></i>
-                    <span>Items</span>
-                </a>
-                <a href="/backend/Inventory/index.php" class="sidebar-link">
-                    <i class="fas fa-user-tie"></i>
-                    <span>inventory</span>
-                </a>
-                <a href="/backend/Orders/index.php" class="sidebar-link active">
-                    <i class="fas fa-truck"></i>
-                    <span>orders</span>
-                </a>
-                <?php if ($role === 'admin'): ?>
-                    <a href="/backend/Transactions/index.php" class="sidebar-link">
-                        <i class="fas fa-warehouse"></i>
-                        <span>transactions</span>
-                    </a>
-                    <a href="/backend/Salaries/index.php" class="sidebar-link ">
-                        <i class="fas fa-money-bill-wave"></i>
-                        <span>Salaries</span>
-                    </a>
-                    <!-- Inside your sidebar-menu div, add this link before the Settings link -->
-                    <a href="/backend/signup/index.php" class="sidebar-link">
-                        <i class="fas fa-user-plus"></i>
-                        <span>Sign Up</span>
-                    </a>
-                <?php endif; ?>
-                <nav class="sidebar">
-                    <ul>
-                        <li class="report-dropdown">
-                            <a href="#" class="sidebar-link sidebar-report-btn">
-                                <i class="fa-solid fa-chart-pie"></i>
-                                <span>Reports</span>
-                                <i class="fa-solid fa-angle-down dropdown-icon"></i>
-                            </a>
-                            <ul class="report-dropdown-content">
-                                <li><a href="/backend/reports/inventory.php">Inventory Report</a></li>
-                                <li><a href="/backend/reports/items.php">Items Report</a></li>
-                                <li><a href="/backend/reports/orders.php">Orders Report</a></li>
-                                <?php if ($role === 'admin'): ?>
-                                    <li><a href="/backend/reports/salaries.php"> Salaries Report</a></li>
-                                    <li><a href="/backend/reports/transactions.php"> Transactions Report</a></li>
-                                    <li><a href="\backend\signup\backup.php"> backup </a></li>
-                                <?php endif; ?>
-                            </ul>
-                        </li>
-                    </ul>
-                </nav>
-
-                <a href="/backend/dashboard/logout.php" class="sidebar-link">
-                    <i class="fa-solid fa-right-from-bracket"></i>
-                    <span>logout</span>
-                </a>
-
-            </div>
-        </div>
+        <?php include __DIR__ . '/../includes/sidebar.php'; ?>
 
         <!-- Main Content -->
         <div class="main-content">
             <div class="header">
                 <div class="page-title">
-                    <h1>Orders Management</h1>
+                    <h1>Sales Orders Management</h1>
                 </div>
                 <div class="action-buttons">
                     <button class="btn btn-primary" id="addOrderBtn">
@@ -171,34 +87,31 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
     </div>
 
     <!-- Add/Edit Order Modal -->
-    <div class="modal" id="orderModal">
+    <div class="modal sales-orders-modal" id="orderModal">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="modal-title" id="modalTitle">Add New Order</h3>
                 <button class="close-btn" id="closeModal">&times;</button>
             </div>
-            <form id="orderForm">
+            <form id="orderForm" class="sales-orders-form">
                 <input type="hidden" id="orderId">
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="customerId">Customer ID</label>
-                        <input type="text" id="customerId" required>
+                        <label for="customerSelect">Customer</label>
+                        <div class="autocomplete-container">
+                            <input type="text" id="customerSelect" placeholder="Search customers..." autocomplete="off">
+                            <div class="autocomplete-dropdown" id="customerDropdown"></div>
+                        </div>
+                        <input type="hidden" id="customerId">
                     </div>
                     <div class="form-group">
-                        <label for="customerName">Customer Name</label>
-                        <input type="text" id="customerName" readonly>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="employeeId">Employee ID</label>
-                        <input type="text" id="employeeId">
-                    </div>
-                    <div class="form-group">
-                        <label for="employeeName">Employee Name</label>
-                        <input type="text" id="employeeName" readonly>
+                        <label for="employeeSelect">Employee (Optional)</label>
+                        <div class="autocomplete-container">
+                            <input type="text" id="employeeSelect" placeholder="Search employees..." autocomplete="off">
+                            <div class="autocomplete-dropdown" id="employeeDropdown"></div>
+                        </div>
+                        <input type="hidden" id="employeeId">
                     </div>
                 </div>
 
@@ -222,23 +135,20 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="itemId">Item ID</label>
-                        <input type="text" id="itemId">
+                        <label for="itemSelect">Item</label>
+                        <div class="autocomplete-container">
+                            <input type="text" id="itemSelect" placeholder="Search items..." autocomplete="off">
+                            <div class="autocomplete-dropdown" id="itemDropdown"></div>
+                        </div>
+                        <input type="hidden" id="itemId">
                     </div>
-                    <div class="form-group">
-                        <label for="itemName">Item Name</label>
-                        <input type="text" id="itemName" readonly>
-                    </div>
-                </div>
-
-                <div class="form-row">
                     <div class="form-group">
                         <label for="quantity">Quantity</label>
                         <input type="number" id="quantity" min="1" value="1">
                     </div>
                     <div class="form-group">
                         <label for="unitPrice">Unit Price ($)</label>
-                        <input type="number" id="unitPrice" step="0.01">
+                        <input type="number" id="unitPrice" step="0.01" readonly>
                     </div>
                     <div class="form-group" style="align-self: flex-end;">
                         <button type="button" class="btn btn-primary" id="addItemBtn">
