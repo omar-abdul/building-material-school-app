@@ -1,8 +1,15 @@
 <?php
 
 /**
- * Categories Backend API
+ * Categories REST API
  * Uses centralized database and utilities
+ * 
+ * GET    /api/categories/categories.php - Get all categories
+ * GET    /api/categories/categories.php?id=X - Get specific category
+ * GET    /api/categories/categories.php?category_id=X&items=true - Get category items
+ * POST   /api/categories/categories.php - Create new category
+ * PUT    /api/categories/categories.php - Update category
+ * DELETE /api/categories/categories.php - Delete category
  */
 
 require_once __DIR__ . '/../../config/database.php';
@@ -11,34 +18,114 @@ require_once __DIR__ . '/../../config/utils.php';
 // Set headers for API
 header('Content-Type: application/json');
 header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
+
+// Handle preflight requests
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
 
 $db = Database::getInstance();
 
-// Get action from request
-$action = $_GET['action'] ?? '';
+// Get HTTP method
+$method = $_SERVER['REQUEST_METHOD'];
 
 try {
-    switch ($action) {
-        case 'getCategories':
-            getCategories();
+    switch ($method) {
+        case 'GET':
+            handleGet();
             break;
-        case 'getCategoryItems':
-            getCategoryItems();
+        case 'POST':
+            handlePost();
             break;
-        case 'saveCategory':
-            saveCategory();
+        case 'PUT':
+            handlePut();
             break;
-        case 'deleteCategory':
-            deleteCategory();
+        case 'DELETE':
+            handleDelete();
             break;
         default:
-            Utils::sendErrorResponse('Invalid action');
+            Utils::sendErrorResponse('Method not allowed', 405);
             break;
     }
 } catch (Exception $e) {
     Utils::sendErrorResponse($e->getMessage());
+}
+
+function handleGet()
+{
+    $categoryId = $_GET['id'] ?? '';
+    $categoryIdForItems = $_GET['category_id'] ?? '';
+    $getItems = isset($_GET['items']) && $_GET['items'] === 'true';
+
+    if (!empty($categoryIdForItems) && $getItems) {
+        getCategoryItems($categoryIdForItems);
+    } elseif (!empty($categoryId)) {
+        getCategory($categoryId);
+    } else {
+        getCategories();
+    }
+}
+
+function handlePost()
+{
+    // Get JSON input
+    $input = json_decode(file_get_contents('php://input'), true);
+
+    if (!$input) {
+        Utils::sendErrorResponse('Invalid JSON input');
+        return;
+    }
+
+    $categoryName = $input['category_name'] ?? '';
+    $description = $input['description'] ?? '';
+    $categoryId = $input['category_id'] ?? '';
+
+    if (empty($categoryName)) {
+        Utils::sendErrorResponse('Category name is required');
+        return;
+    }
+    if (!empty($categoryId)) {
+        updateCategory($categoryId, $categoryName, $description);
+    } else {
+        createCategory($categoryName, $description);
+    }
+}
+
+function handlePut()
+{
+    // Get JSON input
+    $input = json_decode(file_get_contents('php://input'), true);
+
+    if (!$input) {
+        Utils::sendErrorResponse('Invalid JSON input');
+        return;
+    }
+
+    $categoryId = $input['category_id'] ?? '';
+    $categoryName = $input['category_name'] ?? '';
+    $description = $input['description'] ?? '';
+
+    if (empty($categoryId) || empty($categoryName)) {
+        Utils::sendErrorResponse('Category ID and name are required');
+        return;
+    }
+
+    updateCategory($categoryId, $categoryName, $description);
+}
+
+function handleDelete()
+{
+    $categoryId = json_decode(file_get_contents('php://input'), true)['category_id'] ?? '';
+
+    if (empty($categoryId)) {
+        Utils::sendErrorResponse('Category ID is required');
+        return;
+    }
+
+    deleteCategory($categoryId);
 }
 
 function getCategories()
@@ -73,11 +160,40 @@ function getCategories()
     }
 }
 
-function getCategoryItems()
+function getCategory($categoryId)
 {
     global $db;
 
-    $categoryId = $_GET['category_id'] ?? '';
+    // Remove prefix and validate
+    $idValue = str_replace('CAT-', '', $categoryId);
+    if (!is_numeric($idValue)) {
+        Utils::sendErrorResponse('Invalid Category ID format');
+        return;
+    }
+
+    $sql = "SELECT * FROM categories WHERE CategoryID = ?";
+
+    try {
+        $category = $db->fetchOne($sql, [$idValue]);
+
+        if (!$category) {
+            Utils::sendErrorResponse('Category not found', 404);
+            return;
+        }
+
+        // Format the CategoryID
+        $category['CategoryID'] = 'CAT-' . $category['CategoryID'];
+        $category['CreatedDate'] = date('Y-m-d', strtotime($category['CreatedDate']));
+
+        Utils::sendSuccessResponse('Category retrieved successfully', $category);
+    } catch (Exception $e) {
+        Utils::sendErrorResponse('Failed to retrieve category: ' . $e->getMessage());
+    }
+}
+
+function getCategoryItems($categoryId)
+{
+    global $db;
 
     if (empty($categoryId)) {
         Utils::sendErrorResponse('Category ID is required');
@@ -101,57 +217,72 @@ function getCategoryItems()
     }
 }
 
-function saveCategory()
+function createCategory($categoryName, $description)
 {
     global $db;
 
-    $categoryId = $_POST['category_id'] ?? '';
-    $categoryName = $_POST['category_name'] ?? '';
-    $description = $_POST['description'] ?? '';
-
-    if (empty($categoryName)) {
-        Utils::sendErrorResponse('Category name is required');
-        return;
-    }
-
     try {
-        if (strpos($categoryId, 'CAT-') !== false) {
-            // Update existing category
-            $id = str_replace('CAT-', '', $categoryId);
-            $sql = "UPDATE ategories SET CategoryName = ?, Description = ? WHERE CategoryID = ?";
-            $db->query($sql, [$categoryName, $description, $id]);
-            Utils::sendSuccessResponse('Category updated successfully');
-        } else {
-            // Add new category
-            $sql = "INSERT INTO ategories (CategoryName, Description) VALUES (?, ?)";
-            $db->query($sql, [$categoryName, $description]);
-            $newId = $db->lastInsertId();
-            Utils::sendSuccessResponse('Category added successfully', ['category_id' => 'CAT-' . $newId]);
-        }
+        $sql = "INSERT INTO categories (CategoryName, Description) VALUES (?, ?)";
+        $db->query($sql, [$categoryName, $description]);
+        $newId = $db->lastInsertId();
+
+        Utils::sendSuccessResponse('Category created successfully', [
+            'category_id' => 'CAT-' . $newId,
+            'category_name' => $categoryName,
+            'description' => $description
+        ]);
     } catch (Exception $e) {
-        Utils::sendErrorResponse('Failed to save category: ' . $e->getMessage());
+        Utils::sendErrorResponse('Failed to create category: ' . $e->getMessage());
     }
 }
 
-function deleteCategory()
+function updateCategory($categoryId, $categoryName, $description)
 {
     global $db;
 
-    $categoryId = str_replace('CAT-', '', $_POST['category_id']);
+    try {
+        // Remove prefix
+        $id = str_replace('CAT-', '', $categoryId);
 
-    if (empty($categoryId)) {
+        $sql = "UPDATE categories SET CategoryName = ?, Description = ? WHERE CategoryID = ?";
+        $result = $db->query($sql, [$categoryName, $description, $id]);
+
+        if ($result->rowCount() === 0) {
+            Utils::sendErrorResponse('Category not found', 404);
+            return;
+        }
+
+        Utils::sendSuccessResponse('Category updated successfully');
+    } catch (Exception $e) {
+        Utils::sendErrorResponse('Failed to update category: ' . $e->getMessage());
+    }
+}
+
+function deleteCategory($categoryId)
+{
+    global $db;
+
+    // Remove prefix
+    $idValue = str_replace('CAT-', '', $categoryId);
+
+    if (empty($idValue)) {
         Utils::sendErrorResponse('Category ID is required');
         return;
     }
 
     try {
         // First, update items in this category to uncategorized (assuming 0 is uncategorized)
-        $sql = "UPDATE tems SET CategoryID = 0 WHERE CategoryID = ?";
-        $db->query($sql, [$categoryId]);
+        $sql = "UPDATE items SET CategoryID = 0 WHERE CategoryID = ?";
+        $db->query($sql, [$idValue]);
 
         // Then delete the category
         $sql = "DELETE FROM categories WHERE CategoryID = ?";
-        $db->query($sql, [$categoryId]);
+        $result = $db->query($sql, [$idValue]);
+
+        if ($result->rowCount() === 0) {
+            Utils::sendErrorResponse('Category not found', 404);
+            return;
+        }
 
         Utils::sendSuccessResponse('Category deleted successfully');
     } catch (Exception $e) {

@@ -16,10 +16,18 @@ const itemsList = document.getElementById('itemsList');
 const searchInput = document.getElementById('searchInput');
 const statusFilter = document.getElementById('statusFilter');
 
+// Autocomplete elements
+const customerSelect = document.getElementById('customerSelect');
+const customerDropdown = document.getElementById('customerDropdown');
+const employeeSelect = document.getElementById('employeeSelect');
+const employeeDropdown = document.getElementById('employeeDropdown');
+const itemSelect = document.getElementById('itemSelect');
+const itemDropdown = document.getElementById('itemDropdown');
+
 // Dynamic data storage
-let customersData = {};
-let employeesData = {};
-let itemsData = {};
+let customersData = [];
+let employeesData = [];
+let itemsData = [];
 
 // Current order items
 let currentOrderItems = [];
@@ -30,18 +38,16 @@ document.addEventListener('DOMContentLoaded', () => {
     loadEmployees();
     loadItems();
     filterOrders();
+    setupAutocomplete();
 });
 
 // Load customers from API
 async function loadCustomers() {
     try {
-        const response = await fetch('/backend/api/customers/customers.php?action=getCustomers');
+        const response = await fetch('/backend/api/customers/customers.php');
         const data = await response.json();
         if (data.success) {
-            customersData = {};
-            for (const customer of data.data) {
-                customersData[customer.CustomerID] = customer.Name;
-            }
+            customersData = data.data;
         }
     } catch (error) {
         console.error('Error loading customers:', error);
@@ -51,13 +57,10 @@ async function loadCustomers() {
 // Load employees from API
 async function loadEmployees() {
     try {
-        const response = await fetch('/backend/api/employees/employees.php?action=getEmployees');
+        const response = await fetch('/backend/api/employees/employees.php');
         const data = await response.json();
         if (data.success) {
-            employeesData = {};
-            for (const employee of data.data) {
-                employeesData[employee.EmployeeID] = employee.EmployeeName;
-            }
+            employeesData = data.data;
         }
     } catch (error) {
         console.error('Error loading employees:', error);
@@ -67,16 +70,141 @@ async function loadEmployees() {
 // Load items from API
 async function loadItems() {
     try {
-        const response = await fetch('/backend/api/items/items.php?action=getItems');
+        const response = await fetch('/backend/api/items/items.php');
         const data = await response.json();
         if (data.success) {
-            itemsData = {};
-            for (const item of data.data) {
-                itemsData[item.ItemID] = { name: item.ItemName, price: item.Price };
-            }
+            itemsData = data.data;
         }
     } catch (error) {
         console.error('Error loading items:', error);
+    }
+}
+
+// Setup autocomplete functionality
+function setupAutocomplete() {
+    // Customer autocomplete
+    customerSelect.addEventListener('input', () => {
+        const searchTerm = customerSelect.value.toLowerCase();
+        const filteredCustomers = customersData.filter(customer => 
+            customer.Name.toLowerCase().includes(searchTerm) ||
+            customer.CustomerID.toLowerCase().includes(searchTerm)
+        );
+        showAutocompleteDropdown(customerDropdown, filteredCustomers, 'customer');
+    });
+
+    // Employee autocomplete
+    employeeSelect.addEventListener('input', () => {
+        const searchTerm = employeeSelect.value.toLowerCase();
+        const filteredEmployees = employeesData.filter(employee => 
+            employee.name.toLowerCase().includes(searchTerm) ||
+            employee.id.toLowerCase().includes(searchTerm)
+        );
+        showAutocompleteDropdown(employeeDropdown, filteredEmployees, 'employee');
+    });
+
+    // Item autocomplete
+    itemSelect.addEventListener('input', () => {
+        const searchTerm = itemSelect.value.toLowerCase();
+        const filteredItems = itemsData.filter(item => 
+            item.ItemName.toLowerCase().includes(searchTerm) ||
+            item.ItemID.toString().includes(searchTerm)
+        );
+        showAutocompleteDropdown(itemDropdown, filteredItems, 'item');
+    });
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.autocomplete-container')) {
+            hideAllDropdowns();
+        }
+    });
+}
+
+// Show autocomplete dropdown
+function showAutocompleteDropdown(dropdown, items, type) {
+    if (items.length === 0) {
+        dropdown.innerHTML = '<div class="autocomplete-item">No results found</div>';
+        dropdown.classList.add('show');
+        return;
+    }
+
+    dropdown.innerHTML = items.map(item => {
+        let displayText;
+        let id;
+        let name;
+        
+        switch(type) {
+            case 'customer': {
+                displayText = `${item.Name} (${item.CustomerID})`;
+                id = item.CustomerID;
+                name = item.Name;
+                break;
+            }
+            case 'employee': {
+                displayText = `${item.name} (${item.id})`;
+                id = item.id;
+                name = item.name;
+                break;
+            }
+            case 'item': {
+                displayText = `${item.ItemName} (ITM-${item.ItemID.toString().padStart(3, '0')}) - $${item.Price}`;
+                id = item.ItemID;
+                name = item.ItemName;
+                break;
+            }
+        }
+
+        return `<div class="autocomplete-item" data-id="${id}" data-name="${name}" data-type="${type}">${displayText}</div>`;
+    }).join('');
+
+    dropdown.classList.add('show');
+
+    // Add click handlers to dropdown items
+    const dropdownItems = dropdown.querySelectorAll('.autocomplete-item');
+    for (const item of dropdownItems) {
+        item.addEventListener('click', () => {
+            const id = item.dataset.id;
+            const name = item.dataset.name;
+            const type = item.dataset.type;
+            
+            selectAutocompleteItem(type, id, name);
+        });
+    }
+}
+
+// Select autocomplete item
+function selectAutocompleteItem(type, id, name) {
+    switch(type) {
+        case 'customer': {
+            customerSelect.value = `${name} (${id})`;
+            document.getElementById('customerId').value = id;
+            break;
+        }
+        case 'employee': {
+            employeeSelect.value = `${name} (${id})`;
+            document.getElementById('employeeId').value = id;
+            break;
+        }
+        case 'item': {
+            itemSelect.value = `${name} (ITM-${id.toString().padStart(3, '0')})`;
+            document.getElementById('itemId').value = id;
+            // Set unit price
+            const item = itemsData.find(i => i.ItemID === Number.parseInt(id, 10));
+            if (item) {
+                document.getElementById('unitPrice').value = item.Price;
+            }
+            break;
+        }
+    }
+    
+    hideAllDropdowns();
+}
+
+// Hide all dropdowns
+function hideAllDropdowns() {
+    const dropdowns = document.querySelectorAll('.autocomplete-dropdown');
+    for (const dropdown of dropdowns) {
+        dropdown.classList.remove('show');
     }
 }
 
@@ -94,60 +222,18 @@ addItemBtn.addEventListener('click', addItemToOrder);
 searchInput.addEventListener('input', filterOrders);
 statusFilter.addEventListener('change', filterOrders);
 
-// Auto-fill customer/employee/item names when IDs are entered
-document.getElementById('customerId').addEventListener('change', async function() {
-    const customerId = this.value;
-    if (!customerId) {
-        document.getElementById('customerName').value = '';
-        return;
-    }
-
-    const customer = await getCustomerDetails(customerId);
-    if (customer) {
-        document.getElementById('customerName').value = customer.CustomerName;
-    }
-});
-
-document.getElementById('employeeId').addEventListener('change', async function() {
-    const employeeId = this.value;
-    if (!employeeId) {
-        document.getElementById('employeeName').value = '';
-        return;
-    }
-
-    const employee = await getEmployeeDetails(employeeId);
-    if (employee) {
-        document.getElementById('employeeName').value = employee.EmployeeName;
-    }
-});
-
-document.getElementById('itemId').addEventListener('change', async function() {
-    const itemId = this.value;
-    if (!itemId) {
-        document.getElementById('itemName').value = '';
-        document.getElementById('unitPrice').value = '';
-        return;
-    }
-
-    const item = await getItemDetails(itemId);
-    if (item) {
-        document.getElementById('itemName').value = item.ItemName;
-        document.getElementById('unitPrice').value = item.Price;
-    }
-});
-
 // Functions
 function openAddOrderModal() {
     document.getElementById('modalTitle').textContent = "Add New Order";
     document.getElementById('orderId').value = "";
+    customerSelect.value = "";
     document.getElementById('customerId').value = "";
-    document.getElementById('customerName').value = "";
+    employeeSelect.value = "";
     document.getElementById('employeeId').value = "";
-    document.getElementById('employeeName').value = "";
     document.getElementById('status').value = "Pending";
     document.getElementById('orderDate').value = new Date().toISOString().split('T')[0];
+    itemSelect.value = "";
     document.getElementById('itemId').value = "";
-    document.getElementById('itemName').value = "";
     document.getElementById('quantity').value = "1";
     document.getElementById('unitPrice').value = "";
     
@@ -160,7 +246,7 @@ function openAddOrderModal() {
 
 function addItemToOrder() {
     const itemId = document.getElementById('itemId').value;
-    const itemName = document.getElementById('itemName').value;
+    const itemName = itemSelect.value.split(' (')[0]; // Extract name from autocomplete value
     const quantity = Number.parseInt(document.getElementById('quantity').value);
     const unitPrice = Number.parseFloat(document.getElementById('unitPrice').value);
     
@@ -191,8 +277,8 @@ function addItemToOrder() {
     });
     
     // Clear item form
+    itemSelect.value = "";
     document.getElementById('itemId').value = "";
-    document.getElementById('itemName').value = "";
     document.getElementById('quantity').value = "1";
     document.getElementById('unitPrice').value = "";
     
@@ -245,38 +331,39 @@ function removeItem(index) {
 
 // API Functions
 async function getCustomerDetails(customerId) {
-    const response = await fetch(`/backend/api/orders/orders.php?customer_id=${customerId}`);
+    const response = await fetch(`/backend/api/orders/orders.php?customerId=${customerId}`);
     const data = await response.json();
-    if (data.error) {
-        alert(data.error);
-        return null;
+    if (data.success) {
+        return data.data;
     }
-    return data;
+    alert(data.message);
+    return null;
 }
 
 async function getEmployeeDetails(employeeId) {
-    const response = await fetch(`/backend/api/orders/orders.php?employee_id=${employeeId}`);
+    const response = await fetch(`/backend/api/orders/orders.php?employeeId=${employeeId}`);
     const data = await response.json();
-    if (data.error) {
-        alert(data.error);
-        return null;
+    if (data.success) {
+        return data.data;
     }
-    return data;
+    alert(data.message);
+    return null;
 }
 
 async function getItemDetails(itemId) {
-    const response = await fetch(`/backend/api/orders/orders.php?item_id=${itemId}`);
+    const response = await fetch(`/backend/api/orders/orders.php?itemId=${itemId}`);
     const data = await response.json();
-    if (data.error) {
-        alert(data.error);
-        return null;
+    if (data.success) {
+        return data.data;
     }
-    return data;
+    alert(data.message);
+    return null;
 }
 
 async function saveOrderToServer(orderData) {
+    const method = orderData.order_id ? 'PUT' : 'POST';
     const response = await fetch('/backend/api/orders/orders.php', {
-        method: 'POST',
+        method: method,
         headers: {
             'Content-Type': 'application/json',
         },
@@ -286,15 +373,23 @@ async function saveOrderToServer(orderData) {
 }
 
 async function deleteOrderFromServer(orderId) {
-    const response = await fetch(`/backend/api/orders/orders.php?order_id=${orderId}`, {
-        method: 'DELETE'
+    const response = await fetch('/backend/api/orders/orders.php', {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ orderId: orderId })
     });
     return await response.json();
 }
 
 async function getOrderDetails(orderId) {
-    const response = await fetch(`/backend/api/orders/orders.php?order_id=${orderId}`);
-    return await response.json();
+    const response = await fetch(`/backend/api/orders/orders.php?orderId=${orderId}`);
+    const data = await response.json();
+    if (data.success) {
+        return data.data;
+    }
+    return { error: data.message };
 }
 
 async function getOrders(searchTerm = '', statusFilter = '') {
@@ -306,8 +401,20 @@ async function getOrders(searchTerm = '', statusFilter = '') {
 
     if (params.toString()) url += `?${params.toString()}`;
 
-    const response = await fetch(url);
-    return await response.json();
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        if (data.success) {
+            return data.data || [];
+        }
+        throw new Error(data.message || 'Unknown error');
+    } catch (error) {
+        console.error('Error in getOrders:', error);
+        throw error;
+    }
 }
 
 // Save Order Handler
@@ -350,7 +457,7 @@ async function saveOrder(e) {
             closeModals();
             filterOrders();
         } else {
-            alert(`Error saving order: ${result.error || 'Unknown error'}`);
+            alert(`Error saving order: ${result.message || 'Unknown error'}`);
         }
     } catch (error) {
         alert(`Error saving order: ${error.message}`);
@@ -379,7 +486,7 @@ async function confirmDelete() {
             // Automatically refresh the data as requested
             await filterOrders();
         } else {
-            alert(`Error deleting order: ${result.error || 'Unknown error'}`);
+            alert(`Error deleting order: ${result.message || 'Unknown error'}`);
         }
     } catch (error) {
         alert(`Error deleting order: ${error.message}`);
@@ -401,6 +508,9 @@ async function filterOrders() {
         updateOrdersTable(orders);
     } catch (error) {
         console.error("Error filtering orders:", error);
+        // Show error message in table
+        const tbody = document.querySelector('.sales-orders-table tbody');
+        tbody.innerHTML = '<tr><td colspan="8">Error loading orders</td></tr>';
     }
 }
 
@@ -536,26 +646,30 @@ async function editOrder(id) {
 
         document.getElementById('modalTitle').textContent = "Edit Order";
         document.getElementById('orderId').value = order.OrderID;
+        
+        // Set customer autocomplete field
         document.getElementById('customerId').value = order.CustomerID;
-        document.getElementById('customerName').value = order.CustomerName;
+        document.getElementById('customerSelect').value = `${order.CustomerName} (${order.CustomerID})`;
 
+        // Set employee autocomplete field
         if (order.EmployeeID) {
             document.getElementById('employeeId').value = order.EmployeeID;
-            document.getElementById('employeeName').value = order.EmployeeName;
+            document.getElementById('employeeSelect').value = `${order.EmployeeName} (${order.EmployeeID})`;
         } else {
             document.getElementById('employeeId').value = '';
-            document.getElementById('employeeName').value = '';
+            document.getElementById('employeeSelect').value = '';
         }
 
         document.getElementById('status').value = order.Status;
         document.getElementById('orderDate').value = order.OrderDate.split(' ')[0];
 
+        // Populate items
         currentOrderItems = order.items.map(item => ({
             itemId: item.ItemID,
             itemName: item.ItemName,
-            quantity: item.Quantity,
-            unitPrice: item.UnitPrice,
-            total: item.TotalAmount
+            quantity: typeof item.Quantity === 'number' ? item.Quantity : Number.parseInt(item.Quantity) || 1,
+            unitPrice: typeof item.UnitPrice === 'number' ? item.UnitPrice : Number.parseFloat(item.UnitPrice) || 0,
+            total: typeof item.TotalAmount === 'number' ? item.TotalAmount : Number.parseFloat(item.TotalAmount) || 0
         }));
 
         renderOrderItems();
@@ -575,7 +689,7 @@ async function deleteOrder(id) {
         }
 
         document.getElementById('deleteOrderId').textContent = order.OrderID;
-        document.getElementById('deleteOrderCustomer').textContent = order.CustomerName;
+        document.getElementById('deleteCustomerName').textContent = order.CustomerName;
         deleteModal.style.display = "flex";
     } catch (error) {
         alert(`Error loading order for deletion: ${error.message}`);

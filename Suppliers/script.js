@@ -37,10 +37,10 @@ document.addEventListener('DOMContentLoaded', loadSuppliers);
 
 // Functions
 function loadSuppliers() {
-    fetch('/backend/api/suppliers/suppliers.php?action=getSuppliers')
+    fetch('/backend/api/suppliers/suppliers.php')
         .then(response => response.json())
         .then(data => {
-            if (data.status === 'success') {
+            if (data.success) {
                 renderSuppliers(data.data);
             } else {
                 console.error('Error loading suppliers:', data.message);
@@ -53,7 +53,7 @@ function renderSuppliers(suppliers) {
     const tbody = document.querySelector('.suppliers-table tbody');
     tbody.innerHTML = '';
     
-    suppliers.forEach(supplier => {
+    for (const supplier of suppliers) {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${supplier.supplierId}</td>
@@ -76,7 +76,7 @@ function renderSuppliers(suppliers) {
             </td>
         `;
         tbody.appendChild(row);
-    });
+    }
 }
 
 function openAddSupplierModal() {
@@ -91,10 +91,10 @@ function openAddSupplierModal() {
 }
 
 function editSupplier(id) {
-    fetch(`/backend/api/suppliers/suppliers.php?action=getSupplier&id=${id}`)
+    fetch(`/backend/api/suppliers/suppliers.php?id=${id}`)
         .then(response => response.json())
         .then(data => {
-            if (data.status === 'success') {
+            if (data.success) {
                 const supplier = data.data;
                 document.getElementById('modalTitle').textContent = "Edit Supplier";
                 document.getElementById('supplierId').value = supplier.id;
@@ -105,17 +105,17 @@ function editSupplier(id) {
                 document.getElementById('address').value = supplier.address || '';
                 supplierModal.style.display = "flex";
             } else {
-                alert('Error loading supplier: ' + data.message);
+                alert(`Error loading supplier: ${data.message}`);
             }
         })
         .catch(error => console.error('Error:', error));
 }
 
 function viewSupplier(id) {
-    fetch(`/backend/api/suppliers/suppliers.php?action=getSupplier&id=${id}`)
+    fetch(`/backend/api/suppliers/suppliers.php?id=${id}`)
         .then(response => response.json())
         .then(data => {
-            if (data.status === 'success') {
+            if (data.success) {
                 const supplier = data.data;
                 document.getElementById('viewId').textContent = supplier.supplierId;
                 document.getElementById('viewName').textContent = supplier.name;
@@ -125,7 +125,7 @@ function viewSupplier(id) {
                 document.getElementById('viewAddress').textContent = supplier.address || "N/A";
                 viewModal.style.display = "flex";
             } else {
-                alert('Error loading supplier: ' + data.message);
+                alert(`Error loading supplier: ${data.message}`);
             }
         })
         .catch(error => console.error('Error:', error));
@@ -133,16 +133,16 @@ function viewSupplier(id) {
 
 function deleteSupplier(id) {
     currentSupplierToDelete = id;
-    fetch(`/backend/api/suppliers/suppliers.php?action=getSupplier&id=${id}`)
+    fetch(`/backend/api/suppliers/suppliers.php?id=${id}`)
         .then(response => response.json())
         .then(data => {
-            if (data.status === 'success') {
+            if (data.success) {
                 const supplier = data.data;
                 document.getElementById('deleteSupplierId').textContent = supplier.supplierId;
                 document.getElementById('deleteSupplierName').textContent = supplier.name;
                 deleteModal.style.display = "flex";
             } else {
-                alert('Error loading supplier: ' + data.message);
+                alert(`Error loading supplier: ${data.message}`);
             }
         })
         .catch(error => console.error('Error:', error));
@@ -150,16 +150,16 @@ function deleteSupplier(id) {
 
 function confirmDelete() {
     if (currentSupplierToDelete) {
-        fetch(`/backend/api/suppliers/suppliers.php?action=deleteSupplier&id=${currentSupplierToDelete}`, {
-            method: 'GET'
+        fetch(`/backend/api/suppliers/suppliers.php?id=${currentSupplierToDelete}`, {
+            method: 'DELETE'
         })
         .then(response => response.json())
         .then(data => {
-            if (data.status === 'success') {
+            if (data.success) {
                 loadSuppliers(); // Refresh the list
                 closeModals();
             } else {
-                alert('Error deleting supplier: ' + data.message);
+                alert(`Error deleting supplier: ${data.message}`);
             }
         })
         .catch(error => console.error('Error:', error));
@@ -183,30 +183,31 @@ function saveSupplier(e) {
         return;
     }
     
-    const url = id ? '/backend/api/suppliers/suppliers.php?action=updateSupplier' : '/backend/api/suppliers/suppliers.php?action=addSupplier';
-    const method = 'POST';
+    const supplierData = {
+        id: id,
+        name: name,
+        contactPerson: contactPerson,
+        phone: phone,
+        email: email,
+        address: address
+    };
     
-    fetch(url, {
+    const method = id ? 'PUT' : 'POST';
+    
+    fetch('/backend/api/suppliers/suppliers.php', {
         method: method,
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-            id: id,
-            name: name,
-            contactPerson: contactPerson,
-            phone: phone,
-            email: email,
-            address: address
-        })
+        body: JSON.stringify(supplierData)
     })
     .then(response => response.json())
     .then(data => {
-        if (data.status === 'success') {
+        if (data.success) {
             loadSuppliers(); // Refresh the list
             closeModals();
         } else {
-            alert('Error saving supplier: ' + data.message);
+            alert(`Error saving supplier: ${data.message}`);
         }
     })
     .catch(error => console.error('Error:', error));
@@ -215,10 +216,14 @@ function saveSupplier(e) {
 function filterSuppliers() {
     const searchTerm = searchInput.value.trim();
     
-    fetch(`/backend/api/suppliers/suppliers.php?action=getSuppliers&search=${encodeURIComponent(searchTerm)}`)
+    const url = searchTerm 
+        ? `/backend/api/suppliers/suppliers.php?search=${encodeURIComponent(searchTerm)}`
+        : '/backend/api/suppliers/suppliers.php';
+    
+    fetch(url)
         .then(response => response.json())
         .then(data => {
-            if (data.status === 'success') {
+            if (data.success) {
                 renderSuppliers(data.data);
             } else {
                 console.error('Error filtering suppliers:', data.message);
@@ -255,26 +260,10 @@ window.addEventListener('click', (e) => {
     if (e.target === deleteModal) deleteModal.style.display = "none";
 });
 
-
-
-
-// These elements and event listeners are already in your code
-const signUpBtn = document.getElementById('signUpBtn');
-const signUpModal = document.getElementById('signUpModal');
-const closeSignUpModal = document.getElementById('closeSignUpModal');
-const cancelSignUpBtn = document.getElementById('cancelSignUpBtn');
-const signUpForm = document.getElementById('signUpForm');
-
-signUpBtn.addEventListener('click', openSignUpModal);
-closeSignUpModal.addEventListener('click', closeModals);
-cancelSignUpBtn.addEventListener('click', closeModals);
-signUpForm.addEventListener('submit', signUpUser);
-
+// Sign up modal functionality
 function openSignUpModal(e) {
-    e.preventDefault(); // Prevent default link behavior
-    document.getElementById('signUpUsername').value = "";
-    document.getElementById('signUpPassword').value = "";
-    document.getElementById('signUpConfirmPassword').value = "";
-    signUpModal.style.display = "flex";
+    e.preventDefault();
+    // Add your sign up modal logic here
+    console.log('Opening sign up modal...');
 }
 

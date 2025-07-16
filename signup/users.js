@@ -414,7 +414,7 @@ function renderUsers(users) {
     tbody.innerHTML = '';
     
     // biome-ignore lint/complexity/noForEach: <explanation>
-        users.forEach(user => {
+    users.forEach(user => {
         const tr = document.createElement('tr');
         
         tr.innerHTML = `

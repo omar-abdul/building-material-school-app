@@ -43,7 +43,7 @@ searchInput.addEventListener('input', filterCategories);
 
 // Functions
 function loadCategories(search = '') {
-    fetch(`/backend/api/categories/categories.php?action=getCategories&search=${encodeURIComponent(search)}`)
+    fetch("/backend/api/categories/categories.php")
         .then(response => response.json())
         .then(data => {
             if (data.error) {
@@ -118,7 +118,7 @@ function viewItems(id) {
     const categoryName = row.cells[1].textContent;
     document.getElementById('categoryNameTitle').textContent = categoryName;
     
-    fetch(`/backend/api/categories/categories.php?action=getCategoryItems&category_id=${id}`)
+    fetch(`/backend/api/categories/categories.php?category_id=${id}&items=true`)
         .then(response => {
             if (!response.ok) {
                 return response.json().then(err => { throw new Error(err.error) });
@@ -126,17 +126,17 @@ function viewItems(id) {
             return response.json();
         })
         .then(data => {
-            if (data.error) {
-                throw new Error(data.error);
+            if (!data.success) {
+                throw new Error(data.message);
             }
             
             const itemsListBody = document.getElementById('itemsListBody');
             itemsListBody.innerHTML = "";
             
-            if (data.length === 0) {
+            if (data.data.length === 0) {
                 itemsListBody.innerHTML = '<tr><td colspan="4">No items found in this category</td></tr>';
             } else {
-                for (const item of data) {
+                for (const item of data.data) {
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${item.ItemID}</td>
@@ -174,9 +174,11 @@ function confirmDelete() {
     const formData = new FormData();
     formData.append('category_id', currentCategoryToDelete);
     
-    fetch('/backend/api/categories/categories.php?action=deleteCategory', {
-        method: 'POST',
-        body: formData
+    fetch('/backend/api/categories/categories.php', {
+        method: 'DELETE',
+        body: JSON.stringify({
+            category_id: currentCategoryToDelete
+        })
     })
     .then(response => response.json())
     .then(data => {
@@ -206,15 +208,15 @@ function saveCategory(e) {
         alert("Please enter category name");
         return;
     }
+
     
-    const formData = new FormData();
-    formData.append('category_id', id);
-    formData.append('category_name', name);
-    formData.append('description', description);
-    
-    fetch('/backend/api/categories/categories.php?action=saveCategory', {
+    fetch('/backend/api/categories/categories.php', {
         method: 'POST',
-        body: formData
+        body: JSON.stringify({
+            category_name: name,
+            description: description,
+            category_id: id
+        })
     })
     .then(response => response.json())
     .then(data => {

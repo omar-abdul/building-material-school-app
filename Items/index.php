@@ -26,91 +26,7 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
 <body>
     <div class="container">
         <!-- Sidebar -->
-        <div class="sidebar">
-            <div class="brand">
-                <i class="fas fa-building"></i>
-                <span class="brand-name">BMMS</span>
-            </div>
-            <div class="sidebar-menu">
-                <a href="/backend/dashboard/dashboard.php" class="sidebar-link">
-                    <i class="fas fa-tachometer-alt"></i>
-                    <span>Dashboard</span>
-                </a>
-                <?php if ($role === 'admin'): ?>
-                    </a>
-                    <a href="/backend/Categories/index.php" class="sidebar-link">
-                        <i class="fas fa-tags"></i>
-                        <span>Categories</span>
-                    </a>
-                    <a href="/backend/Suppliers/index.php" class="sidebar-link">
-                        <i class="fas fa-file-invoice-dollar"></i>
-                        <span>suppliers</span>
-                    </a>
-                    <a href="/backend/Employees/index.php" class="sidebar-link">
-                        <i class="fas fa-users"></i>
-                        <span>Employees</span>
-                    </a>
-                    <a href="/backend/Customers/index.php" class="sidebar-link">
-                        <i class="fas fa-exchange-alt"></i>
-                        <span>customers</span>
-                    </a>
-                <?php endif; ?>
-                <a href="/backend/Items/index.php" class="sidebar-link active">
-                    <i class="fas fa-boxes"></i>
-                    <span>Items</span>
-                </a>
-                <a href="/backend/Inventory/index.php" class="sidebar-link">
-                    <i class="fas fa-user-tie"></i>
-                    <span>inventory</span>
-                </a>
-                <a href="/backend/Orders/index.php" class="sidebar-link">
-                    <i class="fas fa-truck"></i>
-                    <span>orders</span>
-                </a>
-                <?php if ($role === 'admin'): ?>
-                    <a href="/backend/Transactions/index.php" class="sidebar-link">
-                        <i class="fas fa-warehouse"></i>
-                        <span>transactions</span>
-                    </a>
-                    <a href="/backend/Salaries/index.php" class="sidebar-link ">
-                        <i class="fas fa-money-bill-wave"></i>
-                        <span>Salaries</span>
-                    </a>
-                    <!-- Inside your sidebar-menu div, add this link before the Settings link -->
-                    <a href="/backend/signup/index.php" class="sidebar-link">
-                        <i class="fas fa-user-plus"></i>
-                        <span>Sign Up</span>
-                    </a>
-                <?php endif; ?>
-                <nav class="sidebar">
-                    <ul>
-                        <li class="report-dropdown">
-                            <a href="#" class="sidebar-link sidebar-report-btn">
-                                <i class="fa-solid fa-chart-pie"></i>
-                                <span>Reports</span>
-                                <i class="fa-solid fa-angle-down dropdown-icon"></i>
-                            </a>
-                            <ul class="report-dropdown-content">
-                                <li><a href="/backend/reports/inventory.php">Inventory Report</a></li>
-                                <li><a href="/backend/reports/items.php">Items Report</a></li>
-                                <li><a href="/backend/reports/orders.php">Orders Report</a></li>
-                                <?php if ($role === 'admin'): ?>
-                                    <li><a href="/backend/reports/salaries.php"> Salaries Report</a></li>
-                                    <li><a href="/backend/reports/transactions.php"> Transactions Report</a></li>
-                                    <li><a href="\backend\signup\backup.php"> backup </a></li>
-                                <?php endif; ?>
-                            </ul>
-                        </li>
-                    </ul>
-                </nav>
-
-                <a href="/backend/dashboard/logout.php" class="sidebar-link">
-                    <i class="fa-solid fa-right-from-bracket"></i>
-                    <span>logout</span>
-                </a>
-
-            </div>
-        </div>
+        <?php include __DIR__ . '/../includes/sidebar.php'; ?>
 
         <!-- Main Content -->
         <div class="main-content">
@@ -147,8 +63,7 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
                         <th>Item Name</th>
                         <th>Price</th>
                         <th>Category</th>
-                        <th>Supplier</th>
-                        <th>Registered By</th>
+                        <th>Quantity</th>
                         <th>Created Date</th>
                         <th>Actions</th>
                     </tr>
@@ -188,6 +103,12 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
                     <label for="itemPrice">Price ($)</label>
                     <input type="number" step="0.01" min="0" id="itemPrice" placeholder="0.00" required>
                 </div>
+
+                <div class="form-group">
+                    <label for="itemQuantity">Initial Quantity</label>
+                    <input type="number" min="0" id="itemQuantity" placeholder="0" value="0" required>
+                </div>
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="categoryId">Category ID</label>
@@ -266,6 +187,9 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
                 </div>
                 <div class="detail-row">
                     <strong>Category:</strong> <span id="viewCategory">Electronics</span>
+                </div>
+                <div class="detail-row">
+                    <strong>Quantity:</strong> <span id="viewQuantity">0</span>
                 </div>
                 <div class="detail-row">
                     <strong>Supplier:</strong> <span id="viewSupplier">Tech Suppliers Inc.</span>

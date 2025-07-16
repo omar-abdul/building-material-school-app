@@ -1,8 +1,14 @@
 <?php
 
 /**
- * Suppliers Backend API
+ * Suppliers REST API
  * Uses centralized database and utilities
+ * 
+ * GET    /api/suppliers/suppliers.php - Get all suppliers
+ * GET    /api/suppliers/suppliers.php?id=X - Get specific supplier
+ * POST   /api/suppliers/suppliers.php - Create new supplier
+ * PUT    /api/suppliers/suppliers.php - Update supplier
+ * DELETE /api/suppliers/suppliers.php - Delete supplier
  */
 
 require_once __DIR__ . '/../../config/database.php';
@@ -11,36 +17,112 @@ require_once __DIR__ . '/../../config/utils.php';
 // Set headers for API
 header('Content-Type: application/json');
 header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
+
+// Handle preflight requests
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
 
 $db = Database::getInstance();
 
-$action = $_GET['action'] ?? '';
+// Get HTTP method
+$method = $_SERVER['REQUEST_METHOD'];
 
 try {
-    switch ($action) {
-        case 'getSuppliers':
-            getSuppliers();
+    switch ($method) {
+        case 'GET':
+            handleGet();
             break;
-        case 'addSupplier':
-            addSupplier();
+        case 'POST':
+            handlePost();
             break;
-        case 'updateSupplier':
-            updateSupplier();
+        case 'PUT':
+            handlePut();
             break;
-        case 'deleteSupplier':
-            deleteSupplier();
-            break;
-        case 'getSupplier':
-            getSupplier();
+        case 'DELETE':
+            handleDelete();
             break;
         default:
-            Utils::sendErrorResponse('Invalid action');
+            Utils::sendErrorResponse('Method not allowed', 405);
             break;
     }
-} catch (PDOException $e) {
-    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+} catch (Exception $e) {
+    Utils::sendErrorResponse($e->getMessage());
+}
+
+function handleGet()
+{
+    $supplierId = $_GET['id'] ?? '';
+
+    if (!empty($supplierId)) {
+        getSupplier($supplierId);
+    } else {
+        getSuppliers();
+    }
+}
+
+function handlePost()
+{
+    // Get JSON input
+    $input = json_decode(file_get_contents('php://input'), true);
+
+    if (!$input) {
+        Utils::sendErrorResponse('Invalid JSON input');
+        return;
+    }
+
+    $name = $input['name'] ?? '';
+    $contactPerson = $input['contactPerson'] ?? '';
+    $phone = $input['phone'] ?? '';
+    $email = $input['email'] ?? '';
+    $address = $input['address'] ?? '';
+
+    if (empty($name) || empty($contactPerson) || empty($phone)) {
+        Utils::sendErrorResponse('Required fields are missing');
+        return;
+    }
+
+    createSupplier($name, $contactPerson, $phone, $email, $address);
+}
+
+function handlePut()
+{
+    // Get JSON input
+    $input = json_decode(file_get_contents('php://input'), true);
+
+    if (!$input) {
+        Utils::sendErrorResponse('Invalid JSON input');
+        return;
+    }
+
+    $id = $input['id'] ?? 0;
+    $name = $input['name'] ?? '';
+    $contactPerson = $input['contactPerson'] ?? '';
+    $phone = $input['phone'] ?? '';
+    $email = $input['email'] ?? '';
+    $address = $input['address'] ?? '';
+
+    if (empty($id) || empty($name) || empty($contactPerson) || empty($phone)) {
+        Utils::sendErrorResponse('Required fields are missing');
+        return;
+    }
+
+    updateSupplier($id, $name, $contactPerson, $phone, $email, $address);
+}
+
+function handleDelete()
+{
+    $supplierId = $_GET['id'] ?? '';
+
+    if (empty($supplierId)) {
+        Utils::sendErrorResponse('Supplier ID is required');
+        return;
+    }
+
+    deleteSupplier($supplierId);
 }
 
 function getSuppliers()
@@ -78,13 +160,11 @@ function getSuppliers()
     }
 }
 
-function getSupplier()
+function getSupplier($supplierId)
 {
     global $db;
 
-    $id = $_GET['id'] ?? 0;
-
-    if (empty($id)) {
+    if (empty($supplierId)) {
         Utils::sendErrorResponse('Supplier ID is required');
         return;
     }
@@ -102,67 +182,49 @@ function getSupplier()
             WHERE SupplierID = ?";
 
     try {
-        $supplier = $db->fetchOne($sql, [$id]);
+        $supplier = $db->fetchOne($sql, [$supplierId]);
 
         if ($supplier) {
             Utils::sendSuccessResponse('Supplier retrieved successfully', $supplier);
         } else {
-            Utils::sendErrorResponse('Supplier not found');
+            Utils::sendErrorResponse('Supplier not found', 404);
         }
     } catch (Exception $e) {
         Utils::sendErrorResponse('Failed to retrieve supplier: ' . $e->getMessage());
     }
 }
 
-function addSupplier()
+function createSupplier($name, $contactPerson, $phone, $email, $address)
 {
     global $db;
 
-    $data = json_decode(file_get_contents('php://input'), true);
-
-    $name = $data['name'] ?? '';
-    $contactPerson = $data['contactPerson'] ?? '';
-    $phone = $data['phone'] ?? '';
-    $email = $data['email'] ?? '';
-    $address = $data['address'] ?? '';
-
-    if (empty($name) || empty($contactPerson) || empty($phone)) {
-        Utils::sendErrorResponse('Required fields are missing');
-        return;
-    }
-
-    $sql = "INSERT INTO uppliers 
+    $sql = "INSERT INTO suppliers 
             (SupplierName, ContactPerson, Phone, Email, Address)
             VALUES (?, ?, ?, ?, ?)";
 
     try {
         $db->query($sql, [$name, $contactPerson, $phone, $email, $address]);
         $newId = $db->lastInsertId();
-        Utils::sendSuccessResponse('Supplier added successfully', ['id' => $newId]);
+
+        Utils::sendSuccessResponse('Supplier created successfully', [
+            'id' => $newId,
+            'supplierId' => 'SUP-' . $newId,
+            'name' => $name,
+            'contactPerson' => $contactPerson,
+            'phone' => $phone,
+            'email' => $email,
+            'address' => $address
+        ]);
     } catch (Exception $e) {
-        Utils::sendErrorResponse('Failed to add supplier: ' . $e->getMessage());
+        Utils::sendErrorResponse('Failed to create supplier: ' . $e->getMessage());
     }
 }
 
-function updateSupplier()
+function updateSupplier($id, $name, $contactPerson, $phone, $email, $address)
 {
     global $db;
 
-    $data = json_decode(file_get_contents('php://input'), true);
-
-    $id = $data['id'] ?? 0;
-    $name = $data['name'] ?? '';
-    $contactPerson = $data['contactPerson'] ?? '';
-    $phone = $data['phone'] ?? '';
-    $email = $data['email'] ?? '';
-    $address = $data['address'] ?? '';
-
-    if (empty($id) || empty($name) || empty($contactPerson) || empty($phone)) {
-        Utils::sendErrorResponse('Required fields are missing');
-        return;
-    }
-
-    $sql = "UPDATE uppliers SET
+    $sql = "UPDATE suppliers SET
             SupplierName = ?,
             ContactPerson = ?,
             Phone = ?,
@@ -171,28 +233,38 @@ function updateSupplier()
             WHERE SupplierID = ?";
 
     try {
-        $db->query($sql, [$name, $contactPerson, $phone, $email, $address, $id]);
+        $result = $db->query($sql, [$name, $contactPerson, $phone, $email, $address, $id]);
+
+        if ($result->rowCount() === 0) {
+            Utils::sendErrorResponse('Supplier not found', 404);
+            return;
+        }
+
         Utils::sendSuccessResponse('Supplier updated successfully');
     } catch (Exception $e) {
         Utils::sendErrorResponse('Failed to update supplier: ' . $e->getMessage());
     }
 }
 
-function deleteSupplier()
+function deleteSupplier($supplierId)
 {
     global $db;
 
-    $id = $_GET['id'] ?? 0;
-
-    if (empty($id)) {
-        Utils::sendErrorResponse('Supplier ID is missing');
+    if (empty($supplierId)) {
+        Utils::sendErrorResponse('Supplier ID is required');
         return;
     }
 
     $sql = "DELETE FROM suppliers WHERE SupplierID = ?";
 
     try {
-        $db->query($sql, [$id]);
+        $result = $db->query($sql, [$supplierId]);
+
+        if ($result->rowCount() === 0) {
+            Utils::sendErrorResponse('Supplier not found', 404);
+            return;
+        }
+
         Utils::sendSuccessResponse('Supplier deleted successfully');
     } catch (Exception $e) {
         Utils::sendErrorResponse('Failed to delete supplier: ' . $e->getMessage());

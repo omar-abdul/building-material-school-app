@@ -24,16 +24,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && !isset($_GET['id'])) {
 
         $employees = array();
         foreach ($employeesData as $row) {
-            // Calculate expected salary (10% increase from base salary)
-            $expectedSalary = $row['BaseSalary'] * 1.10;
-
             $employees[] = array(
                 'id' => 'EMP-' . $row['EmployeeID'],
                 'employeeId' => $row['EmployeeID'],
                 'name' => $row['EmployeeName'],
                 'position' => $row['Position'],
                 'baseSalary' => $row['BaseSalary'],
-                'expectedSalary' => number_format($expectedSalary, 2),
+                'expectedSalary' => number_format($row['ExpectedSalary'], 2),
                 'phone' => $row['Phone'],
                 'email' => $row['Email'],
                 'guarantor' => $row['Guarantor'],
@@ -56,14 +53,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['id'])) {
         $row = $db->fetchOne($sql, [$id]);
 
         if ($row) {
-            $expectedSalary = $row['BaseSalary'] * 1.10;
-
             $employee = array(
                 'id' => 'EMP-' . $row['EmployeeID'],
                 'name' => $row['EmployeeName'],
                 'position' => $row['Position'],
                 'baseSalary' => $row['BaseSalary'],
-                'expectedSalary' => number_format($expectedSalary, 2),
+                'expectedSalary' => number_format($row['ExpectedSalary'], 2),
                 'phone' => $row['Phone'],
                 'email' => $row['Email'],
                 'guarantor' => $row['Guarantor'],
@@ -80,15 +75,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['id'])) {
     }
 }
 
-// Add or Update employee
+// Add new employee
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $data = json_decode(file_get_contents('php://input'), true);
 
-        $id = isset($data['employeeId']) ? str_replace('EMP-', '', $data['employeeId']) : null;
         $name = $data['name'] ?? '';
         $position = $data['position'] ?? '';
         $baseSalary = $data['baseSalary'] ?? 0;
+        $expectedSalary = $data['expectedSalary'] ?? 0;
         $phone = $data['phone'] ?? '';
         $email = $data['email'] ?? '';
         $guarantor = $data['guarantor'] ?? '';
@@ -99,27 +94,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             return;
         }
 
-        if ($id) {
-            // Update existing employee
-            $sql = "UPDATE mployees SET EmployeeName=?, Position=?, BaseSalary=?, Phone=?, Email=?, Guarantor=?, Address=? WHERE EmployeeID=?";
-            $db->query($sql, [$name, $position, $baseSalary, $phone, $email, $guarantor, $address, $id]);
-            Utils::sendSuccessResponse('Employee updated successfully');
-        } else {
-            // Add new employee
-            $sql = "INSERT INTO mployees (EmployeeName, Position, BaseSalary, Phone, Email, Guarantor, Address) VALUES (?, ?, ?, ?, ?, ?, ?)";
-            $db->query($sql, [$name, $position, $baseSalary, $phone, $email, $guarantor, $address]);
-            Utils::sendSuccessResponse('Employee added successfully');
-        }
+        $sql = "INSERT INTO employees (EmployeeName, Position, BaseSalary, ExpectedSalary, Phone, Email, Guarantor, Address) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        $db->query($sql, [$name, $position, $baseSalary, $expectedSalary, $phone, $email, $guarantor, $address]);
+        Utils::sendSuccessResponse('Employee added successfully');
     } catch (Exception $e) {
-        Utils::sendErrorResponse('Failed to save employee: ' . $e->getMessage());
+        Utils::sendErrorResponse('Failed to add employee: ' . $e->getMessage());
+    }
+}
+
+// Update employee
+if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
+    try {
+        $data = json_decode(file_get_contents('php://input'), true);
+
+        $id = isset($data['employeeId']) ? str_replace('EMP-', '', $data['employeeId']) : null;
+        $name = $data['name'] ?? '';
+        $position = $data['position'] ?? '';
+        $baseSalary = $data['baseSalary'] ?? 0;
+        $expectedSalary = $data['expectedSalary'] ?? 0;
+        $phone = $data['phone'] ?? '';
+        $email = $data['email'] ?? '';
+        $guarantor = $data['guarantor'] ?? '';
+        $address = $data['address'] ?? '';
+
+        if (empty($id) || empty($name) || empty($position)) {
+            Utils::sendErrorResponse('Employee ID, name and position are required');
+            return;
+        }
+
+        $sql = "UPDATE employees SET EmployeeName=?, Position=?, BaseSalary=?, ExpectedSalary=?, Phone=?, Email=?, Guarantor=?, Address=? WHERE EmployeeID=?";
+        $db->query($sql, [$name, $position, $baseSalary, $expectedSalary, $phone, $email, $guarantor, $address, $id]);
+        Utils::sendSuccessResponse('Employee updated successfully');
+    } catch (Exception $e) {
+        Utils::sendErrorResponse('Failed to update employee: ' . $e->getMessage());
     }
 }
 
 // Delete employee
 if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
     try {
-        parse_str(file_get_contents("php://input"), $deleteParams);
-        $id = isset($deleteParams['id']) ? str_replace('EMP-', '', $deleteParams['id']) : null;
+        $data = json_decode(file_get_contents('php://input'), true);
+        $id = isset($data['id']) ? str_replace('EMP-', '', $data['id']) : null;
 
         if (empty($id)) {
             Utils::sendErrorResponse('Employee ID is required');
@@ -132,5 +147,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
     } catch (Exception $e) {
         Utils::sendErrorResponse('Failed to delete employee: ' . $e->getMessage());
     }
-    exit;
 }

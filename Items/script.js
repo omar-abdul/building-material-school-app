@@ -45,18 +45,19 @@ document.addEventListener('DOMContentLoaded', loadItems);
 
 // Functions
 function loadItems() {
-    fetch('/backend/api/items/items.php?action=getItems')
+    fetch('/backend/api/items/items.php')
         .then(response => {
+            console.log(response);
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }
             return response.json();
         })
         .then(data => {
-            if (Array.isArray(data)) {
-                renderItems(data);
+            if (data.success) {
+                renderItems(data.data);
             } else {
-                console.error('Invalid data format:', data);
+                console.error('Error loading items:', data.message);
             }
         })
         .catch(error => {
@@ -74,8 +75,7 @@ function renderItems(items) {
         return;
     }
     
-    // biome-ignore lint/complexity/noForEach: <explanation>
-        items.forEach(item => {
+    for (const item of items) {
         const row = document.createElement('tr');
         
         row.innerHTML = `
@@ -83,8 +83,7 @@ function renderItems(items) {
             <td>${item.ItemName}</td>
             <td>${item.Price ? `$${item.Price}` : 'N/A'}</td>
             <td>${item.CategoryName}</td>
-            <td>${item.SupplierName}</td>
-            <td>${item.EmployeeName}</td>
+            <td>${item.Quantity || 0}</td>
             <td>${formatDate(item.CreatedDate)}</td>
             <td class="action-cell">
                 <button class="action-btn view-btn" onclick="viewItem(${item.ItemID})">
@@ -100,7 +99,7 @@ function renderItems(items) {
         `;
         
         itemsTable.appendChild(row);
-    });
+    }
 }
 
 function formatDate(dateString) {
@@ -113,6 +112,7 @@ function openAddItemModal() {
     document.getElementById('itemId').value = "";
     document.getElementById('itemName').value = "";
     document.getElementById('itemPrice').value = "";
+    document.getElementById('itemQuantity').value = "0";
     document.getElementById('categoryId').value = "";
     document.getElementById('categoryName').value = "";
     document.getElementById('supplierId').value = "";
@@ -126,7 +126,7 @@ function openAddItemModal() {
 }
 
 function editItem(id) {
-    fetch(`/backend/api/items/items.php?action=getItem&itemId=${id}`)
+    fetch(`/backend/api/items/items.php?itemId=${id}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -134,25 +134,27 @@ function editItem(id) {
             return response.json();
         })
         .then(data => {
-            if (data.error) {
-                alert(data.error);
-                return;
+            if (data.success) {
+                const item = data.data;
+                document.getElementById('modalTitle').textContent = "Edit Item";
+                document.getElementById('itemId').value = item.ItemID;
+                document.getElementById('itemName').value = item.ItemName;
+                document.getElementById('itemPrice').value = item.Price || '';
+                document.getElementById('itemQuantity').value = item.Quantity || 0;
+                document.getElementById('categoryId').value = item.CategoryID;
+                document.getElementById('categoryName').value = item.CategoryName;
+                document.getElementById('supplierId').value = item.SupplierID;
+                document.getElementById('supplierName').value = item.SupplierName;
+                document.getElementById('employeeId').value = item.RegisteredByEmployeeID;
+                document.getElementById('employeeName').value = item.EmployeeName;
+                document.getElementById('note').value = item.Note || '';
+                document.getElementById('description').value = item.Description || '';
+                document.getElementById('createdDate').value = item.CreatedDate.split(' ')[0];
+                itemModal.style.display = "flex";
+            } else {
+                console.error('Error loading item:', data.message);
+                alert('Error loading item details');
             }
-            
-            document.getElementById('modalTitle').textContent = "Edit Item";
-            document.getElementById('itemId').value = data.ItemID;
-            document.getElementById('itemName').value = data.ItemName;
-            document.getElementById('itemPrice').value = data.Price || '';
-            document.getElementById('categoryId').value = data.CategoryID;
-            document.getElementById('categoryName').value = data.CategoryName;
-            document.getElementById('supplierId').value = data.SupplierID;
-            document.getElementById('supplierName').value = data.SupplierName;
-            document.getElementById('employeeId').value = data.RegisteredByEmployeeID;
-            document.getElementById('employeeName').value = data.EmployeeName;
-            document.getElementById('note').value = data.Note || '';
-            document.getElementById('description').value = data.Description || '';
-            document.getElementById('createdDate').value = data.CreatedDate.split(' ')[0];
-            itemModal.style.display = "flex";
         })
         .catch(error => {
             console.error('Error fetching item:', error);
@@ -161,7 +163,7 @@ function editItem(id) {
 }
 
 function viewItem(id) {
-    fetch(`/backend/api/items/items.php?action=getItem&itemId=${id}`)
+    fetch(`/backend/api/items/items.php?itemId=${id}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -169,21 +171,23 @@ function viewItem(id) {
             return response.json();
         })
         .then(data => {
-            if (data.error) {
-                alert(data.error);
-                return;
+            if (data.success) {
+                const item = data.data;
+                document.getElementById('viewId').textContent = `ITM-${item.ItemID}`;
+                document.getElementById('viewName').textContent = item.ItemName;
+                document.getElementById('viewPrice').textContent = item.Price ? `$${item.Price}` : 'N/A';
+                document.getElementById('viewCategory').textContent = `${item.CategoryName} (CAT-${item.CategoryID})`;
+                document.getElementById('viewQuantity').textContent = item.Quantity || 0;
+                document.getElementById('viewSupplier').textContent = `${item.SupplierName} (SUP-${item.SupplierID})`;
+                document.getElementById('viewEmployee').textContent = `${item.EmployeeName} (EMP-${item.RegisteredByEmployeeID})`;
+                document.getElementById('viewNote').textContent = item.Note || 'N/A';
+                document.getElementById('viewDescription').textContent = item.Description || 'N/A';
+                document.getElementById('viewDate').textContent = formatDate(item.CreatedDate);
+                viewModal.style.display = "flex";
+            } else {
+                console.error('Error loading item:', data.message);
+                alert('Error loading item details');
             }
-            
-            document.getElementById('viewId').textContent = `ITM-${data.ItemID}`;
-            document.getElementById('viewName').textContent = data.ItemName;
-            document.getElementById('viewPrice').textContent = data.Price ? `$${data.Price}` : 'N/A';
-            document.getElementById('viewCategory').textContent = `${data.CategoryName} (CAT-${data.CategoryID})`;
-            document.getElementById('viewSupplier').textContent = `${data.SupplierName} (SUP-${data.SupplierID})`;
-            document.getElementById('viewEmployee').textContent = `${data.EmployeeName} (EMP-${data.RegisteredByEmployeeID})`;
-            document.getElementById('viewNote').textContent = data.Note || 'N/A';
-            document.getElementById('viewDescription').textContent = data.Description || 'N/A';
-            document.getElementById('viewDate').textContent = formatDate(data.CreatedDate);
-            viewModal.style.display = "flex";
         })
         .catch(error => {
             console.error('Error fetching item:', error);
@@ -191,40 +195,37 @@ function viewItem(id) {
         });
 }
 
-
-
 function deleteItem(id) {
     if (!confirm('Ma hubtaa inaad masaxdo item-kan?')) {
         return; // User clicked cancel
     }
 
-    fetch(`/backend/api/items/items.php?action=deleteItem&itemId=${id}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network error');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.status === 'success') {
-                alert(data.message);
-                loadItems(); // Reload the items list
-            } else {
-                throw new Error(data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Delete error:', error);
-            alert(`Delete failed: ${error.message}`);
-        });
+    fetch('/backend/api/items/items.php', {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ itemId: id })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network error');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            loadItems(); // Reload the items list
+        } else {
+            throw new Error(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Delete error:', error);
+        alert(`Delete failed: ${error.message}`);
+    });
 }
-
-
-
-
-
-
-
 
 function fetchCategoryDetails() {
     const categoryId = categoryIdInput.value;
@@ -233,7 +234,7 @@ function fetchCategoryDetails() {
         return;
     }
     
-    fetch(`/backend/api/items/items.php?action=getCategoryDetails&categoryId=${categoryId}`)
+    fetch(`/backend/api/items/items.php?categoryId=${categoryId}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -241,11 +242,11 @@ function fetchCategoryDetails() {
             return response.json();
         })
         .then(data => {
-            if (data.error) {
-                categoryNameInput.value = '';
-                alert(data.error);
+            if (data.success) {
+                categoryNameInput.value = data.data.categoryName || '';
             } else {
-                categoryNameInput.value = data.categoryName || '';
+                categoryNameInput.value = '';
+                alert(data.message);
             }
         })
         .catch(error => {
@@ -261,7 +262,7 @@ function fetchSupplierDetails() {
         return;
     }
     
-    fetch(`/backend/api/items/items.php?action=getSupplierDetails&supplierId=${supplierId}`)
+    fetch(`/backend/api/items/items.php?supplierId=${supplierId}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -269,11 +270,11 @@ function fetchSupplierDetails() {
             return response.json();
         })
         .then(data => {
-            if (data.error) {
-                supplierNameInput.value = '';
-                alert(data.error);
+            if (data.success) {
+                supplierNameInput.value = data.data.supplierName || '';
             } else {
-                supplierNameInput.value = data.supplierName || '';
+                supplierNameInput.value = '';
+                alert(data.message);
             }
         })
         .catch(error => {
@@ -289,7 +290,7 @@ function fetchEmployeeDetails() {
         return;
     }
     
-    fetch(`/backend/api/items/items.php?action=getEmployeeDetails&employeeId=${employeeId}`)
+    fetch(`/backend/api/items/items.php?employeeId=${employeeId}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -297,11 +298,11 @@ function fetchEmployeeDetails() {
             return response.json();
         })
         .then(data => {
-            if (data.error) {
-                employeeNameInput.value = '';
-                alert(data.error);
+            if (data.success) {
+                employeeNameInput.value = data.data.employeeName || '';
             } else {
-                employeeNameInput.value = data.employeeName || '';
+                employeeNameInput.value = '';
+                alert(data.message);
             }
         })
         .catch(error => {
@@ -310,8 +311,6 @@ function fetchEmployeeDetails() {
         });
 }
 
-
-
 function saveItem(e) {
     e.preventDefault();
     
@@ -319,7 +318,8 @@ function saveItem(e) {
     const id = document.getElementById('itemId').value;
     const formData = {
         ItemName: document.getElementById('itemName').value,
-        Price: document.getElementById('itemPrice').value, // Added Price field
+        Price: document.getElementById('itemPrice').value,
+        Quantity: document.getElementById('itemQuantity').value,
         CategoryID: document.getElementById('categoryId').value,
         SupplierID: document.getElementById('supplierId').value,
         RegisteredByEmployeeID: document.getElementById('employeeId').value,
@@ -340,11 +340,12 @@ function saveItem(e) {
     }
     
     // Determine URL and method
-    const url = `/backend/api/items/items.php?action=${id ? 'updateItem' : 'addItem'}`;
+    const method = id ? 'PUT' : 'POST';
+    const url = '/backend/api/items/items.php';
     
     // Send request
     fetch(url, {
-        method: 'POST',
+        method: method,
         headers: {
             'Content-Type': 'application/json',
         },
@@ -357,13 +358,12 @@ function saveItem(e) {
         return response.json();
     })
     .then(data => {
-        if (data.status === 'error') {
-            throw new Error(data.message);
-        }
-        if (data.status === 'success') {
+        if (data.success) {
             loadItems();
             closeModals();
             alert(data.message);
+        } else {
+            throw new Error(data.message);
         }
     })
     .catch(error => {
@@ -372,23 +372,25 @@ function saveItem(e) {
     });
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
 function filterItems() {
     const searchTerm = searchInput.value;
     const categoryFilterValue = categoryFilter.value;
     
-    fetch(`/backend/api/items/items.php?action=getItems&search=${encodeURIComponent(searchTerm)}&categoryFilter=${encodeURIComponent(categoryFilterValue)}`)
+    let url = '/backend/api/items/items.php';
+    const params = new URLSearchParams();
+    
+    if (searchTerm) {
+        params.append('search', searchTerm);
+    }
+    if (categoryFilterValue) {
+        params.append('categoryFilter', categoryFilterValue);
+    }
+    
+    if (params.toString()) {
+        url += `?${params.toString()}`;
+    }
+    
+    fetch(url)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -396,7 +398,11 @@ function filterItems() {
             return response.json();
         })
         .then(data => {
-            renderItems(data);
+            if (data.success) {
+                renderItems(data.data);
+            } else {
+                console.error('Error filtering items:', data.message);
+            }
         })
         .catch(error => {
             console.error('Error filtering items:', error);
@@ -406,25 +412,31 @@ function filterItems() {
 function confirmDelete() {
     if (!currentItemToDelete) return;
     
-    fetch(`/backend/api/items/items.php?action=deleteItem&itemId=${currentItemToDelete}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                loadItems();
-                closeModals();
-            } else {
-                alert(data.error || 'Failed to delete item');
-            }
-        })
-        .catch(error => {
-            console.error('Error deleting item:', error);
-            alert('Error deleting item');
-        });
+    fetch('/backend/api/items/items.php', {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ itemId: currentItemToDelete })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            loadItems();
+            closeModals();
+        } else {
+            alert(data.message || 'Failed to delete item');
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting item:', error);
+        alert('Error deleting item');
+    });
 }
 
 function closeModals() {
@@ -451,16 +463,12 @@ document.querySelector('.sidebar-report-btn').addEventListener('click', function
 // Close dropdown when clicking outside 
 document.addEventListener('click', (e) => {
     if (!e.target.closest('.sidebar-report-btn') && !e.target.closest('.report-dropdown-content')) {
-        // biome-ignore lint/complexity/noForEach: <explanation>
-        document.querySelectorAll('.report-dropdown').forEach(dropdown => {
+        const dropdowns = document.querySelectorAll('.report-dropdown');
+        for (const dropdown of dropdowns) {
             dropdown.classList.remove('active');
-        });
+        }
     }
 });
-
-
-
-
 
 // These elements and event listeners are already in your code
 const signUpBtn = document.getElementById('signUpBtn');
