@@ -20,7 +20,8 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BMMS - Salaries Management</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="steyle.css">
+    <link rel="stylesheet" href="../base/styles.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
@@ -47,12 +48,11 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
                     <i class="fas fa-search"></i>
                     <input type="text" id="searchInput" placeholder="Search salaries...">
                 </div>
-                <select id="employeeFilter" class="form-group">
-                    <option value="">Filter by Employee</option>
-                    <option value="EMP-1001">Ahmed Mohamed</option>
-                    <option value="EMP-1002">Fatima Ali</option>
-                    <option value="EMP-1003">Omar Hassan</option>
-                    <option value="EMP-1004">Aisha Abdi</option>
+                <select id="statusFilter" class="form-group">
+                    <option value="">Filter by Status</option>
+                    <option value="Paid">Paid</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Cancelled">Cancelled</option>
                 </select>
             </div>
 
@@ -65,6 +65,7 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
                         <th>Employee Name</th>
                         <th>Amount</th>
                         <th>Advance</th>
+                        <th>Net Salary</th>
                         <th>Payment Method</th>
                         <th>Payment Date</th>
                         <th>Status</th>
@@ -98,17 +99,26 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
                 <input type="hidden" id="salaryId">
 
                 <div class="form-group">
+                    <label for="employeeSearch">Employee</label>
+                    <div class="autocomplete-container">
+                        <input type="text" id="employeeSearch" placeholder="Search employee..." required>
+                        <div class="autocomplete-dropdown" id="employeeDropdown"></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
                     <label for="employeeId">Employee ID</label>
-                    <input type="text" id="employeeId" required>
+                    <input type="text" id="employeeId" readonly>
                 </div>
 
                 <div class="form-group">
                     <label for="employeeName">Employee Name</label>
                     <input type="text" id="employeeName" readonly>
                 </div>
+
                 <div class="form-group">
-                    <label for="Basesalary">Base salary</label>
-                    <input type="text" id="Basesalary" readonly>
+                    <label for="baseSalary">Base Salary</label>
+                    <input type="number" id="baseSalary" step="0.01" readonly>
                 </div>
 
                 <div class="form-row">
@@ -176,35 +186,35 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
             </div>
             <div class="item-details">
                 <div class="detail-row">
-                    <strong>Salary ID:</strong> <span id="viewId">SAL-2023-001</span>
+                    <strong>Salary ID:</strong> <span id="viewId"></span>
                 </div>
                 <div class="detail-row">
-                    <strong>Employee ID:</strong> <span id="viewEmployeeId">EMP-1001</span>
+                    <strong>Employee ID:</strong> <span id="viewEmployeeId"></span>
                 </div>
                 <div class="detail-row">
-                    <strong>Employee Name:</strong> <span id="viewEmployeeName">Ahmed Mohamed</span>
+                    <strong>Employee Name:</strong> <span id="viewEmployeeName"></span>
                 </div>
                 <div class="detail-row">
-                    <strong>Amount:</strong> <span id="viewAmount">$1,650.00</span>
+                    <strong>Amount:</strong> <span id="viewAmount"></span>
                 </div>
                 <div class="detail-row">
-                    <strong>Advance Salary:</strong> <span id="viewAdvance">$200.00</span>
+                    <strong>Advance Salary:</strong> <span id="viewAdvance"></span>
                 </div>
                 <div class="detail-row">
-                    <strong>Net Salary:</strong> <span id="viewNetSalary">$1,450.00</span>
+                    <strong>Net Salary:</strong> <span id="viewNetSalary"></span>
                 </div>
                 <div class="detail-row">
-                    <strong>Payment Method:</strong> <span id="viewPaymentMethod">Bank Transfer</span>
+                    <strong>Payment Method:</strong> <span id="viewPaymentMethod"></span>
                 </div>
                 <div class="detail-row">
-                    <strong>Payment Date:</strong> <span id="viewPaymentDate">15/06/2023</span>
+                    <strong>Payment Date:</strong> <span id="viewPaymentDate"></span>
                 </div>
                 <div class="detail-row">
-                    <strong>Status:</strong> <span id="viewStatus" class="status-paid">Paid</span>
+                    <strong>Status:</strong> <span id="viewStatus"></span>
                 </div>
             </div>
             <div class="form-actions">
-                <button type="button" class="btn btn-primary" id="closeViewBtn">Close</button>
+                <button type="button" class="btn btn-secondary" id="closeViewBtn">Close</button>
             </div>
         </div>
     </div>
@@ -213,42 +223,19 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
     <div class="modal" id="deleteModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title">Confirm Delete</h3>
+                <h3 class="modal-title">Delete Salary</h3>
                 <button class="close-btn" id="closeDeleteModal">&times;</button>
             </div>
             <div class="delete-message">
-                <p>Are you sure you want to delete this salary record?</p>
-                <p><strong>Salary ID:</strong> <span id="deleteSalaryId">SAL-2023-001</span></p>
-                <p><strong>Employee:</strong> <span id="deleteEmployeeName">Ahmed Mohamed</span></p>
+                <p>Are you sure you want to delete salary <strong id="deleteSalaryId"></strong> for <strong id="deleteEmployeeName"></strong>?</p>
+                <p>This action cannot be undone.</p>
             </div>
             <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="cancelDeleteBtn">Cancel</button>
                 <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
-                <button type="button" class="btn" id="cancelDeleteBtn">Cancel</button>
             </div>
         </div>
     </div>
-
-
-
-    <script>
-        // Toggle dropdown when clicking the report button
-        document.querySelector('.sidebar-report-btn').addEventListener('click', function(e) {
-            e.preventDefault();
-            const dropdown = this.closest('.report-dropdown');
-            dropdown.classList.toggle('active');
-        });
-
-        // Close dropdown when clicking outside 
-        document.addEventListener('click', function(e) {
-            // Check if the click was outside the dropdown menu
-            if (!e.target.closest('.sidebar-report-btn') && !e.target.closest('.report-dropdown-content')) {
-                // If click was outside, remove the 'active' class to hide the dropdown
-                document.querySelectorAll('.report-dropdown').forEach(dropdown => {
-                    dropdown.classList.remove('active');
-                });
-            }
-        });
-    </script>
 
     <script src="jscript.js"></script>
 </body>

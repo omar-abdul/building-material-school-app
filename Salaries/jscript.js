@@ -1,3 +1,97 @@
+// Global functions that need to be accessible from onclick handlers
+function viewSalary(id) {
+    fetch(`/backend/api/salaries/salaries.php?salaryId=${id}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success && data.data) {
+                const salary = data.data;
+                
+                // Format payment date
+                const paymentDate = new Date(salary.PaymentDate);
+                const formattedDate = paymentDate.toISOString().split('T')[0];
+                
+                document.getElementById('viewId').textContent = `SAL-${salary.SalaryID}`;
+                document.getElementById('viewEmployeeId').textContent = `EMP-${salary.EmployeeID}`;
+                document.getElementById('viewEmployeeName').textContent = salary.EmployeeName;
+                document.getElementById('viewAmount').textContent = `$${Number.parseFloat(salary.Amount).toFixed(2)}`;
+                document.getElementById('viewAdvance').textContent = `$${Number.parseFloat(salary.AdvanceSalary).toFixed(2)}`;
+                document.getElementById('viewNetSalary').textContent = `$${Number.parseFloat(salary.NetSalary).toFixed(2)}`;
+                document.getElementById('viewPaymentMethod').textContent = salary.PaymentMethod;
+                document.getElementById('viewPaymentDate').textContent = formattedDate;
+                document.getElementById('viewStatus').textContent = salary.Status;
+                document.getElementById('viewModal').style.display = "flex";
+            } else {
+                alert(data.message || 'Error fetching salary details');
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching salary:', error);
+            alert('Error fetching salary details');
+        });
+}
+
+function editSalary(id) {
+    fetch(`/backend/api/salaries/salaries.php?salaryId=${id}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success && data.data) {
+                const salary = data.data;
+                
+                document.getElementById('modalTitle').textContent = "Edit Salary";
+                document.getElementById('salaryId').value = salary.SalaryID;
+                document.getElementById('employeeId').value = salary.EmployeeID;
+                document.getElementById('employeeName').value = salary.EmployeeName;
+                document.getElementById('employeeSearch').value = `${salary.EmployeeName} (EMP-${salary.EmployeeID})`;
+                document.getElementById('baseSalary').value = salary.BaseSalary || "";
+                document.getElementById('amount').value = salary.Amount;
+                document.getElementById('advanceSalary').value = salary.AdvanceSalary;
+                document.getElementById('netSalary').value = salary.NetSalary;
+                document.getElementById('paymentMethod').value = salary.PaymentMethod;
+                document.getElementById('paymentDate').value = salary.PaymentDate.split(' ')[0];
+                document.getElementById('status').value = salary.Status;
+                document.getElementById('salaryModal').style.display = "flex";
+            } else {
+                alert(data.message || 'Error fetching salary details');
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching salary:', error);
+            alert('Error fetching salary details');
+        });
+}
+
+function deleteSalary(id) {
+    fetch(`/backend/api/salaries/salaries.php?salaryId=${id}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.data) {
+                const salary = data.data;
+                document.getElementById('deleteSalaryId').textContent = `SAL-${salary.SalaryID}`;
+                document.getElementById('deleteEmployeeName').textContent = salary.EmployeeName;
+                document.getElementById('deleteModal').style.display = "flex";
+                // Set the current salary to delete
+                window.currentSalaryToDelete = id;
+            } else {
+                alert(data.message || 'Error fetching salary details');
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching salary:', error);
+            alert('Error fetching salary details');
+        });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
 // DOM Elements
 const addSalaryBtn = document.getElementById('addSalaryBtn');
 const salaryModal = document.getElementById('salaryModal');
@@ -12,19 +106,28 @@ const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
 const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
 const salaryForm = document.getElementById('salaryForm');
 const searchInput = document.getElementById('searchInput');
-const employeeFilter = document.getElementById('employeeFilter');
-const employeeIdSelect = document.getElementById('employeeId');
-const employeeNameInput = document.getElementById('employeeName');
-const BasesalaryInput = document.getElementById('Basesalary');
-const advanceSalaryInput = document.getElementById('advanceSalary');
+const statusFilter = document.getElementById('statusFilter');
+
+// Form elements
+const employeeSearch = document.getElementById('employeeSearch');
+const employeeDropdown = document.getElementById('employeeDropdown');
+const employeeId = document.getElementById('employeeId');
+const employeeName = document.getElementById('employeeName');
+const baseSalary = document.getElementById('baseSalary');
+const amount = document.getElementById('amount');
+const advanceSalary = document.getElementById('advanceSalary');
 const calculateBtn = document.getElementById('calculateBtn');
-const netSalaryInput = document.getElementById('netSalary');
-const paymentMethodInput = document.getElementById('paymentMethod');
-const paymentDateInput = document.getElementById('paymentDate');
+const netSalary = document.getElementById('netSalary');
+const paymentMethod = document.getElementById('paymentMethod');
+const paymentDate = document.getElementById('paymentDate');
+const status = document.getElementById('status');
+const salaryId = document.getElementById('salaryId');
+
 const salariesTable = document.querySelector('.salaries-table tbody');
 
 // Current salary to be deleted
 let currentSalaryToDelete = null;
+let employees = [];
 
 // Event Listeners
 addSalaryBtn.addEventListener('click', openAddSalaryModal);
@@ -37,16 +140,24 @@ cancelDeleteBtn.addEventListener('click', closeModals);
 confirmDeleteBtn.addEventListener('click', confirmDelete);
 salaryForm.addEventListener('submit', saveSalary);
 searchInput.addEventListener('input', filterSalaries);
-employeeFilter.addEventListener('change', filterSalaries);
-employeeIdSelect.addEventListener('change', fetchEmployeeDetails);
+statusFilter.addEventListener('change', filterSalaries);
 calculateBtn.addEventListener('click', calculateNetSalary);
 
+// Employee search autocomplete
+employeeSearch.addEventListener('input', handleEmployeeSearch);
+employeeSearch.addEventListener('focus', handleEmployeeSearch);
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.autocomplete-container')) {
+        employeeDropdown.style.display = 'none';
+    }
+});
+
 // Load salaries when page loads
-document.addEventListener('DOMContentLoaded', loadSalaries);
+loadSalaries();
 
 // Functions
 function loadSalaries() {
-    fetch('/backend/api/salaries/salaries.php?action=getSalaries')
+    fetch('/backend/api/salaries/salaries.php')
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -54,8 +165,8 @@ function loadSalaries() {
             return response.json();
         })
         .then(data => {
-            if (Array.isArray(data)) {
-                renderSalaries(data);
+            if (data.success && Array.isArray(data.data)) {
+                renderSalaries(data.data);
             } else {
                 console.error('Invalid data format:', data);
             }
@@ -70,12 +181,12 @@ function renderSalaries(salaries) {
     
     if (!salaries || salaries.length === 0) {
         const row = document.createElement('tr');
-        row.innerHTML = `<td colspan="9" class="no-salaries">No salaries found</td>`;
+        row.innerHTML = `<td colspan="10" class="no-salaries">No salaries found</td>`;
         salariesTable.appendChild(row);
         return;
     }
     
-    salaries.forEach(salary => {
+    for (const salary of salaries) {
         const row = document.createElement('tr');
         
         // Format payment date
@@ -86,11 +197,12 @@ function renderSalaries(salaries) {
             <td>SAL-${salary.SalaryID}</td>
             <td>EMP-${salary.EmployeeID}</td>
             <td>${salary.EmployeeName}</td>
-            <td>$${parseFloat(salary.Amount).toFixed(2)}</td>
-            <td>$${parseFloat(salary.AdvanceSalary).toFixed(2)}</td>
+            <td>$${Number.parseFloat(salary.Amount).toFixed(2)}</td>
+            <td>$${Number.parseFloat(salary.AdvanceSalary).toFixed(2)}</td>
+            <td>$${Number.parseFloat(salary.NetSalary).toFixed(2)}</td>
             <td>${salary.PaymentMethod}</td>
             <td>${formattedDate}</td>
-            <td><span class="status-paid">Paid</span></td>
+            <td><span class="status-${salary.Status.toLowerCase()}">${salary.Status}</span></td>
             <td class="action-cell">
                 <button class="action-btn view-btn" onclick="viewSalary(${salary.SalaryID})">
                     <i class="fas fa-eye"></i> View
@@ -105,238 +217,178 @@ function renderSalaries(salaries) {
         `;
         
         salariesTable.appendChild(row);
-    });
+    }
 }
 
 function openAddSalaryModal() {
     document.getElementById('modalTitle').textContent = "Add New Salary";
-    document.getElementById('salaryId').value = "";
-    document.getElementById('employeeId').value = "";
-    document.getElementById('employeeName').value = "";
-    document.getElementById('Basesalary').value = "";
-    document.getElementById('amount').value = "";
-    document.getElementById('advanceSalary').value = "0.00";
-    document.getElementById('netSalary').value = "";
-    document.getElementById('paymentMethod').value = "";
-    document.getElementById('paymentDate').value = new Date().toISOString().split('T')[0];
+    clearForm();
     salaryModal.style.display = "flex";
 }
 
-function editSalary(id) {
-    fetch(`/backend/api/salaries/salaries.php?action=getSalary&salaryId=${id}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.error) {
-                alert(data.error);
-                return;
-            }
-            
-            document.getElementById('modalTitle').textContent = "Edit Salary";
-            document.getElementById('salaryId').value = data.SalaryID;
-            document.getElementById('employeeId').value = data.EmployeeID;
-            document.getElementById('employeeName').value = data.EmployeeName;
-            document.getElementById('amount').value = data.Amount;
-            document.getElementById('advanceSalary').value = data.AdvanceSalary;
-            document.getElementById('netSalary').value = data.NetSalary;
-            document.getElementById('paymentMethod').value = data.PaymentMethod;
-            document.getElementById('paymentDate').value = data.PaymentDate.split(' ')[0];
-            salaryModal.style.display = "flex";
-        })
-        .catch(error => {
-            console.error('Error fetching salary:', error);
-            alert('Error fetching salary details');
-        });
+function clearForm() {
+    salaryId.value = "";
+    employeeSearch.value = "";
+    employeeId.value = "";
+    employeeName.value = "";
+    baseSalary.value = "";
+    amount.value = "";
+    advanceSalary.value = "0.00";
+    netSalary.value = "";
+    paymentMethod.value = "";
+    paymentDate.value = new Date().toISOString().split('T')[0];
+    status.value = "Paid";
+    employeeDropdown.style.display = 'none';
 }
 
-function viewSalary(id) {
-    fetch(`/backend/api/salaries/salaries.php?action=getSalary&salaryId=${id}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.error) {
-                alert(data.error);
-                return;
-            }
-            
-            // Format payment date
-            const paymentDate = new Date(data.PaymentDate);
-            const formattedDate = paymentDate.toISOString().split('T')[0];
-            
-            document.getElementById('viewId').textContent = `SAL-${data.SalaryID}`;
-            document.getElementById('viewEmployeeId').textContent = `EMP-${data.EmployeeID}`;
-            document.getElementById('viewEmployeeName').textContent = data.EmployeeName;
-            document.getElementById('viewAmount').textContent = `$${parseFloat(data.Amount).toFixed(2)}`;
-            document.getElementById('viewAdvance').textContent = `$${parseFloat(data.AdvanceSalary).toFixed(2)}`;
-            document.getElementById('viewNetSalary').textContent = `$${parseFloat(data.NetSalary).toFixed(2)}`;
-            document.getElementById('viewPaymentMethod').textContent = data.PaymentMethod;
-            document.getElementById('viewPaymentDate').textContent = formattedDate;
-            document.getElementById('viewStatus').textContent = "Paid";
-            viewModal.style.display = "flex";
-        })
-        .catch(error => {
-            console.error('Error fetching salary:', error);
-            alert('Error fetching salary details');
-        });
-}
-
-function deleteSalary(id) {
-    currentSalaryToDelete = id;
-    fetch(`/backend/api/salaries/salaries.php?action=getSalary&salaryId=${id}`)
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('deleteSalaryId').textContent = `SAL-${data.SalaryID}`;
-            document.getElementById('deleteEmployeeName').textContent = data.EmployeeName;
-            deleteModal.style.display = "flex";
-        })
-        .catch(error => {
-            console.error('Error fetching salary for delete:', error);
-            alert('Error fetching salary details');
-        });
-}
-
-function fetchEmployeeDetails() {
-    const employeeId = employeeIdSelect.value;
-    if (!employeeId) {
-        employeeNameInput.value = '';
-        BasesalaryInput.value = '';
+function handleEmployeeSearch() {
+    const searchTerm = employeeSearch.value.trim();
+    
+    if (searchTerm.length < 2) {
+        employeeDropdown.style.display = 'none';
         return;
     }
     
-    fetch(`/backend/api/salaries/salaries.php?action=getEmployeeDetails&employeeId=${employeeId}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
+    fetch(`/backend/api/salaries/salaries.php?searchEmployees=${encodeURIComponent(searchTerm)}`)
+        .then(response => response.json())
         .then(data => {
-            if (data.error) {
-                employeeNameInput.value = '';
-                BasesalaryInput.value = '';
-                alert(data.error);
+            if (data.success && Array.isArray(data.data)) {
+                employees = data.data;
+                showEmployeeDropdown(employees);
             } else {
-                employeeNameInput.value = data.employeeName || '';
-                BasesalaryInput.value = data.baseSalary || '';
-                // Set amount to base salary by default
-                document.getElementById('amount').value = data.baseSalary || '';
+                employeeDropdown.style.display = 'none';
             }
         })
         .catch(error => {
-            console.error('Error fetching employee:', error);
-            employeeNameInput.value = '';
-            BasesalaryInput.value = '';
+            console.error('Error searching employees:', error);
+            employeeDropdown.style.display = 'none';
         });
+}
+
+function showEmployeeDropdown(employees) {
+    if (!employees || employees.length === 0) {
+        employeeDropdown.style.display = 'none';
+        return;
+    }
+    
+    employeeDropdown.innerHTML = '';
+    for (const employee of employees) {
+        const item = document.createElement('div');
+        item.className = 'autocomplete-item';
+        item.textContent = `${employee.EmployeeName} (EMP-${employee.EmployeeID})`;
+        item.addEventListener('click', () => selectEmployee(employee));
+        employeeDropdown.appendChild(item);
+    }
+    employeeDropdown.style.display = 'block';
+}
+
+function selectEmployee(employee) {
+    employeeSearch.value = `${employee.EmployeeName} (EMP-${employee.EmployeeID})`;
+    employeeId.value = employee.EmployeeID;
+    employeeName.value = employee.EmployeeName;
+    baseSalary.value = employee.BaseSalary || "";
+    employeeDropdown.style.display = 'none';
+    
+    // Auto-calculate if amount is not set
+    if (!amount.value && employee.BaseSalary) {
+        amount.value = employee.BaseSalary;
+        calculateNetSalary();
+    }
 }
 
 function calculateNetSalary() {
-    const amount = parseFloat(document.getElementById('amount').value) || 0;
-    const advance = parseFloat(document.getElementById('advanceSalary').value) || 0;
-    
-    if (amount <= 0) {
-        alert("Amount must be greater than 0");
-        return;
-    }
-    
-    if (advance < 0) {
-        alert("Advance cannot be negative");
-        return;
-    }
-    
-    if (advance > amount) {
-        alert("Advance cannot be greater than amount");
-        return;
-    }
-    
-    const netSalary = amount - advance;
-    document.getElementById('netSalary').value = netSalary.toFixed(2);
+    const amountValue = Number.parseFloat(amount.value) || 0;
+    const advanceValue = Number.parseFloat(advanceSalary.value) || 0;
+    const netValue = amountValue - advanceValue;
+    netSalary.value = netValue.toFixed(2);
 }
 
 function saveSalary(e) {
     e.preventDefault();
     
-    // Get form values
-    const id = document.getElementById('salaryId').value;
-    const employeeId = document.getElementById('employeeId').value;
-    const amount = parseFloat(document.getElementById('amount').value);
-    const advance = parseFloat(document.getElementById('advanceSalary').value) || 0;
-    const netSalary = parseFloat(document.getElementById('netSalary').value);
-    const paymentMethod = document.getElementById('paymentMethod').value;
-    const paymentDate = document.getElementById('paymentDate').value;
-    
-    // Validate required fields
-    if (!employeeId || isNaN(amount) || isNaN(netSalary) || !paymentMethod || !paymentDate) {
-        alert("Please fill in all required fields with valid values");
-        return;
-    }
-    
-    // Prepare data
-    const salaryData = {
-        employeeId: employeeId,
-        amount: amount,
-        advanceSalary: advance,
-        paymentMethod: paymentMethod,
-        paymentDate: paymentDate
+    const formData = {
+        employee_id: employeeId.value,
+        amount: amount.value,
+        advance_salary: advanceSalary.value,
+        payment_method: paymentMethod.value,
+        payment_date: paymentDate.value,
+        status: status.value
     };
     
-    if (id) {
-        salaryData.salaryId = id;
+    if (salaryId.value) {
+        // Update existing salary
+        formData.salary_id = salaryId.value;
+        
+        fetch('/backend/api/salaries/salaries.php', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Salary updated successfully');
+                closeModals();
+                loadSalaries();
+            } else {
+                alert(data.message || 'Error updating salary');
+            }
+        })
+        .catch(error => {
+            console.error('Error updating salary:', error);
+            alert('Error updating salary');
+        });
+    } else {
+        // Create new salary
+        fetch('/backend/api/salaries/salaries.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Salary created successfully');
+                closeModals();
+                loadSalaries();
+            } else {
+                alert(data.message || 'Error creating salary');
+            }
+        })
+        .catch(error => {
+            console.error('Error creating salary:', error);
+            alert('Error creating salary');
+        });
     }
-    
-    // Determine URL and method
-    const url = `/backend/api/salaries/salaries.php?action=${id ? 'updateSalary' : 'addSalary'}`;
-    
-    // Send request
-    fetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams(salaryData)
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.error) {
-            throw new Error(data.error);
-        }
-        if (data.success) {
-            loadSalaries();
-            closeModals();
-            alert(`Salary ${id ? 'updated' : 'added'} successfully!`);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert(`Error saving salary: ${error.message}`);
-    });
 }
 
 function filterSalaries() {
     const searchTerm = searchInput.value;
-    const employeeFilterValue = employeeFilter.value;
+    const statusFilterValue = statusFilter.value;
     
-    fetch(`/backend/api/salaries/salaries.php?action=getSalaries&search=${encodeURIComponent(searchTerm)}&employeeFilter=${encodeURIComponent(employeeFilterValue)}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
+    let url = '/backend/api/salaries/salaries.php?';
+    const params = [];
+    
+    if (searchTerm) {
+        params.push(`search=${encodeURIComponent(searchTerm)}`);
+    }
+    
+    if (statusFilterValue) {
+        params.push(`status=${encodeURIComponent(statusFilterValue)}`);
+    }
+    
+    url += params.join('&');
+    
+    fetch(url)
+        .then(response => response.json())
         .then(data => {
-            renderSalaries(data);
+            if (data.success && Array.isArray(data.data)) {
+                renderSalaries(data.data);
+            }
         })
         .catch(error => {
             console.error('Error filtering salaries:', error);
@@ -344,46 +396,38 @@ function filterSalaries() {
 }
 
 function confirmDelete() {
-    if (!currentSalaryToDelete) return;
+    if (!window.currentSalaryToDelete) return;
     
-    fetch(`/backend/api/salaries/salaries.php?action=deleteSalary&salaryId=${currentSalaryToDelete}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                loadSalaries();
-                closeModals();
-            } else {
-                alert(data.error || 'Failed to delete salary');
-            }
-        })
-        .catch(error => {
-            console.error('Error deleting salary:', error);
-            alert('Error deleting salary');
-        });
+    fetch('/backend/api/salaries/salaries.php', {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ salaryId: window.currentSalaryToDelete })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Salary deleted successfully');
+            closeModals();
+            loadSalaries();
+        } else {
+            alert(data.message || 'Error deleting salary');
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting salary:', error);
+        alert('Error deleting salary');
+    });
 }
 
 function closeModals() {
     salaryModal.style.display = "none";
     viewModal.style.display = "none";
     deleteModal.style.display = "none";
-    currentSalaryToDelete = null;
+    employeeDropdown.style.display = 'none';
+    window.currentSalaryToDelete = null;
 }
-
-// Close modals when clicking outside
-window.addEventListener('click', (e) => {
-    if (e.target === salaryModal) salaryModal.style.display = "none";
-    if (e.target === viewModal) viewModal.style.display = "none";
-    if (e.target === deleteModal) deleteModal.style.display = "none";
-});
-
-
-
-
 
 // These elements and event listeners are already in your code
 const signUpBtn = document.getElementById('signUpBtn');
@@ -404,3 +448,4 @@ function openSignUpModal(e) {
     document.getElementById('signUpConfirmPassword').value = "";
     signUpModal.style.display = "flex";
 }
+});

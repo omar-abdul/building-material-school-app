@@ -315,10 +315,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
         $db->beginTransaction();
 
         try {
-            // 1. Delete existing purchase order entries for this PurchaseOrderID
+            /*
+             * DIFFERENTIAL INVENTORY UPDATE LOGIC:
+             * 
+             * When editing a purchase order, we need to handle inventory changes correctly:
+             * 1. Get original quantities from the purchase order
+             * 2. Calculate differences between old and new quantities
+             * 3. Handle removed items (decrease their inventory)
+             * 4. Update inventory based on differences only
+             * 
+             * Example:
+             * - Original purchase order: Item A (3 qty) - inventory was increased by 3
+             * - Updated purchase order: Item A (5 qty) - we only need to increase inventory by 2 more
+             * - Result: inventory increased by 5 total (3 original + 2 additional)
+             */
+
+            // 1. Get original purchase order quantities before deletion
+            $originalItems = $db->fetchAll("SELECT ItemID, Quantity FROM purchase_orders WHERE PurchaseOrderID = ?", [$purchaseOrderId]);
+            $originalQuantities = [];
+            foreach ($originalItems as $item) {
+                $originalQuantities[$item['ItemID']] = $item['Quantity'];
+            }
+
+            // 2. Calculate inventory differences
+            $inventoryDifferences = [];
+            $newItemIds = [];
+
+            foreach ($data['items'] as $item) {
+                $itemId = $item['item_id'];
+                $newQuantity = $item['quantity'];
+                $oldQuantity = $originalQuantities[$itemId] ?? 0;
+                $newItemIds[] = $itemId;
+
+                // Calculate the difference (how much more/less we need)
+                $quantityDifference = $newQuantity - $oldQuantity;
+                $inventoryDifferences[$itemId] = $quantityDifference;
+            }
+
+            // 3. Handle items that were removed from the purchase order (decrease their inventory)
+            foreach ($originalQuantities as $itemId => $oldQuantity) {
+                if (!in_array($itemId, $newItemIds)) {
+                    // This item was removed from the purchase order, so we need to decrease its inventory
+                    // For purchase orders, removing means decreasing inventory
+                    $db->query("UPDATE inventory SET Quantity = GREATEST(0, Quantity - ?) WHERE ItemID = ?", [$oldQuantity, $itemId]);
+                }
+            }
+
+            // 4. Delete existing purchase order entries for this PurchaseOrderID
             $db->query("DELETE FROM purchase_orders WHERE PurchaseOrderID = ?", [$purchaseOrderId]);
 
-            // 2. Insert items and update inventory
+            // 5. Insert items and update inventory based on differences
             $totalAmount = 0;
             foreach ($data['items'] as $item) {
                 $itemTotal = $item['quantity'] * $item['unitPrice'];
@@ -339,8 +385,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
                     $data['status']
                 ]);
 
-                // Update inventory (increase stock for purchases)
-                updateInventory($item['item_id'], $item['quantity']);
+                // Update inventory based on the difference only
+                $quantityDifference = $inventoryDifferences[$item['item_id']];
+                if ($quantityDifference != 0) {
+                    updateInventory($item['item_id'], $quantityDifference);
+                }
             }
 
             $db->commit();
