@@ -329,15 +329,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
         $db->beginTransaction();
 
         try {
-            // 1. Validate all items have sufficient inventory FIRST
-            foreach ($data['items'] as $item) {
-                checkInventory($item['item_id'], $item['quantity']);
+            /*
+             * DIFFERENTIAL INVENTORY UPDATE LOGIC:
+             * 
+             * When editing a sales order, we need to handle inventory changes correctly:
+             * 1. Get original quantities from the order
+             * 2. Calculate differences between old and new quantities
+             * 3. Handle removed items (restore their inventory)
+             * 4. Update inventory based on differences only
+             * 
+             * Example:
+             * - Original order: Item A (3 qty) - inventory was reduced by 3
+             * - Updated order: Item A (5 qty) - we only need to reduce inventory by 2 more
+             * - Result: inventory reduced by 5 total (3 original + 2 additional)
+             */
+
+            // 1. Get original order quantities before deletion
+            $originalItems = $db->fetchAll("SELECT ItemID, Quantity FROM orders WHERE OrderID = ?", [$orderId]);
+            $originalQuantities = [];
+            foreach ($originalItems as $item) {
+                $originalQuantities[$item['ItemID']] = $item['Quantity'];
             }
 
-            // 2. Delete existing order entries for this OrderID
+            // 2. Calculate inventory differences and validate new quantities
+            $inventoryDifferences = [];
+            $newItemIds = [];
+
+            foreach ($data['items'] as $item) {
+                $itemId = $item['item_id'];
+                $newQuantity = $item['quantity'];
+                $oldQuantity = $originalQuantities[$itemId] ?? 0;
+                $newItemIds[] = $itemId;
+
+                // Calculate the difference (how much more/less we need)
+                $quantityDifference = $newQuantity - $oldQuantity;
+
+                // For sales orders, we need to check if we have enough inventory for the additional quantity
+                if ($quantityDifference > 0) {
+                    checkInventory($itemId, $quantityDifference);
+                }
+
+                $inventoryDifferences[$itemId] = $quantityDifference;
+            }
+
+            // 3. Handle items that were removed from the order (restore their inventory)
+            foreach ($originalQuantities as $itemId => $oldQuantity) {
+                if (!in_array($itemId, $newItemIds)) {
+                    // This item was removed from the order, so we need to restore its inventory
+                    // For sales orders, restoring means adding back to inventory
+                    $db->query("UPDATE inventory SET Quantity = Quantity + ? WHERE ItemID = ?", [$oldQuantity, $itemId]);
+                }
+            }
+
+            // 4. Delete existing order entries for this OrderID
             $db->query("DELETE FROM orders WHERE OrderID = ?", [$orderId]);
 
-            // 3. Insert items and update inventory
+            // 5. Insert items and update inventory based on differences
             $totalAmount = 0;
             foreach ($data['items'] as $item) {
                 $itemTotal = $item['quantity'] * $item['unitPrice'];
@@ -358,8 +405,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
                     $data['status']
                 ]);
 
-                // Update inventory (decrease stock for sales)
-                updateInventory($item['item_id'], $item['quantity']);
+                // Update inventory based on the difference only
+                $quantityDifference = $inventoryDifferences[$item['item_id']];
+                if ($quantityDifference != 0) {
+                    updateInventory($item['item_id'], $quantityDifference);
+                }
             }
 
             $db->commit();
