@@ -85,7 +85,7 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
 
                     <a href="/backend/Orders/index.php" class="data-btn add-employee">
                         <i class="fa-solid fa-user-plus"></i>
-                        <span>View Orders</span>
+                        <span>Sales Orders</span>
                     </a>
                     <a href="/backend/PurchaseOrders/index.php" class="data-btn add-employee">
                         <i class="fa-solid fa-shopping-cart"></i>
