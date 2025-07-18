@@ -24,70 +24,82 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
 </head>
 
 <body>
-    <div class="container">
+    <div class="page-content">
         <!-- Sidebar -->
         <?php include __DIR__ . '/../includes/sidebar.php'; ?>
 
         <!-- Main Content -->
-        <div class="main-content">
+        <main>
             <div class="header">
-                <div class="page-title">
-                    <h1>Employees Management</h1>
+                <i class="fa-solid fa-bars bar-item"></i>
+                <div class="search">
+                    <input type="search" placeholder="Search employees..." />
+                    <i class="fa-solid fa-search"></i>
                 </div>
-                <div class="action-buttons">
+                <div class="profile">
+                    <span class="bell"><i class="fa-regular fa-bell"></i></span>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="title">
+                    <h1><i class="fas fa-users"></i> Employees Management</h1>
+                </div>
+
+                <div class="action-buttons" style="margin-bottom: 20px;">
                     <button class="btn btn-primary" id="addEmployeeBtn">
                         <i class="fas fa-plus"></i> Add New Employee
                     </button>
                 </div>
-            </div>
 
-            <!-- Search and Filter -->
-            <div class="search-filter">
-                <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="searchInput" placeholder="Search employees...">
+                <!-- Search and Filter -->
+                <div class="search-filter">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchInput" placeholder="Search employees...">
+                    </div>
+                    <select id="positionFilter" class="form-group">
+                        <option value="">Filter by Position</option>
+                        <option value="Manager">Manager</option>
+                        <option value="Sales">Sales</option>
+                        <option value="Accountant">Accountant</option>
+                        <option value="Warehouse">Warehouse</option>
+                    </select>
                 </div>
-                <select id="positionFilter" class="form-group">
-                    <option value="">Filter by Position</option>
-                    <option value="Manager">Manager</option>
-                    <option value="Sales">Sales</option>
-                    <option value="Accountant">Accountant</option>
-                    <option value="Warehouse">Warehouse</option>
-                </select>
-            </div>
 
-            <!-- Employees Table -->
-            <table class="employees-table">
-                <thead>
-                    <tr>
-                        <th>Employee ID</th>
-                        <th>Name</th>
-                        <th>Position</th>
-                        <th>Base Salary</th>
-                        <th>Expected Salary</th>
-                        <th>Phone</th>
-                        <th>Email</th>
-                        <th>Guarantor</th>
-                        <th>Address</th>
-                        <th>Date Added</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Data will be loaded dynamically via JavaScript -->
-                </tbody>
-            </table>
+                <!-- Employees Table -->
+                <table class="employees-table">
+                    <thead>
+                        <tr>
+                            <th>Employee ID</th>
+                            <th>Name</th>
+                            <th>Position</th>
+                            <th>Base Salary</th>
+                            <th>Expected Salary</th>
+                            <th>Phone</th>
+                            <th>Email</th>
+                            <th>Guarantor</th>
+                            <th>Address</th>
+                            <th>Date Added</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data will be loaded dynamically via JavaScript -->
+                    </tbody>
+                </table>
 
-            <!-- Pagination -->
-            <div class="pagination">
-                <button class="page-btn"><i class="fas fa-angle-left"></i></button>
-                <button class="page-btn active">1</button>
-                <button class="page-btn">2</button>
-                <button class="page-btn">3</button>
-                <button class="page-btn"><i class="fas fa-angle-right"></i></button>
+                <!-- Pagination -->
+                <div class="pagination">
+                    <button class="page-btn"><i class="fas fa-angle-left"></i></button>
+                    <button class="page-btn active">1</button>
+                    <button class="page-btn">2</button>
+                    <button class="page-btn">3</button>
+                    <button class="page-btn"><i class="fas fa-angle-right"></i></button>
+                </div>
             </div>
-        </div>
+        </main>
     </div>
 
     <!-- Add/Edit Employee Modal -->
@@ -166,8 +178,6 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
                     <input type="text" id="guarantor">
                 </div>
 
-
-
                 <div class="form-group">
                     <label for="address">Address</label>
                     <textarea id="address" rows="3"></textarea>
@@ -178,7 +188,6 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
                     <label for="DateAdded">Date Added</label>
                     <input type="date" id="DateAdded" required>
                 </div>
-
 
                 <div class="form-actions">
                     <button type="button" class="btn btn-danger" id="cancelBtn">Cancel</button>
@@ -252,28 +261,7 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
         </div>
     </div>
 
-
-    <script>
-        // Toggle dropdown when clicking the report button
-        document.querySelector('.sidebar-report-btn').addEventListener('click', function(e) {
-            e.preventDefault();
-            const dropdown = this.closest('.report-dropdown');
-            dropdown.classList.toggle('active');
-        });
-
-        // Close dropdown when clicking outside 
-        document.addEventListener('click', function(e) {
-            // Check if the click was outside the dropdown menu
-            if (!e.target.closest('.sidebar-report-btn') && !e.target.closest('.report-dropdown-content')) {
-                // If click was outside, remove the 'active' class to hide the dropdown
-                document.querySelectorAll('.report-dropdown').forEach(dropdown => {
-                    dropdown.classList.remove('active');
-                });
-            }
-        });
-    </script>
-
-    <script src="script.js"></script>
+    <script src="employees.js"></script>
 </body>
 
 </html>

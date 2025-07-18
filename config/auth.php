@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Authentication Class
  * Handles user authentication and session management
@@ -9,48 +10,52 @@ require_once __DIR__ . '/password_manager.php';
 require_once __DIR__ . '/session_manager.php';
 require_once __DIR__ . '/csrf.php';
 
-class Auth {
+class Auth
+{
     private $db;
     private $passwordManager;
-    
-    public function __construct() {
+
+    public function __construct()
+    {
         $this->db = Database::getInstance();
         $this->passwordManager = new PasswordManager();
     }
-    
+
     /**
      * Start secure session
      */
-    public function startSession() {
+    public function startSession()
+    {
         SessionManager::init();
     }
-    
+
     /**
      * Login user with username and password
      * Now supports both plain text and hashed passwords
      */
-    public function login($username, $password) {
+    public function login($username, $password)
+    {
         try {
             $sql = "SELECT * FROM users WHERE username = ?";
             $user = $this->db->fetchOne($sql, [$username]);
-            
+
             if (!$user) {
                 return [
                     'success' => false,
                     'message' => 'Invalid username or password.'
                 ];
             }
-            
+
             // Check if password is plain text or hashed
             if ($this->passwordManager->isPlainTextPassword($user['password'])) {
                 // Plain text password - check directly
                 if ($password === $user['password']) {
                     // Migrate to hashed password
                     $this->passwordManager->migratePlainTextPassword($user['id'], $password);
-                    
+
                     // Set secure session
                     SessionManager::setUserSession($user['id'], $user['username'], $user['role']);
-                    
+
                     return [
                         'success' => true,
                         'user' => [
@@ -68,10 +73,10 @@ class Auth {
                     if ($this->passwordManager->needsRehash($user['password'])) {
                         $this->passwordManager->migratePlainTextPassword($user['id'], $password);
                     }
-                    
+
                     // Set secure session
                     SessionManager::setUserSession($user['id'], $user['username'], $user['role']);
-                    
+
                     return [
                         'success' => true,
                         'user' => [
@@ -82,12 +87,11 @@ class Auth {
                     ];
                 }
             }
-            
+
             return [
                 'success' => false,
                 'message' => 'Invalid username or password.'
             ];
-            
         } catch (Exception $e) {
             return [
                 'success' => false,
@@ -95,77 +99,86 @@ class Auth {
             ];
         }
     }
-    
+
     /**
      * Check if user is logged in
      */
-    public function isLoggedIn() {
+    public function isLoggedIn()
+    {
         $this->startSession();
         return SessionManager::isLoggedIn();
     }
-    
+
     /**
      * Check if user has admin role
      */
-    public function isAdmin() {
+    public function isAdmin()
+    {
         return SessionManager::isAdmin();
     }
-    
+
     /**
      * Get current user role
      */
-    public function getUserRole() {
+    public function getUserRole()
+    {
         return SessionManager::getUserRole();
     }
-    
+
     /**
      * Get current user ID
      */
-    public function getUserId() {
+    public function getUserId()
+    {
         return SessionManager::getUserId();
     }
-    
+
     /**
      * Get current username
      */
-    public function getUsername() {
+    public function getUsername()
+    {
         return SessionManager::getUsername();
     }
-    
+
     /**
      * Require authentication - redirect to login if not authenticated
      */
-    public function requireAuth($redirectUrl = '/backend/dashboard/index.php') {
+    public function requireAuth($redirectUrl = '/backend/Login/')
+    {
         if (!$this->isLoggedIn()) {
             header('Location: ' . $redirectUrl);
             exit();
         }
     }
-    
+
     /**
      * Require admin role - redirect to dashboard if not admin
      */
-    public function requireAdmin($redirectUrl = '/backend/dashboard/dashboard.php') {
+    public function requireAdmin($redirectUrl = '/backend/dashboard/dashboard.php')
+    {
         $this->requireAuth();
         if (!$this->isAdmin()) {
             header('Location: ' . $redirectUrl);
             exit();
         }
     }
-    
+
     /**
      * Logout user
      */
-    public function logout() {
+    public function logout()
+    {
         $this->startSession();
         SessionManager::destroy();
     }
-    
+
     /**
      * Create new user (for signup functionality)
      * Now uses secure password hashing
      */
-    public function createUser($username, $password, $role = 'user') {
+    public function createUser($username, $password, $role = 'user')
+    {
         try {
             // Validate password strength
             $passwordErrors = $this->passwordManager->validatePasswordStrength($password);
@@ -175,7 +188,7 @@ class Auth {
                     'message' => 'Password validation failed: ' . implode(', ', $passwordErrors)
                 ];
             }
-            
+
             // Check if username already exists
             $existingUser = $this->db->fetchOne("SELECT id FROM users WHERE username = ?", [$username]);
             if ($existingUser) {
@@ -184,14 +197,14 @@ class Auth {
                     'message' => 'Username already exists'
                 ];
             }
-            
+
             // Hash the password
             $hashedPassword = $this->passwordManager->hashPassword($password);
-            
+
             // Insert new user
             $sql = "INSERT INTO users (username, password, role) VALUES (?, ?, ?)";
             $this->db->query($sql, [$username, $hashedPassword, $role]);
-            
+
             return [
                 'success' => true,
                 'message' => 'User created successfully',
@@ -204,41 +217,42 @@ class Auth {
             ];
         }
     }
-    
+
     /**
      * Update user information
      */
-    public function updateUser($userId, $username, $password = null, $role = null) {
+    public function updateUser($userId, $username, $password = null, $role = null)
+    {
         try {
             $updates = [];
             $params = [];
-            
+
             if (!empty($username)) {
                 $updates[] = "username = ?";
                 $params[] = $username;
             }
-            
+
             if (!empty($password)) {
                 $updates[] = "password = ?";
                 $params[] = $password;
             }
-            
+
             if (!empty($role)) {
                 $updates[] = "role = ?";
                 $params[] = $role;
             }
-            
+
             if (empty($updates)) {
                 return [
                     'success' => false,
                     'message' => 'No fields to update'
                 ];
             }
-            
+
             $params[] = $userId;
             $sql = "UPDATE users SET " . implode(', ', $updates) . " WHERE id = ?";
             $this->db->query($sql, $params);
-            
+
             return [
                 'success' => true,
                 'message' => 'User updated successfully'
@@ -250,15 +264,16 @@ class Auth {
             ];
         }
     }
-    
+
     /**
      * Delete user
      */
-    public function deleteUser($userId) {
+    public function deleteUser($userId)
+    {
         try {
             $sql = "DELETE FROM users WHERE id = ?";
             $this->db->query($sql, [$userId]);
-            
+
             return [
                 'success' => true,
                 'message' => 'User deleted successfully'
@@ -270,29 +285,30 @@ class Auth {
             ];
         }
     }
-    
+
     /**
      * Get all users (for admin functionality)
      */
-    public function getAllUsers($search = '', $roleFilter = '') {
+    public function getAllUsers($search = '', $roleFilter = '')
+    {
         try {
             $sql = "SELECT id, username, role, created_at FROM users WHERE 1=1";
             $params = [];
-            
+
             if (!empty($search)) {
                 $sql .= " AND username LIKE ?";
                 $params[] = "%$search%";
             }
-            
+
             if (!empty($roleFilter)) {
                 $sql .= " AND role = ?";
                 $params[] = $roleFilter;
             }
-            
+
             $sql .= " ORDER BY created_at DESC";
-            
+
             $users = $this->db->fetchAll($sql, $params);
-            
+
             return [
                 'success' => true,
                 'users' => $users
@@ -305,4 +321,3 @@ class Auth {
         }
     }
 }
-?> 

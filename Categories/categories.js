@@ -20,13 +20,6 @@ let currentCategoryToDelete = null;
 // Initialize the page
 document.addEventListener('DOMContentLoaded', () => {
     loadCategories();
-    
-    // Toggle dropdown when clicking the report button
-    document.querySelector('.sidebar-report-btn')?.addEventListener('click', function(e) {
-        e.preventDefault();
-        const dropdown = this.closest('.report-dropdown');
-        dropdown.classList.toggle('active');
-    });
 });
 
 // Event Listeners
@@ -43,9 +36,15 @@ searchInput.addEventListener('input', filterCategories);
 
 // Functions
 function loadCategories(search = '') {
+    console.log('Loading categories...');
     fetch("/backend/api/categories/categories.php")
-        .then(response => response.json())
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.json();
+        })
         .then(data => {
+            console.log('API response:', data);
+            
             if (data.error) {
                 alert(data.error);
                 return;
@@ -53,7 +52,16 @@ function loadCategories(search = '') {
             
             categoriesTable.innerHTML = '';
             
-            for (const category of data.data) {
+            // Handle both success and direct data formats
+            const categories = data.success ? data.data : data;
+            console.log('Categories to display:', categories);
+            
+            if (!categories || categories.length === 0) {
+                categoriesTable.innerHTML = '<tr><td colspan="5" style="text-align: center;">No categories found</td></tr>';
+                return;
+            }
+            
+            for (const category of categories) {
                 const row = document.createElement('tr');
                 row.setAttribute('data-id', category.CategoryID); // Add data-id attribute
                 row.innerHTML = `
@@ -75,6 +83,7 @@ function loadCategories(search = '') {
                 `;
                 categoriesTable.appendChild(row);
             }
+            console.log('Categories loaded successfully');
         })
         .catch(error => {
             console.error('Error:', error);
@@ -209,7 +218,6 @@ function saveCategory(e) {
         return;
     }
 
-    
     fetch('/backend/api/categories/categories.php', {
         method: 'POST',
         body: JSON.stringify({
@@ -253,23 +261,3 @@ window.addEventListener('click', (e) => {
     if (e.target === viewItemsModal) viewItemsModal.style.display = "none";
     if (e.target === deleteModal) deleteModal.style.display = "none";
 });
-
-// These elements and event listeners are already in your code
-const signUpBtn = document.getElementById('signUpBtn');
-const signUpModal = document.getElementById('signUpModal');
-const closeSignUpModal = document.getElementById('closeSignUpModal');
-const cancelSignUpBtn = document.getElementById('cancelSignUpBtn');
-const signUpForm = document.getElementById('signUpForm');
-
-signUpBtn.addEventListener('click', openSignUpModal);
-closeSignUpModal.addEventListener('click', closeModals);
-cancelSignUpBtn.addEventListener('click', closeModals);
-signUpForm.addEventListener('submit', signUpUser);
-
-function openSignUpModal(e) {
-    e.preventDefault(); // Prevent default link behavior
-    document.getElementById('signUpUsername').value = "";
-    document.getElementById('signUpPassword').value = "";
-    document.getElementById('signUpConfirmPassword').value = "";
-    signUpModal.style.display = "flex";
-}

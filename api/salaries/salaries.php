@@ -7,6 +7,7 @@
 
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/utils.php';
+require_once __DIR__ . '/../../includes/FinancialHelper.php';
 
 // Set headers for API
 header('Content-Type: application/json');
@@ -26,6 +27,74 @@ function getNextSalaryID()
     $result = $db->fetchOne("SELECT MAX(SalaryID) as maxId FROM salaries");
     $nextId = ($result['maxId'] ?? 0) + 1;
     return $nextId;
+}
+
+// ==============================================
+// FINANCIAL TRANSACTION FUNCTIONS
+// ==============================================
+
+/**
+ * Create financial transaction for salary payment
+ */
+function createSalaryFinancialTransaction($salaryId, $employeeId, $netSalary, $paymentMethod, $status)
+{
+    try {
+        // Determine transaction status based on salary status
+        $transactionStatus = 'Pending';
+        if ($status === 'Paid') {
+            $transactionStatus = 'Completed';
+        } elseif ($status === 'Cancelled') {
+            $transactionStatus = 'Cancelled';
+        }
+
+        // Create salary transaction
+        FinancialHelper::createSalaryTransaction($salaryId, $employeeId, $netSalary, $paymentMethod, $transactionStatus);
+
+        return true;
+    } catch (Exception $e) {
+        error_log("Failed to create financial transaction for salary $salaryId: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Update financial transaction when salary is updated
+ */
+function updateSalaryFinancialTransaction($salaryId, $employeeId, $netSalary, $paymentMethod, $status)
+{
+    try {
+        // Update the existing transaction status
+        $transactionStatus = 'Pending';
+        if ($status === 'Paid') {
+            $transactionStatus = 'Completed';
+        } elseif ($status === 'Cancelled') {
+            $transactionStatus = 'Cancelled';
+        }
+
+        // Update transaction status
+        FinancialHelper::updateTransactionStatus($salaryId, 'salary', $transactionStatus);
+
+        return true;
+    } catch (Exception $e) {
+        error_log("Failed to update financial transaction for salary $salaryId: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Delete financial transaction when salary is deleted
+ */
+function deleteSalaryFinancialTransaction($salaryId)
+{
+    try {
+        // Update transaction status to cancelled instead of deleting
+        FinancialHelper::updateTransactionStatus($salaryId, 'salary', 'Cancelled');
+
+        return true;
+    } catch (Exception $e) {
+        error_log("Failed to delete financial transaction for salary $salaryId: " . $e->getMessage());
+        return false;
+    }
 }
 
 // ==============================================
@@ -123,30 +192,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['employeeId'])) {
     }
 }
 
-// Search employees (for autocomplete)
-if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['searchEmployees'])) {
-    try {
-        $searchTerm = $_GET['searchEmployees'] ?? '';
-
-        if (empty($searchTerm)) {
-            Utils::sendSuccessResponse('Employees retrieved successfully', []);
-            return;
-        }
-
-        $employees = $db->fetchAll("
-            SELECT EmployeeID, EmployeeName, BaseSalary
-            FROM employees 
-            WHERE EmployeeName LIKE ? OR EmployeeID LIKE ?
-            ORDER BY EmployeeName
-            LIMIT 10
-        ", ["%$searchTerm%", "%$searchTerm%"]);
-
-        Utils::sendSuccessResponse('Employees retrieved successfully', $employees);
-    } catch (Exception $e) {
-        Utils::sendErrorResponse('Failed to search employees: ' . $e->getMessage());
-    }
-}
-
 // Create salary
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
@@ -187,6 +232,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $data['payment_date'],
                 $data['status'] ?? 'Paid'
             ]);
+
+            // Create financial transaction
+            createSalaryFinancialTransaction($salaryId, $employeeId, $netSalary, $data['payment_method'], $data['status'] ?? 'Paid');
 
             $db->commit();
             Utils::sendSuccessResponse('Salary created successfully', ['salary_id' => $salaryId]);
@@ -245,6 +293,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
                 $salaryId
             ]);
 
+            // Update financial transaction
+            updateSalaryFinancialTransaction($salaryId, $employeeId, $netSalary, $data['payment_method'], $data['status'] ?? 'Paid');
+
             $db->commit();
             Utils::sendSuccessResponse('Salary updated successfully', ['salary_id' => $salaryId]);
         } catch (Exception $e) {
@@ -280,6 +331,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
 
             // Delete the salary
             $db->query("DELETE FROM salaries WHERE SalaryID = ?", [$salaryId]);
+
+            // Delete financial transaction
+            deleteSalaryFinancialTransaction($salaryId);
 
             $db->commit();
             Utils::sendSuccessResponse('Salary deleted successfully');

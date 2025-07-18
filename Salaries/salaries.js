@@ -126,7 +126,6 @@ const salaryId = document.getElementById('salaryId');
 const salariesTable = document.querySelector('.salaries-table tbody');
 
 // Current salary to be deleted
-let currentSalaryToDelete = null;
 let employees = [];
 
 // Event Listeners
@@ -249,9 +248,10 @@ function handleEmployeeSearch() {
         return;
     }
     
-    fetch(`/backend/api/salaries/salaries.php?searchEmployees=${encodeURIComponent(searchTerm)}`)
+    fetch(`/backend/api/employees/employees.php?search=${encodeURIComponent(searchTerm)}`)
         .then(response => response.json())
         .then(data => {
+            console.log(data);
             if (data.success && Array.isArray(data.data)) {
                 employees = data.data;
                 showEmployeeDropdown(employees);
@@ -266,7 +266,10 @@ function handleEmployeeSearch() {
 }
 
 function showEmployeeDropdown(employees) {
+    console.log('showEmployeeDropdown called with:', employees);
+    
     if (!employees || employees.length === 0) {
+        console.log('No employees found, hiding dropdown');
         employeeDropdown.style.display = 'none';
         return;
     }
@@ -279,15 +282,25 @@ function showEmployeeDropdown(employees) {
         item.addEventListener('click', () => selectEmployee(employee));
         employeeDropdown.appendChild(item);
     }
+    console.log('Showing dropdown with', employees.length, 'employees');
     employeeDropdown.style.display = 'block';
 }
 
 function selectEmployee(employee) {
+    console.log('selectEmployee called with:', employee);
+    
     employeeSearch.value = `${employee.EmployeeName} (EMP-${employee.EmployeeID})`;
     employeeId.value = employee.EmployeeID;
     employeeName.value = employee.EmployeeName;
     baseSalary.value = employee.BaseSalary || "";
     employeeDropdown.style.display = 'none';
+    
+    console.log('Employee selected:', {
+        search: employeeSearch.value,
+        id: employeeId.value,
+        name: employeeName.value,
+        baseSalary: baseSalary.value
+    });
     
     // Auto-calculate if amount is not set
     if (!amount.value && employee.BaseSalary) {

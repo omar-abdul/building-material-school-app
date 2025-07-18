@@ -14,18 +14,27 @@ const itemForm = document.getElementById('itemForm');
 const searchInput = document.getElementById('searchInput');
 const categoryFilter = document.getElementById('categoryFilter');
 const itemsTable = document.querySelector('.items-table tbody');
+
+// Autocomplete elements
 const categoryIdInput = document.getElementById('categoryId');
-const categoryNameInput = document.getElementById('categoryName');
+const categoryDropdown = document.getElementById('categoryDropdown');
 const supplierIdInput = document.getElementById('supplierId');
-const supplierNameInput = document.getElementById('supplierName');
+const supplierDropdown = document.getElementById('supplierDropdown');
 const employeeIdInput = document.getElementById('employeeId');
-const employeeNameInput = document.getElementById('employeeName');
+const employeeDropdown = document.getElementById('employeeDropdown');
 
 // Current item to be deleted
 let currentItemToDelete = null;
 
 // Event Listeners
-addItemBtn.addEventListener('click', openAddItemModal);
+console.log('Setting up event listeners');
+console.log('addItemBtn element:', addItemBtn);
+
+addItemBtn.addEventListener('click', () => {
+    console.log('Add Item button clicked');
+    openAddItemModal();
+});
+
 closeModal.addEventListener('click', closeModals);
 closeViewModal.addEventListener('click', closeModals);
 closeDeleteModal.addEventListener('click', closeModals);
@@ -36,12 +45,26 @@ confirmDeleteBtn.addEventListener('click', confirmDelete);
 itemForm.addEventListener('submit', saveItem);
 searchInput.addEventListener('input', filterItems);
 categoryFilter.addEventListener('change', filterItems);
-categoryIdInput.addEventListener('change', fetchCategoryDetails);
-supplierIdInput.addEventListener('change', fetchSupplierDetails);
-employeeIdInput.addEventListener('change', fetchEmployeeDetails);
+
+// Autocomplete event listeners
+categoryIdInput.addEventListener('input', () => searchCategories(categoryIdInput.value));
+supplierIdInput.addEventListener('input', () => searchSuppliers(supplierIdInput.value));
+employeeIdInput.addEventListener('input', () => searchEmployees(employeeIdInput.value));
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.autocomplete-container')) {
+        categoryDropdown.style.display = 'none';
+        supplierDropdown.style.display = 'none';
+        employeeDropdown.style.display = 'none';
+    }
+});
 
 // Load items when page loads
-document.addEventListener('DOMContentLoaded', loadItems);
+document.addEventListener('DOMContentLoaded', () => {
+    loadItems();
+    loadCategoriesForFilter();
+});
 
 // Functions
 function loadItems() {
@@ -108,21 +131,31 @@ function formatDate(dateString) {
 }
 
 function openAddItemModal() {
-    document.getElementById('modalTitle').textContent = "Add New Item";
-    document.getElementById('itemId').value = "";
-    document.getElementById('itemName').value = "";
-    document.getElementById('itemPrice').value = "";
-    document.getElementById('itemQuantity').value = "0";
-    document.getElementById('categoryId').value = "";
-    document.getElementById('categoryName').value = "";
-    document.getElementById('supplierId').value = "";
-    document.getElementById('supplierName').value = "";
-    document.getElementById('employeeId').value = "";
-    document.getElementById('employeeName').value = "";
-    document.getElementById('note').value = "";
-    document.getElementById('description').value = "";
-    document.getElementById('createdDate').value = new Date().toISOString().split('T')[0];
-    itemModal.style.display = "flex";
+    console.log('openAddItemModal called');
+    try {
+        document.getElementById('modalTitle').textContent = "Add New Item";
+        document.getElementById('itemId').value = "";
+        document.getElementById('itemName').value = "";
+        document.getElementById('itemPrice').value = "";
+        document.getElementById('itemQuantity').value = "0";
+        document.getElementById('categoryId').value = "";
+        document.getElementById('supplierId').value = "";
+        document.getElementById('employeeId').value = "";
+        document.getElementById('note').value = "";
+        document.getElementById('description').value = "";
+        document.getElementById('createdDate').value = new Date().toISOString().split('T')[0];
+        
+        // Clear autocomplete dropdowns
+        categoryDropdown.style.display = 'none';
+        supplierDropdown.style.display = 'none';
+        employeeDropdown.style.display = 'none';
+        
+        console.log('Setting modal display to flex');
+        itemModal.style.display = "flex";
+        console.log('Modal display set to:', itemModal.style.display);
+    } catch (error) {
+        console.error('Error in openAddItemModal:', error);
+    }
 }
 
 function editItem(id) {
@@ -142,14 +175,17 @@ function editItem(id) {
                 document.getElementById('itemPrice').value = item.Price || '';
                 document.getElementById('itemQuantity').value = item.Quantity || 0;
                 document.getElementById('categoryId').value = item.CategoryID;
-                document.getElementById('categoryName').value = item.CategoryName;
                 document.getElementById('supplierId').value = item.SupplierID;
-                document.getElementById('supplierName').value = item.SupplierName;
                 document.getElementById('employeeId').value = item.RegisteredByEmployeeID;
-                document.getElementById('employeeName').value = item.EmployeeName;
                 document.getElementById('note').value = item.Note || '';
                 document.getElementById('description').value = item.Description || '';
                 document.getElementById('createdDate').value = item.CreatedDate.split(' ')[0];
+                
+                // Clear autocomplete dropdowns
+                categoryDropdown.style.display = 'none';
+                supplierDropdown.style.display = 'none';
+                employeeDropdown.style.display = 'none';
+                
                 itemModal.style.display = "flex";
             } else {
                 console.error('Error loading item:', data.message);
@@ -199,8 +235,8 @@ function deleteItem(id) {
     if (!confirm('Ma hubtaa inaad masaxdo item-kan?')) {
         return; // User clicked cancel
     }
-
-    fetch('/backend/api/items/items.php', {
+    
+    fetch(`/backend/api/items/items.php?itemId=${id}`, {
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json',
@@ -227,90 +263,6 @@ function deleteItem(id) {
     });
 }
 
-function fetchCategoryDetails() {
-    const categoryId = categoryIdInput.value;
-    if (!categoryId) {
-        categoryNameInput.value = '';
-        return;
-    }
-    
-    fetch(`/backend/api/items/items.php?categoryId=${categoryId}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                categoryNameInput.value = data.data.categoryName || '';
-            } else {
-                categoryNameInput.value = '';
-                alert(data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching category:', error);
-            categoryNameInput.value = '';
-        });
-}
-
-function fetchSupplierDetails() {
-    const supplierId = supplierIdInput.value;
-    if (!supplierId) {
-        supplierNameInput.value = '';
-        return;
-    }
-    
-    fetch(`/backend/api/items/items.php?supplierId=${supplierId}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                supplierNameInput.value = data.data.supplierName || '';
-            } else {
-                supplierNameInput.value = '';
-                alert(data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching supplier:', error);
-            supplierNameInput.value = '';
-        });
-}
-
-function fetchEmployeeDetails() {
-    const employeeId = employeeIdInput.value;
-    if (!employeeId) {
-        employeeNameInput.value = '';
-        return;
-    }
-    
-    fetch(`/backend/api/items/items.php?employeeId=${employeeId}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                employeeNameInput.value = data.data.employeeName || '';
-            } else {
-                employeeNameInput.value = '';
-                alert(data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching employee:', error);
-            employeeNameInput.value = '';
-        });
-}
-
 function saveItem(e) {
     e.preventDefault();
     
@@ -328,6 +280,8 @@ function saveItem(e) {
         CreatedDate: document.getElementById('createdDate').value
     };
     
+    console.log('Form data being sent:', formData);
+    
     // Add ItemID if we're updating
     if (id) {
         formData.ItemID = id;
@@ -336,12 +290,16 @@ function saveItem(e) {
     // Validate required fields
     if (!formData.ItemName || !formData.CategoryID || !formData.SupplierID || !formData.RegisteredByEmployeeID) {
         alert("Please fill in all required fields");
+        console.log('Validation failed - missing required fields');
         return;
     }
     
     // Determine URL and method
     const method = id ? 'PUT' : 'POST';
     const url = '/backend/api/items/items.php';
+    
+    console.log('Sending request to:', url, 'with method:', method);
+    console.log('Final form data:', formData);
     
     // Send request
     fetch(url, {
@@ -358,6 +316,7 @@ function saveItem(e) {
         return response.json();
     })
     .then(data => {
+        console.log('API response:', data);
         if (data.success) {
             loadItems();
             closeModals();
@@ -453,39 +412,125 @@ window.addEventListener('click', (e) => {
     if (e.target === deleteModal) deleteModal.style.display = "none";
 });
 
-// Toggle dropdown when clicking the report button
-document.querySelector('.sidebar-report-btn').addEventListener('click', function(e) {
-    e.preventDefault();
-    const dropdown = this.closest('.report-dropdown');
-    dropdown.classList.toggle('active');
-});
-
-// Close dropdown when clicking outside 
-document.addEventListener('click', (e) => {
-    if (!e.target.closest('.sidebar-report-btn') && !e.target.closest('.report-dropdown-content')) {
-        const dropdowns = document.querySelectorAll('.report-dropdown');
-        for (const dropdown of dropdowns) {
-            dropdown.classList.remove('active');
-        }
+// Autocomplete Functions
+async function searchCategories(query) {
+    if (query.length < 2) {
+        categoryDropdown.style.display = 'none';
+        return;
     }
-});
 
-// These elements and event listeners are already in your code
-const signUpBtn = document.getElementById('signUpBtn');
-const signUpModal = document.getElementById('signUpModal');
-const closeSignUpModal = document.getElementById('closeSignUpModal');
-const cancelSignUpBtn = document.getElementById('cancelSignUpBtn');
-const signUpForm = document.getElementById('signUpForm');
+    try {
+        const response = await fetch(`/backend/api/categories/categories.php?search=${encodeURIComponent(query)}`);
+        const data = await response.json();
+        
+        if (data.success && data.data.length > 0) {
+            categoryDropdown.innerHTML = '';
+            for (const category of data.data) {
+                const item = document.createElement('div');
+                item.className = 'autocomplete-item';
+                item.textContent = `${category.CategoryName} (${category.CategoryID})`;
+                item.onclick = () => {
+                    // Extract numeric ID from CategoryID (e.g., "CAT-1" -> "1")
+                    const numericId = category.CategoryID.replace('CAT-', '');
+                    console.log('Category selected:', category.CategoryName, 'Original ID:', category.CategoryID, 'Numeric ID:', numericId);
+                    categoryIdInput.value = numericId;
+                    console.log('Category input value set to:', categoryIdInput.value);
+                    categoryDropdown.style.display = 'none';
+                };
+                categoryDropdown.appendChild(item);
+            }
+            categoryDropdown.style.display = 'block';
+        } else {
+            categoryDropdown.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error searching categories:', error);
+    }
+}
 
-signUpBtn.addEventListener('click', openSignUpModal);
-closeSignUpModal.addEventListener('click', closeModals);
-cancelSignUpBtn.addEventListener('click', closeModals);
-signUpForm.addEventListener('submit', signUpUser);
+async function searchSuppliers(query) {
+    if (query.length < 2) {
+        supplierDropdown.style.display = 'none';
+        return;
+    }
 
-function openSignUpModal(e) {
-    e.preventDefault(); // Prevent default link behavior
-    document.getElementById('signUpUsername').value = "";
-    document.getElementById('signUpPassword').value = "";
-    document.getElementById('signUpConfirmPassword').value = "";
-    signUpModal.style.display = "flex";
+    try {
+        const response = await fetch(`/backend/api/suppliers/suppliers.php?search=${encodeURIComponent(query)}`);
+        const data = await response.json();
+        
+        if (data.success && data.data.length > 0) {
+            supplierDropdown.innerHTML = '';
+            for (const supplier of data.data) {
+                const item = document.createElement('div');
+                item.className = 'autocomplete-item';
+                item.textContent = `${supplier.name} (${supplier.supplierId})`;
+                item.onclick = () => {
+                    // Extract numeric ID from supplierId (e.g., "SUP-1" -> "1")
+                    const numericId = supplier.supplierId.replace('SUP-', '');
+                    console.log('Supplier selected:', supplier.name, 'Original ID:', supplier.supplierId, 'Numeric ID:', numericId);
+                    supplierIdInput.value = numericId;
+                    console.log('Supplier input value set to:', supplierIdInput.value);
+                    supplierDropdown.style.display = 'none';
+                };
+                supplierDropdown.appendChild(item);
+            }
+            supplierDropdown.style.display = 'block';
+        } else {
+            supplierDropdown.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error searching suppliers:', error);
+    }
+}
+
+async function searchEmployees(query) {
+    if (query.length < 2) {
+        employeeDropdown.style.display = 'none';
+        return;
+    }
+
+    try {
+        const response = await fetch(`/backend/api/employees/employees.php?search=${encodeURIComponent(query)}`);
+        const data = await response.json();
+        
+        if (data.success && data.data.length > 0) {
+            employeeDropdown.innerHTML = '';
+            for (const employee of data.data) {
+                const item = document.createElement('div');
+                item.className = 'autocomplete-item';
+                item.textContent = `${employee.EmployeeName} (${employee.EmployeeID})`;
+                item.onclick = () => {
+                    console.log('Employee selected:', employee.EmployeeName, 'ID:', employee.EmployeeID);
+                    employeeIdInput.value = employee.EmployeeID;
+                    console.log('Employee input value set to:', employeeIdInput.value);
+                    employeeDropdown.style.display = 'none';
+                };
+                employeeDropdown.appendChild(item);
+            }
+            employeeDropdown.style.display = 'block';
+        } else {
+            employeeDropdown.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error searching employees:', error);
+    }
+}
+
+async function loadCategoriesForFilter() {
+    try {
+        const response = await fetch('/backend/api/categories/categories.php');
+        const data = await response.json();
+        
+        if (data.success) {
+            categoryFilter.innerHTML = '<option value="">Filter by Category</option>';
+            for (const category of data.data) {
+                const option = document.createElement('option');
+                option.value = category.CategoryName;
+                option.textContent = category.CategoryName;
+                categoryFilter.appendChild(option);
+            }
+        }
+    } catch (error) {
+        console.error('Error loading categories for filter:', error);
+    }
 }

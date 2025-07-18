@@ -90,30 +90,6 @@ for (const tip of tipTops) {
     });
 }
 
-
- // Toggle dropdown when clicking the report button
- document.querySelector('.sidebar-report-btn').addEventListener('click', (e) => {
-    e.preventDefault();
-    const dropdown = this.closest('.report-dropdown');
-    dropdown.classList.toggle('active');
-});
-
-// Close dropdown when clicking outside 
-document.addEventListener('click', (e) => {
-    // Check if the click was outside the dropdown menu
-    if (!e.target.closest('.sidebar-report-btn') && !e.target.closest('.sidebar-report-dropdown-content')) {
-        // If click was outside, remove the 'active' class to hide the dropdown
-        for (const dropdown of document.querySelectorAll('.report-dropdown')) {
-            dropdown.classList.remove('active');
-        }
-    }
-});
-
-
-
-
-
-
 // These elements and event listeners are already in your code
 const signUpBtn = document.getElementById('signUpBtn');
 const signUpModal = document.getElementById('signUpModal');

@@ -33,7 +33,7 @@ function isActive($pageName)
         <span class="brand-name">BMMS</span>
     </div>
     <div class="sidebar-menu">
-        <a href="/backend/dashboard/dashboard.php" class="sidebar-link <?= isActive('dashboard') ?>">
+        <a href="/backend/dashboard/index.php" class="sidebar-link <?= isActive('dashboard') ?>">
             <i class="fas fa-tachometer-alt"></i>
             <span>Dashboard</span>
         </a>
@@ -71,43 +71,21 @@ function isActive($pageName)
         </a>
 
         <?php if ($isAdmin): ?>
-            <a href="/backend/Transactions/index.php" class="sidebar-link <?= isActive('Transactions') ?>">
-                <i class="fas fa-warehouse"></i>
-                <span>Transactions</span>
-            </a>
             <a href="/backend/Salaries/index.php" class="sidebar-link <?= isActive('Salaries') ?>">
                 <i class="fas fa-money-bill-wave"></i>
                 <span>Salaries</span>
             </a>
-            <a href="/backend/signup/index.php" class="sidebar-link <?= isActive('signup') ?>">
+            <a href="/backend/Financial/index.php" class="sidebar-link <?= isActive('Financial') ?>">
+                <i class="fas fa-chart-line"></i>
+                <span>Financial Management</span>
+            </a>
+            <a href="/backend/Users/index.php" class="sidebar-link <?= isActive('Users') ?>">
                 <i class="fas fa-user-plus"></i>
-                <span>Sign Up</span>
+                <span>Users Management</span>
             </a>
         <?php endif; ?>
 
-        <nav class="sidebar">
-            <ul>
-                <li class="report-dropdown">
-                    <a href="#" class="sidebar-link sidebar-report-btn">
-                        <i class="fa-solid fa-chart-pie"></i>
-                        <span>Reports</span>
-                        <i class="fa-solid fa-angle-down dropdown-icon"></i>
-                    </a>
-                    <ul class="report-dropdown-content">
-                        <li><a href="/backend/reports/inventory.php">Inventory Report</a></li>
-                        <li><a href="/backend/reports/items.php">Items Report</a></li>
-                        <li><a href="/backend/reports/orders.php">Orders Report</a></li>
-                        <?php if ($isAdmin): ?>
-                            <li><a href="/backend/reports/salaries.php">Salaries Report</a></li>
-                            <li><a href="/backend/reports/transactions.php">Transactions Report</a></li>
-                            <li><a href="/backend/signup/backup.php">Backup</a></li>
-                        <?php endif; ?>
-                    </ul>
-                </li>
-            </ul>
-        </nav>
-
-        <a href="/backend/dashboard/logout.php" class="sidebar-link">
+        <a href="/backend/Logout/" class="sidebar-link">
             <i class="fa-solid fa-right-from-bracket"></i>
             <span>Logout</span>
         </a>

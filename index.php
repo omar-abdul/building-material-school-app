@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Root Bootstrap File
  * Automatically redirects users based on authentication status
@@ -12,11 +13,10 @@ $auth->startSession();
 // Check if user is logged in
 if ($auth->isLoggedIn()) {
     // User is logged in, redirect to dashboard
-    header('Location: /backend/dashboard/dashboard.php');
+    header('Location: /backend/dashboard/');
     exit();
 } else {
     // User is not logged in, redirect to login page
-    header('Location: /backend/dashboard/index.php');
+    header('Location: /backend/Login/');
     exit();
 }
-?> 

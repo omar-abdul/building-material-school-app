@@ -7,6 +7,7 @@
 
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/utils.php';
+require_once __DIR__ . '/../../includes/FinancialHelper.php';
 
 // Set headers for API
 header('Content-Type: application/json');
@@ -60,6 +61,74 @@ function updateInventory($itemId, $quantity)
 {
     global $db;
     return $db->query("UPDATE inventory SET Quantity = Quantity - ? WHERE ItemID = ?", [$quantity, $itemId]);
+}
+
+// ==============================================
+// FINANCIAL TRANSACTION FUNCTIONS
+// ==============================================
+
+/**
+ * Create or update financial transaction for sales order
+ */
+function createSalesOrderFinancialTransaction($orderId, $customerId, $totalAmount, $status)
+{
+    try {
+        // Determine transaction status based on order status
+        $transactionStatus = 'Pending';
+        if ($status === 'Delivered' || $status === 'Completed') {
+            $transactionStatus = 'Completed';
+        } elseif ($status === 'Cancelled') {
+            $transactionStatus = 'Cancelled';
+        }
+
+        // Create sales order transaction
+        FinancialHelper::createSalesOrderTransaction($orderId, $customerId, $totalAmount, $transactionStatus);
+
+        return true;
+    } catch (Exception $e) {
+        error_log("Failed to create financial transaction for order $orderId: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Update financial transaction when order is updated
+ */
+function updateSalesOrderFinancialTransaction($orderId, $customerId, $totalAmount, $status)
+{
+    try {
+        // Update the existing transaction status
+        $transactionStatus = 'Pending';
+        if ($status === 'Delivered' || $status === 'Completed') {
+            $transactionStatus = 'Completed';
+        } elseif ($status === 'Cancelled') {
+            $transactionStatus = 'Cancelled';
+        }
+
+        // Update transaction status
+        FinancialHelper::updateTransactionStatus($orderId, 'order', $transactionStatus);
+
+        return true;
+    } catch (Exception $e) {
+        error_log("Failed to update financial transaction for order $orderId: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Delete financial transaction when order is deleted
+ */
+function deleteSalesOrderFinancialTransaction($orderId)
+{
+    try {
+        // Update transaction status to cancelled instead of deleting
+        FinancialHelper::updateTransactionStatus($orderId, 'order', 'Cancelled');
+
+        return true;
+    } catch (Exception $e) {
+        error_log("Failed to delete financial transaction for order $orderId: " . $e->getMessage());
+        return false;
+    }
 }
 
 // ==============================================
@@ -286,6 +355,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 updateInventory($item['item_id'], $item['quantity']);
             }
 
+            // 4. Create financial transaction
+            createSalesOrderFinancialTransaction($orderId, $customerId, $totalAmount, $data['status']);
+
             $db->commit();
             Utils::sendSuccessResponse('Order saved successfully', ['order_id' => $orderId]);
         } catch (Exception $e) {
@@ -412,6 +484,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
                 }
             }
 
+            // 6. Update financial transaction
+            updateSalesOrderFinancialTransaction($orderId, $customerId, $totalAmount, $data['status']);
+
             $db->commit();
             Utils::sendSuccessResponse('Order updated successfully', ['order_id' => $orderId]);
         } catch (Exception $e) {
@@ -452,6 +527,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
 
             // 3. Now delete the order entries
             $db->query("DELETE FROM orders WHERE OrderID = ?", [$orderId]);
+
+            // 4. Delete financial transaction
+            deleteSalesOrderFinancialTransaction($orderId);
 
             $db->commit();
             Utils::sendSuccessResponse('Order deleted successfully');

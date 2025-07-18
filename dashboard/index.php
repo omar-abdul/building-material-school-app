@@ -1,219 +1,118 @@
+<?php
+
+/**
+ * Dashboard Page
+ * Uses centralized authentication system
+ */
+
+require_once __DIR__ . '/../config/auth.php';
+
+$auth = new Auth();
+$auth->requireAuth();
+
+$role = $auth->getUserRole(); // 'admin' or 'user'
+?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-
-
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <script src="login.js" defer></script>
-  <title>Login - KuLan Buildings Material</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-
-    body {
-      display: flex;
-      height: 100vh;
-      background-color: #e6eff7;
-    }
-
-    .container {
-      display: flex;
-      flex: 1;
-      background-color: white;
-      border-radius: 12px;
-      overflow: hidden;
-      width: 90%;
-      max-width: 960px;
-      margin: auto;
-      box-shadow: 0 0 25px rgba(0, 0, 0, 0.1);
-    }
-
-    .left-side, .right-side {
-      flex: 1;
-      padding: 40px;
-    }
-
-    .left-side {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-
-    .logo {
-      display: flex;
-      align-items: center;
-      font-size: 24px;
-      font-weight: bold;
-      color: #2a3f5f;
-      margin-bottom: 30px;
-    }
-
-    .logo img {
-      width: 40px;
-      height: 40px;
-      margin-right: 10px;
-    }
-
-    .form-group {
-      margin-bottom: 20px;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 6px;
-      font-weight: 500;
-    }
-
-    input, select {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 14px;
-    }
-
-    button {
-      width: 100%;
-      padding: 10px;
-      background-color: #306bff;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #3b82f6;
-    }
-
-    .form-footer {
-      display: flex;
-      justify-content: space-between;
-      font-size: 13px;
-      margin-top: 10px;
-    }
-
-    .right-side {
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      align-items: center;
-      text-align: center;
-      padding: 0;
-      background: linear-gradient(to bottom, #3b82f6 0%, #3b82f6 70%, #000000 100%);
-    }
-
-    .top-half {
-      flex: 1;
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .top-content {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .top-content img {
-      max-width: 70%;
-      height: auto;
-      border-radius: 8px;
-      opacity: 0;
-      animation: fadeZoom 1.2s ease-out forwards;
-    }
-
-    .top-content h2 {
-      color: #ffffff;
-      margin-top: 20px;
-      font-size: 22px;
-    }
-
-    .bottom-half {
-      color: #ffffff;
-      width: 100%;
-      padding: 40px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      background: transparent;
-    }
-
-    .bottom-half p {
-      font-size: 14px;
-      max-width: 320px;
-    }
-    .error {
-      color: red;
-      text-align: center;
-      margin-top: 10px;
-    }
-    .footer-text {
-      margin-top: 15px;
-      font-size: 14px;
-      color: var(--gray-dark);
-    }
-
-    @keyframes fadeZoom {
-      0% {
-        opacity: 0;
-        transform: scale(0.8);
-      }
-      100% {
-        opacity: 1;
-        transform: scale(1);
-      }
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <title>BMMS Dashboard</title>
 </head>
+
 <body>
-  <div class="container">
-    <div class="left-side">
-      <div class="logo">
-        <img src="/backend/dashboard/image/logo.png" alt="kulan Logo">
-        <span>KuLan<br><small>BUILDINGS MATERIAL</small></span>
-      </div>
-      <form id="loginForm">
-        <?php
-        require_once __DIR__ . '/../config/csrf.php';
-        echo CSRF::getHiddenInput();
-        ?>
-        <div class="form-group">
-          <label for="username">Username</label>
-          <input type="text" id="username" name="username" required />
-        </div>
-        <div class="form-group">
-          <label for="password">Password</label>
-          <input type="password" id="password" name="password" required />
-        </div>
-        <button type="submit">Login</button>
-        <div class="error" id="loginError"></div>
-      </form>
-      <div class="footer-text">
-        © 2025 Building Material Management System
-      </div>
+    <div class="loader">
+        <h1>Loading<span>....</span></h1>
     </div>
-    <div class="right-side">
-      <div class="top-half">
-        <div class="top-content">
-          <img src="/backend/dashboard/image/111.png" alt="Qalab Dhisme">
-          <h2>libso qalab dhisme tayo sare leh</h2>
-        </div>
-      </div>
-      <div class="bottom-half">
-        <p>Waxaan kaa caawineynaa inaad si sahlan u hesho dhammaan qalabka dhismaha aad u baahan tahay — si ammaan ah, degdeg ah, iyo qiimo jaban.</p>
-      </div>
+    <div class="page-content">
+        <?php include __DIR__ . '/../includes/sidebar.php'; ?>
+        <main>
+            <div class="header">
+                <i class="fa-solid fa-bars bar-item"></i>
+                <div class="search">
+                    <input type="search" placeholder="Search materials, suppliers..." />
+                    <i class="fa-solid fa-search"></i>
+                </div>
+                <div class="profile">
+                    <span class="bell"><i class="fa-regular fa-bell"></i></span>
+                    <!-- <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Profile" /> -->
+                </div>
+            </div>
+            <div class="main-content">
+                <div class="title">
+                    <h1>Building Material Management System</h1>
+                </div>
+
+                <!-- Data Management Buttons -->
+                <div class="data-management-buttons">
+                    <?php if ($role === 'admin'): ?>
+                        <a href="/backend/Categories/index.php" class="data-btn add-category">
+                            <i class="fa-solid fa-tag"></i>
+                            <span>Add Category</span>
+                        </a>
+                        <a href="/backend/Suppliers/index.php" class="data-btn add-supplier">
+                            <i class="fa-solid fa-truck-ramp-box"></i>
+                            <span>Add Supplier</span>
+                        </a>
+                        <a href="/backend/Employees/index.php" class="data-btn view-orders">
+                            <i class="fa-solid fa-cart-flatbed"></i>
+                            <span>Add Employees</span>
+                        </a>
+                        <a href="/backend/Customers/index.php" class="data-btn view-transactions">
+                            <i class="fa-solid fa-receipt"></i>
+                            <span>Add Customers</span>
+                        </a>
+                        <a href="/backend/Salaries/index.php" class="data-btn add-salary">
+                            <i class="fa-solid fa-money-bill-wave"></i>
+                            <span>Add Salary</span>
+                        </a>
+                        <a href="/backend/Financial/index.php" class="data-btn add-customer">
+                            <i class="fa-solid fa-chart-line"></i>
+                            <span>Financial Management</span>
+                        </a>
+                    <?php endif; ?>
+                    <a href="/backend/Items/index.php" class="data-btn add-item">
+                        <i class="fa-solid fa-box-circle-plus"></i>
+                        <span>Add Item</span>
+                    </a>
+
+                    <a href="/backend/Orders/index.php" class="data-btn add-employee">
+                        <i class="fa-solid fa-user-plus"></i>
+                        <span>View Orders</span>
+                    </a>
+                    <a href="/backend/PurchaseOrders/index.php" class="data-btn add-employee">
+                        <i class="fa-solid fa-shopping-cart"></i>
+                        <span>Purchase Orders</span>
+                    </a>
+                </div>
+
+                <div class="main-content-boxes">
+                    <!-- Your dashboard boxes/content here -->
+                    <!-- ... (same as in your original HTML) ... -->
+                </div>
+
+                <div class="projects-box">
+                    <!-- Your projects table here -->
+                    <!-- ... (same as in your original HTML) ... -->
+                </div>
+            </div>
+        </main>
     </div>
-  </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Dashboard initialization code can go here
+        });
+    </script>
+
+    <script src="dashboard.js"></script>
 </body>
-</html>
-</body>
+
 </html>
