@@ -110,15 +110,11 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
                     <textarea id="address" rows="3"></textarea>
                 </div>
 
-
-
                 <!-- Add this form-group right after the customer details section in the items modal -->
                 <div class="form-group">
                     <label for="DateAdded">Date Added</label>
                     <input type="date" id="DateAdded" required>
                 </div>
-
-
 
                 <div class="form-actions">
                     <button type="button" class="btn btn-danger" id="cancelBtn">Cancel</button>
@@ -211,35 +207,16 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
         </div>
     </div>
 
-
-
-
-
-
-
     <script>
+        // Add this script to your existing script section
         // Toggle dropdown when clicking the report button
-        document.querySelector('.sidebar-report-btn').addEventListener('click', function(e) {
+        document.getElementById('reportBtn').addEventListener('click', function(e) {
             e.preventDefault();
-            const dropdown = this.closest('.report-dropdown');
-            dropdown.classList.toggle('active');
-        });
-
-        // Close dropdown when clicking outside 
-        document.addEventListener('click', function(e) {
-            // Check if the click was outside the dropdown menu
-            if (!e.target.closest('.sidebar-report-btn') && !e.target.closest('.report-dropdown-content')) {
-                // If click was outside, remove the 'active' class to hide the dropdown
-                document.querySelectorAll('.report-dropdown').forEach(dropdown => {
-                    dropdown.classList.remove('active');
-                });
-            }
         });
     </script>
+    </script>
 
-
-
-    <script src="script.js"></script>
+    <script src="customers.js"></script>
 </body>
 
 </html>

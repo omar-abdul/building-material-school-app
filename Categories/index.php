@@ -24,56 +24,66 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
 </head>
 
 <body>
-    <div class="container">
-        <!-- Sidebar -->
+    <div class="page-content">
         <?php include __DIR__ . '/../includes/sidebar.php'; ?>
 
-        <!-- Main Content -->
-        <div class="main-content">
+        <main>
             <div class="header">
-                <div class="page-title">
-                    <h1>Categories Management</h1>
+                <i class="fa-solid fa-bars bar-item"></i>
+                <div class="search">
+                    <input type="search" placeholder="Search categories..." />
+                    <i class="fa-solid fa-search"></i>
                 </div>
-                <div class="action-buttons">
+                <div class="profile">
+                    <span class="bell"><i class="fa-regular fa-bell"></i></span>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="title">
+                    <h1><i class="fas fa-tags"></i> Categories Management</h1>
+                </div>
+
+                <div class="action-buttons" style="margin-bottom: 20px;">
                     <button class="btn btn-primary" id="addCategoryBtn">
                         <i class="fas fa-plus"></i> Add New Category
                     </button>
                 </div>
-            </div>
 
-            <!-- Search and Filter -->
-            <div class="search-filter">
-                <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="searchInput" placeholder="Search categories...">
+                <!-- Search and Filter -->
+                <div class="search-filter">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchInput" placeholder="Search categories...">
+                    </div>
+                </div>
+
+                <!-- Categories Table -->
+                <table class="categories-table">
+                    <thead>
+                        <tr>
+                            <th>Category ID</th>
+                            <th>Category Name</th>
+                            <th>Description</th>
+                            <th>Date Added</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data will be loaded dynamically via JavaScript -->
+                    </tbody>
+                </table>
+
+                <!-- Pagination -->
+                <div class="pagination">
+                    <button class="page-btn"><i class="fas fa-angle-left"></i></button>
+                    <button class="page-btn active">1</button>
+                    <button class="page-btn">2</button>
+                    <button class="page-btn">3</button>
+                    <button class="page-btn"><i class="fas fa-angle-right"></i></button>
                 </div>
             </div>
-
-            <!-- Categories Table -->
-            <table class="categories-table">
-                <thead>
-                    <tr>
-                        <th>Category ID</th>
-                        <th>Category Name</th>
-                        <th>Description</th>
-                        <th>Date Added</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Data will be loaded dynamically via JavaScript -->
-                </tbody>
-            </table>
-
-            <!-- Pagination -->
-            <div class="pagination">
-                <button class="page-btn"><i class="fas fa-angle-left"></i></button>
-                <button class="page-btn active">1</button>
-                <button class="page-btn">2</button>
-                <button class="page-btn">3</button>
-                <button class="page-btn"><i class="fas fa-angle-right"></i></button>
-            </div>
-        </div>
+        </main>
     </div>
 
     <!-- Add/Edit Category Modal -->
@@ -159,7 +169,7 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
 
 
 
-    <script src="script.js"></script>
+    <script src="categories.js"></script>
 </body>
 
 </html>

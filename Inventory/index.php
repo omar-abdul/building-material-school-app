@@ -78,8 +78,6 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
         </div>
     </div>
 
-
-
     <!-- Add/Edit Inventory Modal -->
     <div class="modal" id="inventoryModal">
         <div class="modal-content">
@@ -178,33 +176,15 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
 <input type="text" id="item_name_input" placeholder="Item Name" readonly>
 <input type="text" id="price_input" placeholder="Price" readonly> -->
 
-
-
-
     <script>
         // Toggle dropdown when clicking the report button
-        document.querySelector('.sidebar-report-btn').addEventListener('click', function(e) {
+        {
             e.preventDefault();
-            const dropdown = this.closest('.report-dropdown');
-            dropdown.classList.toggle('active');
-        });
-
-        // Close dropdown when clicking outside 
-        document.addEventListener('click', function(e) {
-            // Check if the click was outside the dropdown menu
-            if (!e.target.closest('.sidebar-report-btn') && !e.target.closest('.report-dropdown-content')) {
-                // If click was outside, remove the 'active' class to hide the dropdown
-                document.querySelectorAll('.report-dropdown').forEach(dropdown => {
-                    dropdown.classList.remove('active');
-                });
             }
         });
     </script>
 
-
-
-
-    <script src="script.js"></script>
+    <script src="inventory.js"></script>
 </body>
 
 </html>

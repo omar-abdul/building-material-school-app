@@ -7,6 +7,7 @@
 
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/utils.php';
+require_once __DIR__ . '/../../includes/FinancialHelper.php';
 
 // Set headers for API
 header('Content-Type: application/json');
@@ -50,6 +51,74 @@ function updateInventory($itemId, $quantity)
     } else {
         // Create new inventory record
         return $db->query("INSERT INTO inventory (ItemID, Quantity, LastUpdated) VALUES (?, ?, NOW())", [$itemId, $quantity]);
+    }
+}
+
+// ==============================================
+// FINANCIAL TRANSACTION FUNCTIONS
+// ==============================================
+
+/**
+ * Create or update financial transaction for purchase order
+ */
+function createPurchaseOrderFinancialTransaction($purchaseOrderId, $supplierId, $totalAmount, $status)
+{
+    try {
+        // Determine transaction status based on purchase order status
+        $transactionStatus = 'Pending';
+        if ($status === 'Received' || $status === 'Completed') {
+            $transactionStatus = 'Completed';
+        } elseif ($status === 'Cancelled') {
+            $transactionStatus = 'Cancelled';
+        }
+
+        // Create purchase order transaction
+        FinancialHelper::createPurchaseOrderTransaction($purchaseOrderId, $supplierId, $totalAmount, $transactionStatus);
+
+        return true;
+    } catch (Exception $e) {
+        error_log("Failed to create financial transaction for purchase order $purchaseOrderId: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Update financial transaction when purchase order is updated
+ */
+function updatePurchaseOrderFinancialTransaction($purchaseOrderId, $supplierId, $totalAmount, $status)
+{
+    try {
+        // Update the existing transaction status
+        $transactionStatus = 'Pending';
+        if ($status === 'Received' || $status === 'Completed') {
+            $transactionStatus = 'Completed';
+        } elseif ($status === 'Cancelled') {
+            $transactionStatus = 'Cancelled';
+        }
+
+        // Update transaction status
+        FinancialHelper::updateTransactionStatus($purchaseOrderId, 'purchase', $transactionStatus);
+
+        return true;
+    } catch (Exception $e) {
+        error_log("Failed to update financial transaction for purchase order $purchaseOrderId: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Delete financial transaction when purchase order is deleted
+ */
+function deletePurchaseOrderFinancialTransaction($purchaseOrderId)
+{
+    try {
+        // Update transaction status to cancelled instead of deleting
+        FinancialHelper::updateTransactionStatus($purchaseOrderId, 'purchase', 'Cancelled');
+
+        return true;
+    } catch (Exception $e) {
+        error_log("Failed to delete financial transaction for purchase order $purchaseOrderId: " . $e->getMessage());
+        return false;
     }
 }
 
@@ -272,6 +341,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 updateInventory($item['item_id'], $item['quantity']);
             }
 
+            // Create financial transaction
+            createPurchaseOrderFinancialTransaction($purchaseOrderId, $supplierId, $totalAmount, $data['status']);
+
             $db->commit();
             Utils::sendSuccessResponse('Purchase order saved successfully', ['purchase_order_id' => $purchaseOrderId]);
         } catch (Exception $e) {
@@ -392,6 +464,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
                 }
             }
 
+            // Update financial transaction
+            updatePurchaseOrderFinancialTransaction($purchaseOrderId, $supplierId, $totalAmount, $data['status']);
+
             $db->commit();
             Utils::sendSuccessResponse('Purchase order updated successfully', ['purchase_order_id' => $purchaseOrderId]);
         } catch (Exception $e) {
@@ -432,6 +507,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
 
             // 3. Now delete the purchase order entries
             $db->query("DELETE FROM purchase_orders WHERE PurchaseOrderID = ?", [$purchaseOrderId]);
+
+            // Delete financial transaction
+            deletePurchaseOrderFinancialTransaction($purchaseOrderId);
 
             $db->commit();
             Utils::sendSuccessResponse('Purchase order deleted successfully');

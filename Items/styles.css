@@ -23,6 +23,64 @@
     /* Inherits from base button styles */
 }
 
+/* Autocomplete styles for Items module */
+.autocomplete-container {
+    position: relative;
+    width: 100%;
+}
+
+.autocomplete-container input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.autocomplete-container input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.autocomplete-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+}
+
+.autocomplete-dropdown.show {
+    display: block;
+}
+
+.autocomplete-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s;
+}
+
+.autocomplete-item:last-child {
+    border-bottom: none;
+}
+
+.autocomplete-item:hover {
+    background-color: #f8f9fa;
+}
+
+.autocomplete-item.selected {
+    background-color: #e3f2fd;
+}
+
 /* Items specific responsive styles */
 @media (max-width: 768px) {
     .items-table {
@@ -32,5 +90,10 @@
     .items-table th,
     .items-table td {
         padding: 8px 10px;
+    }
+    
+    .detail-row {
+        flex-direction: column;
+        gap: 5px;
     }
 }

@@ -16,8 +16,40 @@ header("Access-Control-Allow-Headers: Content-Type");
 
 $db = Database::getInstance();
 
+// Search employees (for autocomplete)
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['search'])) {
+    try {
+        $searchTerm = $_GET['search'] ?? '';
+
+        if (empty($searchTerm)) {
+            Utils::sendSuccessResponse('Employees retrieved successfully', []);
+            return;
+        }
+
+        $sql = "SELECT EmployeeID, EmployeeName, BaseSalary FROM employees 
+                WHERE EmployeeName LIKE ? OR EmployeeID LIKE ? 
+                ORDER BY EmployeeName 
+                LIMIT 10";
+
+        $employeesData = $db->fetchAll($sql, ["%$searchTerm%", "%$searchTerm%"]);
+
+        $employees = array();
+        foreach ($employeesData as $row) {
+            $employees[] = array(
+                'EmployeeID' => $row['EmployeeID'],
+                'EmployeeName' => $row['EmployeeName'],
+                'BaseSalary' => $row['BaseSalary']
+            );
+        }
+
+        Utils::sendSuccessResponse('Employees retrieved successfully', $employees);
+    } catch (Exception $e) {
+        Utils::sendErrorResponse('Failed to search employees: ' . $e->getMessage());
+    }
+}
+
 // Get all employees
-if ($_SERVER['REQUEST_METHOD'] === 'GET' && !isset($_GET['id'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && !isset($_GET['id']) && !isset($_GET['search'])) {
     try {
         $sql = "SELECT * FROM employees ORDER BY EmployeeName";
         $employeesData = $db->fetchAll($sql);

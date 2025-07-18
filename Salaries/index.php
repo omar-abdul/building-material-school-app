@@ -237,7 +237,7 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
         </div>
     </div>
 
-    <script src="jscript.js"></script>
+    <script src="salaries.js"></script>
 </body>
 
 </html>

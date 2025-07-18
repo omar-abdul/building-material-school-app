@@ -253,20 +253,8 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
 
     <script>
         // Toggle dropdown when clicking the report button
-        document.querySelector('.sidebar-report-btn').addEventListener('click', function(e) {
+        {
             e.preventDefault();
-            const dropdown = this.closest('.report-dropdown');
-            dropdown.classList.toggle('active');
-        });
-
-        // Close dropdown when clicking outside 
-        document.addEventListener('click', function(e) {
-            // Check if the click was outside the dropdown menu
-            if (!e.target.closest('.sidebar-report-btn') && !e.target.closest('.report-dropdown-content')) {
-                // If click was outside, remove the 'active' class to hide the dropdown
-                document.querySelectorAll('.report-dropdown').forEach(dropdown => {
-                    dropdown.classList.remove('active');
-                });
             }
         });
     </script>

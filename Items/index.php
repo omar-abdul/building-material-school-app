@@ -111,34 +111,31 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="categoryId">Category ID</label>
-                        <input type="text" id="categoryId" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="categoryName">Category Name</label>
-                        <input type="text" id="categoryName" readonly>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="supplierId">Supplier ID</label>
-                        <input type="text" id="supplierId" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="supplierName">Supplier Name</label>
-                        <input type="text" id="supplierName" readonly>
+                        <label for="categoryId">Category</label>
+                        <div class="autocomplete-container">
+                            <input type="text" id="categoryId" placeholder="Search categories..." required>
+                            <div class="autocomplete-dropdown" id="categoryDropdown"></div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="employeeId">Registered By (Employee ID)</label>
-                        <input type="text" id="employeeId" required>
+                        <label for="supplierId">Supplier</label>
+                        <div class="autocomplete-container">
+                            <input type="text" id="supplierId" placeholder="Search suppliers..." required>
+                            <div class="autocomplete-dropdown" id="supplierDropdown"></div>
+                        </div>
                     </div>
+                </div>
+
+                <div class="form-row">
                     <div class="form-group">
-                        <label for="employeeName">Employee Name</label>
-                        <input type="text" id="employeeName" readonly>
+                        <label for="employeeId">Registered By (Employee)</label>
+                        <div class="autocomplete-container">
+                            <input type="text" id="employeeId" placeholder="Search employees..." required>
+                            <div class="autocomplete-dropdown" id="employeeDropdown"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -232,7 +229,7 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="items.js"></script>
 </body>
 
 </html>

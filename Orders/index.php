@@ -178,11 +178,6 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
         </div>
     </div>
 
-
-
-
-
-
     <!-- View Order Modal -->
     <div class="modal" id="viewModal">
         <div class="modal-content">
@@ -271,39 +266,11 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
         </div>
     </div>
 
-
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const reportLinks = document.querySelectorAll('.report-dropdown-content a');
-            const reportContainer = document.getElementById('report-frame');
-            const dashboardWidgets = document.getElementById('dashboard-boxes');
-
-            reportLinks.forEach(link => {
-                link.addEventListener('click', function() {
-                    if (reportContainer && dashboardWidgets) {
-                        reportContainer.style.display = 'block';
-                        dashboardWidgets.style.display = 'none';
-                    }
-                });
-            });
-        });
-
+        // Add this script to your existing script section
         // Toggle dropdown when clicking the report button
-        document.querySelector('.sidebar-report-btn').addEventListener('click', function(e) {
+        document.getElementById('reportBtn').addEventListener('click', function(e) {
             e.preventDefault();
-            const dropdown = this.closest('.report-dropdown');
-            dropdown.classList.toggle('active');
-        });
-
-        // Close dropdown when clicking outside 
-        document.addEventListener('click', function(e) {
-            // Check if the click was outside the dropdown menu
-            if (!e.target.closest('.sidebar-report-btn') && !e.target.closest('.report-dropdown-content')) {
-                // If click was outside, remove the 'active' class to hide the dropdown
-                document.querySelectorAll('.report-dropdown').forEach(dropdown => {
-                    dropdown.classList.remove('active');
-                });
-            }
         });
     </script>
 
