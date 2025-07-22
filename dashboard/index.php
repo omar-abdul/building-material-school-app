@@ -5,6 +5,7 @@
  * Uses centralized authentication system
  */
 
+require_once __DIR__ . '/../config/base_url.php';
 require_once __DIR__ . '/../config/auth.php';
 
 $auth = new Auth();
@@ -53,41 +54,41 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
                 <!-- Data Management Buttons -->
                 <div class="data-management-buttons">
                     <?php if ($role === 'admin'): ?>
-                        <a href="/backend/Categories/index.php" class="data-btn add-category">
+                        <a href="<?= BASE_URL ?>Categories/index.php" class="data-btn add-category">
                             <i class="fa-solid fa-tag"></i>
                             <span>Add Category</span>
                         </a>
-                        <a href="/backend/Suppliers/index.php" class="data-btn add-supplier">
+                        <a href="<?= BASE_URL ?>Suppliers/index.php" class="data-btn add-supplier">
                             <i class="fa-solid fa-truck-ramp-box"></i>
                             <span>Add Supplier</span>
                         </a>
-                        <a href="/backend/Employees/index.php" class="data-btn view-orders">
+                        <a href="<?= BASE_URL ?>Employees/index.php" class="data-btn view-orders">
                             <i class="fa-solid fa-cart-flatbed"></i>
                             <span>Add Employees</span>
                         </a>
-                        <a href="/backend/Customers/index.php" class="data-btn view-transactions">
+                        <a href="<?= BASE_URL ?>Customers/index.php" class="data-btn view-transactions">
                             <i class="fa-solid fa-receipt"></i>
                             <span>Add Customers</span>
                         </a>
-                        <a href="/backend/Salaries/index.php" class="data-btn add-salary">
+                        <a href="<?= BASE_URL ?>Salaries/index.php" class="data-btn add-salary">
                             <i class="fa-solid fa-money-bill-wave"></i>
                             <span>Add Salary</span>
                         </a>
-                        <a href="/backend/Financial/index.php" class="data-btn add-customer">
+                        <a href="<?= BASE_URL ?>Financial/index.php" class="data-btn add-customer">
                             <i class="fa-solid fa-chart-line"></i>
                             <span>Financial Management</span>
                         </a>
                     <?php endif; ?>
-                    <a href="/backend/Items/index.php" class="data-btn add-item">
+                    <a href="<?= BASE_URL ?>Items/index.php" class="data-btn add-item">
                         <i class="fa-solid fa-box-circle-plus"></i>
                         <span>Add Item</span>
                     </a>
 
-                    <a href="/backend/Orders/index.php" class="data-btn add-employee">
+                    <a href="<?= BASE_URL ?>Orders/index.php" class="data-btn add-employee">
                         <i class="fa-solid fa-user-plus"></i>
                         <span>Sales Orders</span>
                     </a>
-                    <a href="/backend/PurchaseOrders/index.php" class="data-btn add-employee">
+                    <a href="<?= BASE_URL ?>PurchaseOrders/index.php" class="data-btn add-employee">
                         <i class="fa-solid fa-shopping-cart"></i>
                         <span>Purchase Orders</span>
                     </a>

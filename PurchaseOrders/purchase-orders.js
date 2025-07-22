@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // Load suppliers from API
 async function loadSuppliers() {
     try {
-        const response = await fetch('/backend/api/suppliers/suppliers.php');
+        const response = await fetch(buildApiUrl('suppliers/suppliers.php'));
         const data = await response.json();
         if (data.success) {
             suppliersData = data.data;
@@ -57,7 +57,7 @@ async function loadSuppliers() {
 // Load employees from API
 async function loadEmployees() {
     try {
-        const response = await fetch('/backend/api/employees/employees.php');
+        const response = await fetch(buildApiUrl('employees/employees.php'));
         const data = await response.json();
         if (data.success) {
             employeesData = data.data;
@@ -70,7 +70,7 @@ async function loadEmployees() {
 // Load items from API
 async function loadItems() {
     try {
-        const response = await fetch('/backend/api/items/items.php');
+        const response = await fetch(buildApiUrl('items/items.php'));
         const data = await response.json();
         if (data.success) {
             itemsData = data.data;
@@ -188,10 +188,12 @@ function selectAutocompleteItem(type, id, name) {
         case 'item': {
             itemSelect.value = `${name} (ITM-${id.toString().padStart(3, '0')})`;
             document.getElementById('itemId').value = id;
-            // Set unit price
+            // Set unit price as placeholder/suggestion, but keep it editable
             const item = itemsData.find(i => i.ItemID === Number.parseInt(id, 10));
             if (item) {
-                document.getElementById('unitPrice').value = item.Price;
+                const unitPriceInput = document.getElementById('unitPrice');
+                unitPriceInput.value = ''; // Clear first
+                unitPriceInput.placeholder = `Suggested: $${item.Price}`;
             }
             break;
         }
@@ -331,7 +333,7 @@ function removeItem(index) {
 
 // API Functions
 async function getSupplierDetails(supplierId) {
-    const response = await fetch(`/backend/api/purchase-orders/purchase-orders.php?supplierId=${supplierId}`);
+    const response = await fetch(buildApiUrl(`purchase-orders/purchase-orders.php?supplierId=${supplierId}`));
     const data = await response.json();
     if (data.success) {
         return data.data;
@@ -341,7 +343,7 @@ async function getSupplierDetails(supplierId) {
 }
 
 async function getEmployeeDetails(employeeId) {
-    const response = await fetch(`/backend/api/purchase-orders/purchase-orders.php?employeeId=${employeeId}`);
+    const response = await fetch(buildApiUrl(`purchase-orders/purchase-orders.php?employeeId=${employeeId}`));
     const data = await response.json();
     if (data.success) {
         return data.data;
@@ -351,7 +353,7 @@ async function getEmployeeDetails(employeeId) {
 }
 
 async function getItemDetails(itemId) {
-    const response = await fetch(`/backend/api/purchase-orders/purchase-orders.php?itemId=${itemId}`);
+    const response = await fetch(buildApiUrl(`purchase-orders/purchase-orders.php?itemId=${itemId}`));
     const data = await response.json();
     if (data.success) {
         return data.data;
@@ -362,7 +364,7 @@ async function getItemDetails(itemId) {
 
 async function savePurchaseOrderToServer(purchaseOrderData) {
     const method = purchaseOrderData.purchase_order_id ? 'PUT' : 'POST';
-    const response = await fetch('/backend/api/purchase-orders/purchase-orders.php', {
+    const response = await fetch(buildApiUrl('purchase-orders/purchase-orders.php'), {
         method: method,
         headers: {
             'Content-Type': 'application/json',
@@ -373,7 +375,7 @@ async function savePurchaseOrderToServer(purchaseOrderData) {
 }
 
 async function deletePurchaseOrderFromServer(purchaseOrderId) {
-    const response = await fetch('/backend/api/purchase-orders/purchase-orders.php', {
+    const response = await fetch(buildApiUrl('purchase-orders/purchase-orders.php'), {
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json',
@@ -384,7 +386,7 @@ async function deletePurchaseOrderFromServer(purchaseOrderId) {
 }
 
 async function getPurchaseOrderDetails(purchaseOrderId) {
-    const response = await fetch(`/backend/api/purchase-orders/purchase-orders.php?purchaseOrderId=${purchaseOrderId}`);
+    const response = await fetch(buildApiUrl(`purchase-orders/purchase-orders.php?purchaseOrderId=${purchaseOrderId}`));
     const data = await response.json();
     if (data.success) {
         return data.data;
@@ -393,7 +395,7 @@ async function getPurchaseOrderDetails(purchaseOrderId) {
 }
 
 async function getPurchaseOrders(searchTerm = '', statusFilter = '') {
-    let url = '/backend/api/purchase-orders/purchase-orders.php';
+    let url = buildApiUrl('purchase-orders/purchase-orders.php');
     const params = new URLSearchParams();
 
     if (searchTerm) params.append('search', searchTerm);

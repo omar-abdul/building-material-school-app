@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', loadEmployees);
 
 // Functions
 function loadEmployees() {
-    fetch('/backend/api/employees/employees.php')
+    fetch(buildApiUrl('employees/employees.php'))
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -104,12 +104,12 @@ function openAddEmployeeModal() {
 }
 
 function editEmployee(id) {
-    fetch(`/backend/api/employees/employees.php?id=${id}`)
+    fetch(`buildApiUrl('employees/employees.php?id=${id}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
                 const employee = data.data;
-                document.getElementById('modalTitle').textContent = "Edit Employee";
+                document.getElementById(')modalTitle').textContent = "Edit Employee";
                 document.getElementById('employeeId').value = employee.id;
                 document.getElementById('employeeName').value = employee.name;
                 document.getElementById('position').value = employee.position;
@@ -136,12 +136,12 @@ function editEmployee(id) {
 }
 
 function viewEmployee(id) {
-    fetch(`/backend/api/employees/employees.php?id=${id}`)
+    fetch(`buildApiUrl('employees/employees.php?id=${id}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
                 const employee = data.data;
-                document.getElementById('viewId').textContent = employee.id;
+                document.getElementById(')viewId').textContent = employee.id;
                 document.getElementById('viewName').textContent = employee.name;
                 document.getElementById('viewPosition').textContent = employee.position;
                 document.getElementById('viewBaseSalary').textContent = `$${Number.parseFloat(employee.baseSalary).toFixed(2)}`;
@@ -181,7 +181,7 @@ function deleteEmployee(id) {
 function confirmDelete() {
     console.log(currentEmployeeToDelete);
     if (currentEmployeeToDelete) {
-        fetch('/backend/api/employees/employees.php', {
+        fetch(buildApiUrl('employees/employees.php'), {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
@@ -247,7 +247,7 @@ function saveEmployee(e) {
     };
     
     const method = id ? 'PUT' : 'POST';
-    const url = '/backend/api/employees/employees.php';
+    const url = buildApiUrl('employees/employees.php');
     
     fetch(url, {
         method: method,

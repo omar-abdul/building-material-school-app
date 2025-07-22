@@ -25,6 +25,22 @@ class FinancialHelper
     {
         self::init();
 
+        // Check if transaction already exists to prevent duplicates
+        $existingTransaction = self::$db->fetchOne(
+            "SELECT TransactionID FROM financial_transactions 
+             WHERE ReferenceID = ? AND ReferenceType = 'order' AND TransactionType = 'SALES_ORDER'",
+            [$orderId]
+        );
+
+        if ($existingTransaction) {
+            // Update existing transaction instead of creating new one
+            $query = "UPDATE financial_transactions 
+                     SET Amount = ?, Status = ?, UpdatedAt = CURRENT_TIMESTAMP 
+                     WHERE ReferenceID = ? AND ReferenceType = 'order' AND TransactionType = 'SALES_ORDER'";
+            self::$db->query($query, [$totalAmount, $status, $orderId]);
+            return $existingTransaction['TransactionID'];
+        }
+
         return self::createTransaction([
             'transactionType' => 'SALES_ORDER',
             'referenceId' => $orderId,
@@ -58,17 +74,33 @@ class FinancialHelper
     }
 
     /**
-     * Create a purchase order transaction
+     * Create a purchase order transaction (creates payable, not expense)
      */
     public static function createPurchaseOrderTransaction($purchaseId, $supplierId, $totalAmount, $status = 'Pending')
     {
         self::init();
 
+        // Check if transaction already exists to prevent duplicates
+        $existingTransaction = self::$db->fetchOne(
+            "SELECT TransactionID FROM financial_transactions 
+             WHERE ReferenceID = ? AND ReferenceType = 'purchase' AND TransactionType = 'PURCHASE_ORDER'",
+            [$purchaseId]
+        );
+
+        if ($existingTransaction) {
+            // Update existing transaction instead of creating new one
+            $query = "UPDATE financial_transactions 
+                     SET Amount = ?, Status = ?, UpdatedAt = CURRENT_TIMESTAMP 
+                     WHERE ReferenceID = ? AND ReferenceType = 'purchase' AND TransactionType = 'PURCHASE_ORDER'";
+            self::$db->query($query, [$totalAmount, $status, $purchaseId]);
+            return $existingTransaction['TransactionID'];
+        }
+
         return self::createTransaction([
             'transactionType' => 'PURCHASE_ORDER',
             'referenceId' => $purchaseId,
             'referenceType' => 'purchase',
-            'amount' => -$totalAmount, // Negative for expense
+            'amount' => $totalAmount, // Positive for payable (not expense)
             'status' => $status,
             'supplierId' => $supplierId,
             'description' => "Purchase Order #$purchaseId",
@@ -360,6 +392,85 @@ class FinancialHelper
                 $lastTransactionDate
             ]);
         }
+    }
+
+    /**
+     * Calculate average cost for inventory using weighted average method
+     */
+    public static function calculateAverageCost($itemId, $newQuantity, $newCost)
+    {
+        self::init();
+
+        // Get current inventory
+        $currentInventory = self::$db->fetchOne(
+            "SELECT Quantity, Cost FROM inventory WHERE ItemID = ?",
+            [$itemId]
+        );
+
+        if (!$currentInventory) {
+            // First time adding this item to inventory
+            return $newCost;
+        }
+
+        $currentQuantity = $currentInventory['Quantity'];
+        $currentCost = $currentInventory['Cost'];
+
+        // Calculate weighted average cost
+        $totalQuantity = $currentQuantity + $newQuantity;
+        $totalValue = ($currentQuantity * $currentCost) + ($newQuantity * $newCost);
+
+        return $totalQuantity > 0 ? $totalValue / $totalQuantity : 0;
+    }
+
+    /**
+     * Update inventory with average costing
+     */
+    public static function updateInventoryWithCost($itemId, $quantity, $unitCost)
+    {
+        self::init();
+
+        $averageCost = self::calculateAverageCost($itemId, $quantity, $unitCost);
+
+        // Check if inventory record exists
+        $existingInventory = self::$db->fetchOne(
+            "SELECT InventoryID FROM inventory WHERE ItemID = ?",
+            [$itemId]
+        );
+
+        if ($existingInventory) {
+            // Update existing inventory
+            $query = "UPDATE inventory 
+                     SET Quantity = Quantity + ?, Cost = ?, LastUpdated = CURRENT_TIMESTAMP 
+                     WHERE ItemID = ?";
+            self::$db->query($query, [$quantity, $averageCost, $itemId]);
+        } else {
+            // Insert new inventory record
+            $query = "INSERT INTO inventory (ItemID, Quantity, Cost, LastUpdated) 
+                     VALUES (?, ?, ?, CURRENT_TIMESTAMP)";
+            self::$db->query($query, [$itemId, $quantity, $averageCost]);
+        }
+
+        return $averageCost;
+    }
+
+    /**
+     * Create COGS transaction for sales
+     */
+    public static function createCOGSTransaction($orderId, $itemId, $quantity, $unitCost, $status = 'Completed')
+    {
+        self::init();
+
+        $cogsAmount = $quantity * $unitCost;
+
+        return self::createTransaction([
+            'transactionType' => 'INVENTORY_SALE',
+            'referenceId' => $orderId,
+            'referenceType' => 'order',
+            'amount' => -$cogsAmount, // Negative for expense (COGS)
+            'status' => $status,
+            'description' => "COGS for Order #$orderId - Item #$itemId",
+            'createdBy' => 1
+        ]);
     }
 
     /**

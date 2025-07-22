@@ -57,6 +57,9 @@ try {
         case 'calculateAllBalances':
             calculateAllBalances();
             break;
+        case 'getFinancialOverview':
+            getFinancialOverview();
+            break;
         default:
             Utils::sendErrorResponse('Invalid action');
             break;
@@ -539,5 +542,58 @@ function calculateAllBalances()
         Utils::sendSuccessResponse('All balances calculated successfully');
     } catch (Exception $e) {
         Utils::sendErrorResponse('Failed to calculate balances: ' . $e->getMessage());
+    }
+}
+
+function getFinancialOverview()
+{
+    global $db;
+
+    try {
+        // Calculate total revenue (positive sales transactions)
+        $revenueQuery = "SELECT COALESCE(SUM(Amount), 0) as total_revenue 
+                        FROM financial_transactions 
+                        WHERE TransactionType = 'SALES_ORDER' AND Status = 'Completed' AND Amount > 0";
+        $revenue = $db->fetchOne($revenueQuery);
+        $totalRevenue = $revenue['total_revenue'] ?? 0;
+
+        // Calculate total COGS (negative inventory sale transactions)
+        $cogsQuery = "SELECT COALESCE(SUM(ABS(Amount)), 0) as total_cogs 
+                     FROM financial_transactions 
+                     WHERE TransactionType = 'INVENTORY_SALE' AND Status = 'Completed' AND Amount < 0";
+        $cogs = $db->fetchOne($cogsQuery);
+        $totalCOGS = $cogs['total_cogs'] ?? 0;
+
+        // Calculate other expenses (only salary payments and direct expenses, NOT purchase orders)
+        $expensesQuery = "SELECT COALESCE(SUM(ABS(Amount)), 0) as total_expenses 
+                         FROM financial_transactions 
+                         WHERE TransactionType IN ('SALARY_PAYMENT', 'DIRECT_EXPENSE') 
+                         AND Status = 'Completed' AND Amount < 0";
+        $expenses = $db->fetchOne($expensesQuery);
+        $totalExpenses = $expenses['total_expenses'] ?? 0;
+
+        // Calculate net profit (revenue - COGS - other expenses)
+        $netProfit = $totalRevenue - $totalCOGS - $totalExpenses;
+
+        // Calculate pending payments
+        $pendingQuery = "SELECT COALESCE(SUM(Amount), 0) as pending_amount, COUNT(*) as pending_count 
+                        FROM financial_transactions 
+                        WHERE Status = 'Pending' AND Amount > 0";
+        $pending = $db->fetchOne($pendingQuery);
+        $pendingAmount = $pending['pending_amount'] ?? 0;
+        $pendingCount = $pending['pending_count'] ?? 0;
+
+        $overview = [
+            'total_revenue' => $totalRevenue,
+            'total_cogs' => $totalCOGS,
+            'total_expenses' => $totalExpenses,
+            'net_profit' => $netProfit,
+            'pending_payments' => $pendingAmount,
+            'pending_count' => $pendingCount
+        ];
+
+        Utils::sendSuccessResponse('Financial overview retrieved successfully', $overview);
+    } catch (Exception $e) {
+        Utils::sendErrorResponse('Failed to get financial overview: ' . $e->getMessage());
     }
 }

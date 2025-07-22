@@ -144,8 +144,12 @@ class Auth
     /**
      * Require authentication - redirect to login if not authenticated
      */
-    public function requireAuth($redirectUrl = '/backend/Login/')
+    public function requireAuth($redirectUrl = null)
     {
+        if ($redirectUrl === null) {
+            require_once __DIR__ . '/base_url.php';
+            $redirectUrl = BASE_URL . 'Login/';
+        }
         if (!$this->isLoggedIn()) {
             header('Location: ' . $redirectUrl);
             exit();
@@ -155,8 +159,12 @@ class Auth
     /**
      * Require admin role - redirect to dashboard if not admin
      */
-    public function requireAdmin($redirectUrl = '/backend/dashboard/dashboard.php')
+    public function requireAdmin($redirectUrl = null)
     {
+        if ($redirectUrl === null) {
+            require_once __DIR__ . '/base_url.php';
+            $redirectUrl = BASE_URL . 'dashboard/dashboard.php';
+        }
         $this->requireAuth();
         if (!$this->isAdmin()) {
             header('Location: ' . $redirectUrl);

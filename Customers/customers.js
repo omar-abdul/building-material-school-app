@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', loadCustomers);
 
 // Functions
 function loadCustomers() {
-    fetch('/backend/api/customers/customers.php')
+    fetch(buildApiUrl('customers/customers.php'))
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -98,12 +98,12 @@ function openAddCustomerModal() {
 }
 
 function editCustomer(id) {
-    fetch(`/backend/api/customers/customers.php?id=${id}`)
+    fetch(buildApiUrl(`customers/customers.php?id=${id}`))
         .then(response => response.json())
         .then(data => {
             if (data.success) {
                 const customer = data.data;
-                document.getElementById('modalTitle').textContent = "Edit Customer";
+                document.getElementById(')modalTitle').textContent = "Edit Customer";
                 document.getElementById('customerId').value = customer.CustomerID;
                 document.getElementById('customerName').value = customer.Name;
                 document.getElementById('phone').value = customer.Phone;
@@ -122,12 +122,12 @@ function editCustomer(id) {
 }
 
 function viewCustomer(id) {
-    fetch(`/backend/api/customers/customers.php?id=${id}`)
+    fetch(buildApiUrl(`customers/customers.php?id=${id}`))
         .then(response => response.json())
         .then(data => {
             if (data.success) {
                 const customer = data.data;
-                document.getElementById('viewId').textContent = customer.CustomerID;
+                document.getElementById(')viewId').textContent = customer.CustomerID;
                 document.getElementById('viewName').textContent = customer.Name;
                 document.getElementById('viewPhone').textContent = customer.Phone;
                 document.getElementById('viewEmail').textContent = customer.Email || "N/A";
@@ -147,7 +147,7 @@ function viewCustomer(id) {
 function deleteCustomer(id) {
     currentCustomerToDelete = id;
     // Get customer name for display in confirmation
-    fetch(`/backend/api/customers/customers.php?id=${id}`)
+    fetch(buildApiUrl(`customers/customers.php?id=${id}`))
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -168,7 +168,7 @@ function deleteCustomer(id) {
 
 function confirmDelete() {
     if (currentCustomerToDelete) {
-        fetch('/backend/api/customers/customers.php', {
+        fetch(buildApiUrl('customers/customers.php'), {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
@@ -199,7 +199,7 @@ function viewOrderHistory(id) {
     currentCustomerToViewHistory = id;
     
     // Get customer name for display
-    fetch(`/backend/api/customers/customers.php?id=${id}`)
+    fetch(buildApiUrl(`customers/customers.php?id=${id}`))
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -207,7 +207,7 @@ function viewOrderHistory(id) {
                 document.getElementById('historyCustomerName').textContent = `${customer.Name} (${customer.CustomerID})`;
                 
                 // Get order history
-                return fetch(`/backend/api/customers/customers.php?id=${id}&history=true`);
+                return fetch(buildApiUrl(`customers/customers.php?id=${id}&history=true`));
             }
             throw new Error(data.message);
         })
@@ -277,7 +277,7 @@ function saveCustomer(e) {
     };
     
     const method = id ? 'PUT' : 'POST';
-    const url = '/backend/api/customers/customers.php';
+    const url = buildApiUrl('customers/customers.php');
     
     if (id) {
         customerData.id = id;
@@ -314,13 +314,13 @@ function filterCustomers() {
         return;
     }
     
-    fetch(`/backend/api/customers/customers.php?term=${encodeURIComponent(searchTerm)}`)
+    fetch(`buildApiUrl('customers/customers.php?term=${encodeURIComponent(searchTerm)}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
                 renderCustomersTable(data.data);
             } else {
-                console.error('Error searching customers:', data.message);
+                console.error(')Error searching customers:', data.message);
                 alert('Failed to search customers');
             }
         })

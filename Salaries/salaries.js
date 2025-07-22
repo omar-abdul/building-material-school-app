@@ -1,6 +1,6 @@
 // Global functions that need to be accessible from onclick handlers
 function viewSalary(id) {
-    fetch(`/backend/api/salaries/salaries.php?salaryId=${id}`)
+    fetch(buildApiUrl(`salaries/salaries.php?salaryId=${id}`))
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -36,7 +36,7 @@ function viewSalary(id) {
 }
 
 function editSalary(id) {
-    fetch(`/backend/api/salaries/salaries.php?salaryId=${id}`)
+    fetch(buildApiUrl(`salaries/salaries.php?salaryId=${id}`))
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -71,7 +71,7 @@ function editSalary(id) {
 }
 
 function deleteSalary(id) {
-    fetch(`/backend/api/salaries/salaries.php?salaryId=${id}`)
+    fetch(buildApiUrl(`salaries/salaries.php?salaryId=${id}`))
         .then(response => response.json())
         .then(data => {
             if (data.success && data.data) {
@@ -156,7 +156,7 @@ loadSalaries();
 
 // Functions
 function loadSalaries() {
-    fetch('/backend/api/salaries/salaries.php')
+    fetch(buildApiUrl('salaries/salaries.php'))
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -248,10 +248,9 @@ function handleEmployeeSearch() {
         return;
     }
     
-    fetch(`/backend/api/employees/employees.php?search=${encodeURIComponent(searchTerm)}`)
+    fetch(buildApiUrl(`employees/employees.php?search=${encodeURIComponent(searchTerm)}`))
         .then(response => response.json())
         .then(data => {
-            console.log(data);
             if (data.success && Array.isArray(data.data)) {
                 employees = data.data;
                 showEmployeeDropdown(employees);
@@ -332,7 +331,7 @@ function saveSalary(e) {
         // Update existing salary
         formData.salary_id = salaryId.value;
         
-        fetch('/backend/api/salaries/salaries.php', {
+        fetch(buildApiUrl('salaries/salaries.php'), {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -355,7 +354,7 @@ function saveSalary(e) {
         });
     } else {
         // Create new salary
-        fetch('/backend/api/salaries/salaries.php', {
+        fetch(buildApiUrl('salaries/salaries.php'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -383,7 +382,7 @@ function filterSalaries() {
     const searchTerm = searchInput.value;
     const statusFilterValue = statusFilter.value;
     
-    let url = '/backend/api/salaries/salaries.php?';
+    let url = buildApiUrl('salaries/salaries.php?');
     const params = [];
     
     if (searchTerm) {
@@ -411,7 +410,7 @@ function filterSalaries() {
 function confirmDelete() {
     if (!window.currentSalaryToDelete) return;
     
-    fetch('/backend/api/salaries/salaries.php', {
+    fetch(buildApiUrl('salaries/salaries.php'), {
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json',

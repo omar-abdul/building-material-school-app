@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', loadSuppliers);
 
 // Functions
 function loadSuppliers() {
-    fetch('/backend/api/suppliers/suppliers.php')
+    fetch(buildApiUrl('suppliers/suppliers.php'))
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -91,12 +91,12 @@ function openAddSupplierModal() {
 }
 
 function editSupplier(id) {
-    fetch(`/backend/api/suppliers/suppliers.php?id=${id}`)
+    fetch(`buildApiUrl('suppliers/suppliers.php?id=${id}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
                 const supplier = data.data;
-                document.getElementById('modalTitle').textContent = "Edit Supplier";
+                document.getElementById(')modalTitle').textContent = "Edit Supplier";
                 document.getElementById('supplierId').value = supplier.id;
                 document.getElementById('supplierName').value = supplier.name;
                 document.getElementById('contactPerson').value = supplier.contactPerson;
@@ -112,12 +112,12 @@ function editSupplier(id) {
 }
 
 function viewSupplier(id) {
-    fetch(`/backend/api/suppliers/suppliers.php?id=${id}`)
+    fetch(`buildApiUrl('suppliers/suppliers.php?id=${id}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
                 const supplier = data.data;
-                document.getElementById('viewId').textContent = supplier.supplierId;
+                document.getElementById(')viewId').textContent = supplier.supplierId;
                 document.getElementById('viewName').textContent = supplier.name;
                 document.getElementById('viewContact').textContent = supplier.contactPerson;
                 document.getElementById('viewPhone').textContent = supplier.phone;
@@ -133,12 +133,12 @@ function viewSupplier(id) {
 
 function deleteSupplier(id) {
     currentSupplierToDelete = id;
-    fetch(`/backend/api/suppliers/suppliers.php?id=${id}`)
+    fetch(`buildApiUrl('suppliers/suppliers.php?id=${id}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
                 const supplier = data.data;
-                document.getElementById('deleteSupplierId').textContent = supplier.supplierId;
+                document.getElementById(')deleteSupplierId').textContent = supplier.supplierId;
                 document.getElementById('deleteSupplierName').textContent = supplier.name;
                 deleteModal.style.display = "flex";
             } else {
@@ -150,8 +150,8 @@ function deleteSupplier(id) {
 
 function confirmDelete() {
     if (currentSupplierToDelete) {
-        fetch(`/backend/api/suppliers/suppliers.php?id=${currentSupplierToDelete}`, {
-            method: 'DELETE'
+        fetch(`buildApiUrl('suppliers/suppliers.php?id=${currentSupplierToDelete}`, {
+            method: ')DELETE'
         })
         .then(response => response.json())
         .then(data => {
@@ -194,7 +194,7 @@ function saveSupplier(e) {
     
     const method = id ? 'PUT' : 'POST';
     
-    fetch('/backend/api/suppliers/suppliers.php', {
+    fetch(buildApiUrl('suppliers/suppliers.php'), {
         method: method,
         headers: {
             'Content-Type': 'application/json',
@@ -217,8 +217,8 @@ function filterSuppliers() {
     const searchTerm = searchInput.value.trim();
     
     const url = searchTerm 
-        ? `/backend/api/suppliers/suppliers.php?search=${encodeURIComponent(searchTerm)}`
-        : '/backend/api/suppliers/suppliers.php';
+        ? `buildApiUrl('suppliers/suppliers.php?search=${encodeURIComponent(searchTerm)}`
+        : ')buildApiUrl('suppliers/suppliers.php');
     
     fetch(url)
         .then(response => response.json())

@@ -36,22 +36,14 @@ function getNextPurchaseOrderID()
 // ==============================================
 
 /**
- * Update inventory after purchase order (increase stock for purchases)
+ * Update inventory after purchase order with average costing
  */
-function updateInventory($itemId, $quantity)
+function updateInventory($itemId, $quantity, $unitCost)
 {
     global $db;
 
-    // Check if inventory record exists
-    $existing = $db->fetchOne("SELECT InventoryID FROM inventory WHERE ItemID = ?", [$itemId]);
-
-    if ($existing) {
-        // Update existing inventory
-        return $db->query("UPDATE inventory SET Quantity = Quantity + ? WHERE ItemID = ?", [$quantity, $itemId]);
-    } else {
-        // Create new inventory record
-        return $db->query("INSERT INTO inventory (ItemID, Quantity, LastUpdated) VALUES (?, ?, NOW())", [$itemId, $quantity]);
-    }
+    // Use FinancialHelper to update inventory with average costing
+    return FinancialHelper::updateInventoryWithCost($itemId, $quantity, $unitCost);
 }
 
 // ==============================================
@@ -337,8 +329,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $data['status']
                 ]);
 
-                // Update inventory (increase stock for purchases)
-                updateInventory($item['item_id'], $item['quantity']);
+                // Update inventory with average costing (increase stock for purchases)
+                updateInventory($item['item_id'], $item['quantity'], $item['unitPrice']);
             }
 
             // Create financial transaction

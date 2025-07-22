@@ -5,6 +5,7 @@
  * Standalone login page for BMMS
  */
 
+require_once __DIR__ . '/../config/base_url.php';
 require_once __DIR__ . '/../config/auth.php';
 
 $auth = new Auth();
@@ -12,7 +13,7 @@ $auth->startSession();
 
 // Check if user is already logged in
 if ($auth->isLoggedIn()) {
-    header('Location: /backend/dashboard/');
+    header('Location: ' . BASE_URL . 'dashboard/');
     exit();
 }
 
@@ -31,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $result = $auth->login($username, $password);
 
             if ($result['success']) {
-                header('Location: /backend/dashboard/');
+                header('Location: ' . BASE_URL . 'dashboard/');
                 exit();
             } else {
                 $error = $result['message'];
