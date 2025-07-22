@@ -61,7 +61,7 @@ function setupEventListeners() {
  */
 async function loadFinancialOverview() {
     try {
-        const response = await fetch('/backend/api/financial/overview.php');
+        const response = await fetch(buildApiUrl('financial/financial.php?action=getFinancialOverview'));
         const data = await response.json();
         
         if (data.success) {
@@ -74,6 +74,7 @@ async function loadFinancialOverview() {
         // Set default values
         updateOverviewCards({
             total_revenue: 0,
+            total_cogs: 0,
             total_expenses: 0,
             net_profit: 0,
             pending_payments: 0
@@ -86,6 +87,7 @@ async function loadFinancialOverview() {
  */
 function updateOverviewCards(data) {
     document.getElementById('total-revenue').textContent = formatCurrency(data.total_revenue || 0);
+    document.getElementById('total-cogs').textContent = formatCurrency(data.total_cogs || 0);
     document.getElementById('total-expenses').textContent = formatCurrency(data.total_expenses || 0);
     document.getElementById('net-profit').textContent = formatCurrency(data.net_profit || 0);
     document.getElementById('pending-payments').textContent = formatCurrency(data.pending_payments || 0);
@@ -103,7 +105,7 @@ async function showCustomerBalances() {
     tbody.innerHTML = '<tr><td colspan="6" class="loading">Loading customer balances...</td></tr>';
     
     try {
-        const response = await fetch('/backend/api/financial/customer-balances.php');
+        const response = await fetch(buildApiUrl('financial/customer-balances.php'));
         const data = await response.json();
         
         if (data.success) {
@@ -129,7 +131,7 @@ async function showSupplierBalances() {
     tbody.innerHTML = '<tr><td colspan="6" class="loading">Loading supplier balances...</td></tr>';
     
     try {
-        const response = await fetch('/backend/api/financial/supplier-balances.php');
+        const response = await fetch(buildApiUrl('financial/supplier-balances.php'));
         const data = await response.json();
         
         if (data.success) {
@@ -155,7 +157,7 @@ async function showTransactionHistory() {
     tbody.innerHTML = '<tr><td colspan="8" class="loading">Loading transaction history...</td></tr>';
     
     try {
-        const response = await fetch('/backend/api/financial/transactions.php');
+        const response = await fetch(buildApiUrl('financial/financial.php?action=getTransactions'));
         const data = await response.json();
         
         if (data.success) {
@@ -257,28 +259,28 @@ function renderTransactionHistory(transactions) {
     
     tbody.innerHTML = transactions.map(transaction => `
         <tr>
-            <td>${transaction.transaction_id}</td>
-            <td>${formatDate(transaction.transaction_date)}</td>
+            <td>${transaction.TransactionID}</td>
+            <td>${formatDate(transaction.TransactionDate)}</td>
             <td>
-                <span class="status-badge ${getTransactionTypeClass(transaction.transaction_type)}">
-                    ${transaction.transaction_type}
+                <span class="status-badge ${getTransactionTypeClass(transaction.TransactionType)}">
+                    ${transaction.TransactionType}
                 </span>
             </td>
-            <td>${escapeHtml(transaction.description)}</td>
+            <td>${escapeHtml(transaction.Description)}</td>
             <td>
-                <span class="balance-amount ${getAmountClass(transaction.amount)}">
-                    ${formatCurrency(transaction.amount)}
+                <span class="balance-amount ${getAmountClass(transaction.Amount)}">
+                    ${formatCurrency(transaction.Amount)}
                 </span>
             </td>
-            <td>${escapeHtml(transaction.customer_supplier_name || 'N/A')}</td>
+            <td>${escapeHtml(transaction.CustomerName || transaction.SupplierName || 'N/A')}</td>
             <td>
-                <span class="status-badge ${getStatusClass(transaction.status)}">
-                    ${transaction.status}
+                <span class="status-badge ${getStatusClass(transaction.Status)}">
+                    ${transaction.Status}
                 </span>
             </td>
             <td>
                 <div class="action-buttons">
-                    <button class="btn btn-sm btn-primary" onclick="viewTransactionDetails(${transaction.transaction_id})">
+                    <button class="btn btn-sm btn-primary" onclick="viewTransactionDetails(${transaction.TransactionID})">
                         <i class="fas fa-eye"></i> Details
                     </button>
                 </div>
@@ -300,8 +302,8 @@ async function generateReport() {
     document.getElementById('profit-analysis').innerHTML = '<div class="loading">Loading...</div>';
     
     try {
-        const response = await fetch(`/backend/api/financial/report.php?period=${period}`);
-        console.log('Report API response:', response);
+        const response = await fetch(buildApiUrl(`financial/report.php?period=${period}`));
+        console.log(')Report API response:', response);
         
         const data = await response.json();
         console.log('Report API data:', data);
@@ -490,16 +492,16 @@ function generateCharts(data) {
 async function viewTransactionDetails(transactionId) {
     console.log('Viewing transaction details for ID:', transactionId);
     try {
-        const response = await fetch(`/backend/api/financial/transaction-details.php?id=${transactionId}`);
+        const response = await fetch(buildApiUrl(`financial/transaction-details.php?id=${transactionId}`));
         const data = await response.json();
         
-        console.log('Transaction details response:', data);
+        console.log(')Transaction details response:', data);
         
         if (data.success) {
             showTransactionModal(data.data);
         } else {
             console.error('Failed to load transaction details:', data.message);
-            alert('Failed to load transaction details: ' + data.message);
+            alert(`Failed to load transaction details: ${data.message}`);
         }
     } catch (error) {
         console.error('Error loading transaction details:', error);

@@ -5,6 +5,7 @@
  * Uses centralized authentication system
  */
 
+require_once __DIR__ . '/../config/base_url.php';
 require_once __DIR__ . '/../config/auth.php';
 
 $auth = new Auth();
@@ -145,7 +146,7 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
                     </div>
                     <div class="form-group">
                         <label for="salaryIncrease">Salary Increase (%)</label>
-                        <input type="number" id="salaryIncrease" step="0.1" min="0" max="100" required>
+                        <input type="number" id="salaryIncrease" step="0.1" min="0" max="100" value="0" required>
                     </div>
                 </div>
 
@@ -261,7 +262,7 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
         </div>
     </div>
 
-    <script src="employees.js"></script>
+        <!-- JavaScript Configuration -->\n    <script src="<?= BASE_URL ?>config/js-config.php"></script>\n    <script src="employees.js"></script>
 </body>
 
 </html>

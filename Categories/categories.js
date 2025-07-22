@@ -37,7 +37,7 @@ searchInput.addEventListener('input', filterCategories);
 // Functions
 function loadCategories(search = '') {
     console.log('Loading categories...');
-    fetch("/backend/api/categories/categories.php")
+    fetch(buildApiUrl('categories/categories.php'))
         .then(response => {
             console.log('Response status:', response.status);
             return response.json();
@@ -127,7 +127,7 @@ function viewItems(id) {
     const categoryName = row.cells[1].textContent;
     document.getElementById('categoryNameTitle').textContent = categoryName;
     
-    fetch(`/backend/api/categories/categories.php?category_id=${id}&items=true`)
+    fetch(buildApiUrl(`categories/categories.php?category_id=${id}&items=true`))
         .then(response => {
             if (!response.ok) {
                 return response.json().then(err => { throw new Error(err.error) });
@@ -183,7 +183,7 @@ function confirmDelete() {
     const formData = new FormData();
     formData.append('category_id', currentCategoryToDelete);
     
-    fetch('/backend/api/categories/categories.php', {
+    fetch(buildApiUrl('categories/categories.php'), {
         method: 'DELETE',
         body: JSON.stringify({
             category_id: currentCategoryToDelete
@@ -218,7 +218,7 @@ function saveCategory(e) {
         return;
     }
 
-    fetch('/backend/api/categories/categories.php', {
+    fetch(buildApiUrl('categories/categories.php'), {
         method: 'POST',
         body: JSON.stringify({
             category_name: name,

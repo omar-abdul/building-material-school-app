@@ -5,6 +5,7 @@
  * Handles user registration, management, and authentication
  */
 
+require_once __DIR__ . '/../config/base_url.php';
 require_once __DIR__ . '/../config/auth.php';
 
 $auth = new Auth();
@@ -55,9 +56,9 @@ $role = $auth->getUserRole();
                         <i class="fas fa-download"></i>
                         Export Users
                     </button>
-                    <button class="action-btn" onclick="showBackupModal()">
+                    <!-- <button class="action-btn" onclick="showBackupModal()">
                         <i class="fas fa-database"></i>
-                        Database Backup
+                        Database Backup -->
                     </button>
                 </div>
 
@@ -218,7 +219,7 @@ $role = $auth->getUserRole();
         </div>
     </div>
 
-    <script src="users.js"></script>
+    <!-- JavaScript Configuration -->\n <script src="<?= BASE_URL ?>config/js-config.php"></script>\n <script src="users.js"></script>
 </body>
 
 </html>

@@ -353,6 +353,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 // Update inventory (decrease stock for sales)
                 updateInventory($item['item_id'], $item['quantity']);
+
+                // Create COGS transaction for this item
+                $inventory = $db->fetchOne("SELECT Cost FROM inventory WHERE ItemID = ?", [$item['item_id']]);
+                if ($inventory && $inventory['Cost'] > 0) {
+                    FinancialHelper::createCOGSTransaction($orderId, $item['item_id'], $item['quantity'], $inventory['Cost'], $data['status']);
+                }
             }
 
             // 4. Create financial transaction

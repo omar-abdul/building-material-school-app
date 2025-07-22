@@ -5,6 +5,7 @@
  * Shows transaction history, balances, and financial reports
  */
 
+require_once __DIR__ . '/../config/base_url.php';
 require_once __DIR__ . '/../config/auth.php';
 
 $auth = new Auth();
@@ -58,12 +59,23 @@ $role = $auth->getUserRole();
                         </div>
                     </div>
 
+                    <div class="overview-card total-cogs">
+                        <div class="card-icon">
+                            <i class="fas fa-boxes"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>Cost of Goods Sold</h3>
+                            <p class="amount" id="total-cogs">$0.00</p>
+                            <span class="trend neutral">COGS</span>
+                        </div>
+                    </div>
+
                     <div class="overview-card total-expenses">
                         <div class="card-icon">
                             <i class="fas fa-shopping-cart"></i>
                         </div>
                         <div class="card-content">
-                            <h3>Total Expenses</h3>
+                            <h3>Other Expenses</h3>
                             <p class="amount" id="total-expenses">$0.00</p>
                             <span class="trend negative">+8.2% <i class="fas fa-arrow-up"></i></span>
                         </div>
@@ -401,6 +413,8 @@ $role = $auth->getUserRole();
         </div>
     </div>
 
+    <!-- JavaScript Configuration -->
+    <script src="<?= BASE_URL ?>config/js-config.php"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="financial.js"></script>
 </body>

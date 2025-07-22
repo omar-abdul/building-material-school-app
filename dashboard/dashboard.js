@@ -37,7 +37,7 @@ let salaryData = [];
 // Load salary data from API
 async function loadSalaryData() {
     try {
-        const response = await fetch('/backend/api/salaries/salaries.php?action=getSalaries');
+        const response = await fetch(buildApiUrl('salaries/salaries.php?action=getSalaries'));
         const data = await response.json();
         if (data.success) {
             salaryData = data.data;

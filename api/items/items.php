@@ -30,15 +30,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && !isset($_GET['itemId']) && !isset($_
                          COALESCE(inv.Quantity, 0) as Quantity
                   FROM items i
                   JOIN categories c ON i.CategoryID = c.CategoryID
-                  JOIN suppliers s ON i.SupplierID = s.SupplierID
-                  JOIN employees e ON i.RegisteredByEmployeeID = e.EmployeeID
+                  LEFT JOIN suppliers s ON i.SupplierID = s.SupplierID
+                  LEFT JOIN employees e ON i.RegisteredByEmployeeID = e.EmployeeID
                   LEFT JOIN inventory inv ON i.ItemID = inv.ItemID
                   WHERE 1=1";
 
         $params = [];
 
         if (!empty($search)) {
-            $query .= " AND (i.ItemName LIKE ? OR i.Description LIKE ? OR c.CategoryName LIKE ? OR s.SupplierName LIKE ?)";
+            $query .= " AND (i.ItemName LIKE ? OR i.Description LIKE ? OR c.CategoryName LIKE ? OR COALESCE(s.SupplierName, '') LIKE ?)";
             $searchParam = "%$search%";
             $params = array_merge($params, [$searchParam, $searchParam, $searchParam, $searchParam]);
         }
@@ -71,8 +71,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['itemId'])) {
                          COALESCE(inv.Quantity, 0) as Quantity
                   FROM items i
                   JOIN categories c ON i.CategoryID = c.CategoryID
-                  JOIN suppliers s ON i.SupplierID = s.SupplierID
-                  JOIN employees e ON i.RegisteredByEmployeeID = e.EmployeeID
+                  LEFT JOIN suppliers s ON i.SupplierID = s.SupplierID
+                  LEFT JOIN employees e ON i.RegisteredByEmployeeID = e.EmployeeID
                   LEFT JOIN inventory inv ON i.ItemID = inv.ItemID
                   WHERE i.ItemID = ?";
 
@@ -166,7 +166,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data = $_POST;
         }
 
-        $required = ['ItemName', 'Price', 'CategoryID', 'SupplierID', 'RegisteredByEmployeeID'];
+        $required = ['ItemName', 'Price', 'CategoryID'];
         foreach ($required as $field) {
             if (empty($data[$field])) {
                 Utils::sendErrorResponse("$field is required");
@@ -178,8 +178,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $price = (float) $data['Price'];
         $quantity = (int) ($data['Quantity'] ?? 0);
         $categoryId = (int) $data['CategoryID'];
-        $supplierId = (int) $data['SupplierID'];
-        $employeeId = (int) $data['RegisteredByEmployeeID'];
+        $supplierId = !empty($data['SupplierID']) ? (int) $data['SupplierID'] : null;
+        $employeeId = !empty($data['RegisteredByEmployeeID']) ? (int) $data['RegisteredByEmployeeID'] : null;
         $note = isset($data['Note']) ? trim($data['Note']) : '';
         $description = isset($data['Description']) ? trim($data['Description']) : '';
         $createdDate = isset($data['CreatedDate']) ? $data['CreatedDate'] : date('Y-m-d H:i:s');
@@ -236,7 +236,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
             return;
         }
 
-        $required = ['ItemName', 'Price', 'CategoryID', 'SupplierID', 'RegisteredByEmployeeID'];
+        $required = ['ItemName', 'Price', 'CategoryID'];
         foreach ($required as $field) {
             if (empty($data[$field])) {
                 Utils::sendErrorResponse("$field is required");

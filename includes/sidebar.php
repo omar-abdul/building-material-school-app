@@ -7,6 +7,7 @@
 
 // Ensure auth is available
 if (!isset($auth)) {
+    require_once __DIR__ . '/../config/base_url.php';
     require_once __DIR__ . '/../config/auth.php';
     $auth = new Auth();
     $auth->requireAuth();
@@ -33,59 +34,59 @@ function isActive($pageName)
         <span class="brand-name">BMMS</span>
     </div>
     <div class="sidebar-menu">
-        <a href="/backend/dashboard/index.php" class="sidebar-link <?= isActive('dashboard') ?>">
+        <a href="<?= BASE_URL ?>dashboard/index.php" class="sidebar-link <?= isActive('dashboard') ?>">
             <i class="fas fa-tachometer-alt"></i>
             <span>Dashboard</span>
         </a>
 
         <?php if ($isAdmin): ?>
-            <a href="/backend/Categories/index.php" class="sidebar-link <?= isActive('Categories') ?>">
+            <a href="<?= BASE_URL ?>Categories/index.php" class="sidebar-link <?= isActive('Categories') ?>">
                 <i class="fas fa-tags"></i>
                 <span>Categories</span>
             </a>
-            <a href="/backend/Suppliers/index.php" class="sidebar-link <?= isActive('Suppliers') ?>">
+            <a href="<?= BASE_URL ?>Suppliers/index.php" class="sidebar-link <?= isActive('Suppliers') ?>">
                 <i class="fas fa-file-invoice-dollar"></i>
                 <span>Suppliers</span>
             </a>
-            <a href="/backend/Employees/index.php" class="sidebar-link <?= isActive('Employees') ?>">
+            <a href="<?= BASE_URL ?>Employees/index.php" class="sidebar-link <?= isActive('Employees') ?>">
                 <i class="fas fa-users"></i>
                 <span>Employees</span>
             </a>
-            <a href="/backend/Customers/index.php" class="sidebar-link <?= isActive('Customers') ?>">
+            <a href="<?= BASE_URL ?>Customers/index.php" class="sidebar-link <?= isActive('Customers') ?>">
                 <i class="fas fa-exchange-alt"></i>
                 <span>Customers</span>
             </a>
         <?php endif; ?>
 
-        <a href="/backend/Items/index.php" class="sidebar-link <?= isActive('Items') ?>">
+        <a href="<?= BASE_URL ?>Items/index.php" class="sidebar-link <?= isActive('Items') ?>">
             <i class="fas fa-boxes"></i>
             <span>Items</span>
         </a>
-        <a href="/backend/Orders/index.php" class="sidebar-link <?= isActive('Orders') ?>">
+        <a href="<?= BASE_URL ?>Orders/index.php" class="sidebar-link <?= isActive('Orders') ?>">
             <i class="fas fa-truck"></i>
             <span>Sales Orders</span>
         </a>
-        <a href="/backend/PurchaseOrders/index.php" class="sidebar-link <?= isActive('PurchaseOrders') ?>">
+        <a href="<?= BASE_URL ?>PurchaseOrders/index.php" class="sidebar-link <?= isActive('PurchaseOrders') ?>">
             <i class="fas fa-shopping-cart"></i>
             <span>Purchase Orders</span>
         </a>
 
         <?php if ($isAdmin): ?>
-            <a href="/backend/Salaries/index.php" class="sidebar-link <?= isActive('Salaries') ?>">
+            <a href="<?= BASE_URL ?>Salaries/index.php" class="sidebar-link <?= isActive('Salaries') ?>">
                 <i class="fas fa-money-bill-wave"></i>
                 <span>Salaries</span>
             </a>
-            <a href="/backend/Financial/index.php" class="sidebar-link <?= isActive('Financial') ?>">
+            <a href="<?= BASE_URL ?>Financial/index.php" class="sidebar-link <?= isActive('Financial') ?>">
                 <i class="fas fa-chart-line"></i>
                 <span>Financial Management</span>
             </a>
-            <a href="/backend/Users/index.php" class="sidebar-link <?= isActive('Users') ?>">
+            <a href="<?= BASE_URL ?>Users/index.php" class="sidebar-link <?= isActive('Users') ?>">
                 <i class="fas fa-user-plus"></i>
                 <span>Users Management</span>
             </a>
         <?php endif; ?>
 
-        <a href="/backend/Logout/" class="sidebar-link">
+        <a href="<?= BASE_URL ?>Logout/" class="sidebar-link">
             <i class="fa-solid fa-right-from-bracket"></i>
             <span>Logout</span>
         </a>

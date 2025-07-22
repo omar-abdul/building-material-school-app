@@ -5,6 +5,7 @@
  * Uses centralized authentication system
  */
 
+require_once __DIR__ . '/../config/base_url.php';
 require_once __DIR__ . '/../config/auth.php';
 
 $auth = new Auth();
@@ -184,7 +185,7 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
         });
     </script>
 
-    <script src="inventory.js"></script>
+        <!-- JavaScript Configuration -->\n    <script src="<?= BASE_URL ?>config/js-config.php"></script>\n    <script src="inventory.js"></script>
 </body>
 
 </html>

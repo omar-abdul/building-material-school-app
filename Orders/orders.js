@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // Load customers from API
 async function loadCustomers() {
     try {
-        const response = await fetch('/backend/api/customers/customers.php');
+        const response = await fetch(buildApiUrl('customers/customers.php'));
         const data = await response.json();
         if (data.success) {
             customersData = data.data;
@@ -57,7 +57,7 @@ async function loadCustomers() {
 // Load employees from API
 async function loadEmployees() {
     try {
-        const response = await fetch('/backend/api/employees/employees.php');
+        const response = await fetch(buildApiUrl('employees/employees.php'));
         const data = await response.json();
         if (data.success) {
             employeesData = data.data;
@@ -70,7 +70,7 @@ async function loadEmployees() {
 // Load items from API
 async function loadItems() {
     try {
-        const response = await fetch('/backend/api/items/items.php');
+        const response = await fetch(buildApiUrl('items/items.php'));
         const data = await response.json();
         if (data.success) {
             itemsData = data.data;
@@ -188,10 +188,12 @@ function selectAutocompleteItem(type, id, name) {
         case 'item': {
             itemSelect.value = `${name} (ITM-${id.toString().padStart(3, '0')})`;
             document.getElementById('itemId').value = id;
-            // Set unit price
+            // Set unit price as placeholder/suggestion, but keep it editable
             const item = itemsData.find(i => i.ItemID === Number.parseInt(id, 10));
             if (item) {
-                document.getElementById('unitPrice').value = item.Price;
+                const unitPriceInput = document.getElementById('unitPrice');
+                unitPriceInput.value = ''; // Clear first
+                unitPriceInput.placeholder = `Suggested: $${item.Price}`;
             }
             break;
         }
@@ -331,7 +333,7 @@ function removeItem(index) {
 
 // API Functions
 async function getCustomerDetails(customerId) {
-    const response = await fetch(`/backend/api/orders/orders.php?customerId=${customerId}`);
+    const response = await fetch(buildApiUrl(`orders/orders.php?customerId=${customerId}`));
     const data = await response.json();
     if (data.success) {
         return data.data;
@@ -341,7 +343,7 @@ async function getCustomerDetails(customerId) {
 }
 
 async function getEmployeeDetails(employeeId) {
-    const response = await fetch(`/backend/api/orders/orders.php?employeeId=${employeeId}`);
+    const response = await fetch(buildApiUrl(`orders/orders.php?employeeId=${employeeId}`));
     const data = await response.json();
     if (data.success) {
         return data.data;
@@ -351,7 +353,7 @@ async function getEmployeeDetails(employeeId) {
 }
 
 async function getItemDetails(itemId) {
-    const response = await fetch(`/backend/api/orders/orders.php?itemId=${itemId}`);
+    const response = await fetch(buildApiUrl(`orders/orders.php?itemId=${itemId}`));
     const data = await response.json();
     if (data.success) {
         return data.data;
@@ -362,7 +364,7 @@ async function getItemDetails(itemId) {
 
 async function saveOrderToServer(orderData) {
     const method = orderData.order_id ? 'PUT' : 'POST';
-    const response = await fetch('/backend/api/orders/orders.php', {
+    const response = await fetch(buildApiUrl('orders/orders.php'), {
         method: method,
         headers: {
             'Content-Type': 'application/json',
@@ -373,7 +375,7 @@ async function saveOrderToServer(orderData) {
 }
 
 async function deleteOrderFromServer(orderId) {
-    const response = await fetch('/backend/api/orders/orders.php', {
+    const response = await fetch(buildApiUrl('orders/orders.php'), {
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json',
@@ -384,7 +386,7 @@ async function deleteOrderFromServer(orderId) {
 }
 
 async function getOrderDetails(orderId) {
-    const response = await fetch(`/backend/api/orders/orders.php?orderId=${orderId}`);
+    const response = await fetch(buildApiUrl(`orders/orders.php?orderId=${orderId}`));
     const data = await response.json();
     if (data.success) {
         return data.data;
@@ -393,7 +395,7 @@ async function getOrderDetails(orderId) {
 }
 
 async function getOrders(searchTerm = '', statusFilter = '') {
-    let url = '/backend/api/orders/orders.php';
+    let url = buildApiUrl('orders/orders.php');
     const params = new URLSearchParams();
 
     if (searchTerm) params.append('search', searchTerm);

@@ -18,8 +18,6 @@ const itemsTable = document.querySelector('.items-table tbody');
 // Autocomplete elements
 const categoryIdInput = document.getElementById('categoryId');
 const categoryDropdown = document.getElementById('categoryDropdown');
-const supplierIdInput = document.getElementById('supplierId');
-const supplierDropdown = document.getElementById('supplierDropdown');
 const employeeIdInput = document.getElementById('employeeId');
 const employeeDropdown = document.getElementById('employeeDropdown');
 
@@ -48,14 +46,12 @@ categoryFilter.addEventListener('change', filterItems);
 
 // Autocomplete event listeners
 categoryIdInput.addEventListener('input', () => searchCategories(categoryIdInput.value));
-supplierIdInput.addEventListener('input', () => searchSuppliers(supplierIdInput.value));
 employeeIdInput.addEventListener('input', () => searchEmployees(employeeIdInput.value));
 
 // Close dropdowns when clicking outside
 document.addEventListener('click', (e) => {
     if (!e.target.closest('.autocomplete-container')) {
         categoryDropdown.style.display = 'none';
-        supplierDropdown.style.display = 'none';
         employeeDropdown.style.display = 'none';
     }
 });
@@ -68,16 +64,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Functions
 function loadItems() {
-    fetch('/backend/api/items/items.php')
+    console.log('Loading items...');
+    fetch(buildApiUrl('items/items.php'))
         .then(response => {
-            console.log(response);
+            console.log('Response status:', response.status);
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }
             return response.json();
         })
         .then(data => {
+            console.log('Items data received:', data);
             if (data.success) {
+                console.log('Rendering items:', data.data);
                 renderItems(data.data);
             } else {
                 console.error('Error loading items:', data.message);
@@ -139,7 +138,6 @@ function openAddItemModal() {
         document.getElementById('itemPrice').value = "";
         document.getElementById('itemQuantity').value = "0";
         document.getElementById('categoryId').value = "";
-        document.getElementById('supplierId').value = "";
         document.getElementById('employeeId').value = "";
         document.getElementById('note').value = "";
         document.getElementById('description').value = "";
@@ -147,7 +145,6 @@ function openAddItemModal() {
         
         // Clear autocomplete dropdowns
         categoryDropdown.style.display = 'none';
-        supplierDropdown.style.display = 'none';
         employeeDropdown.style.display = 'none';
         
         console.log('Setting modal display to flex');
@@ -159,7 +156,7 @@ function openAddItemModal() {
 }
 
 function editItem(id) {
-    fetch(`/backend/api/items/items.php?itemId=${id}`)
+            fetch(buildApiUrl(`items/items.php?itemId=${id}`))
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -175,7 +172,6 @@ function editItem(id) {
                 document.getElementById('itemPrice').value = item.Price || '';
                 document.getElementById('itemQuantity').value = item.Quantity || 0;
                 document.getElementById('categoryId').value = item.CategoryID;
-                document.getElementById('supplierId').value = item.SupplierID;
                 document.getElementById('employeeId').value = item.RegisteredByEmployeeID;
                 document.getElementById('note').value = item.Note || '';
                 document.getElementById('description').value = item.Description || '';
@@ -183,7 +179,6 @@ function editItem(id) {
                 
                 // Clear autocomplete dropdowns
                 categoryDropdown.style.display = 'none';
-                supplierDropdown.style.display = 'none';
                 employeeDropdown.style.display = 'none';
                 
                 itemModal.style.display = "flex";
@@ -199,7 +194,7 @@ function editItem(id) {
 }
 
 function viewItem(id) {
-    fetch(`/backend/api/items/items.php?itemId=${id}`)
+            fetch(buildApiUrl(`items/items.php?itemId=${id}`))
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -214,8 +209,8 @@ function viewItem(id) {
                 document.getElementById('viewPrice').textContent = item.Price ? `$${item.Price}` : 'N/A';
                 document.getElementById('viewCategory').textContent = `${item.CategoryName} (CAT-${item.CategoryID})`;
                 document.getElementById('viewQuantity').textContent = item.Quantity || 0;
-                document.getElementById('viewSupplier').textContent = `${item.SupplierName} (SUP-${item.SupplierID})`;
-                document.getElementById('viewEmployee').textContent = `${item.EmployeeName} (EMP-${item.RegisteredByEmployeeID})`;
+                document.getElementById('viewSupplier').textContent = item.SupplierName ? `${item.SupplierName} (SUP-${item.SupplierID})` : 'N/A';
+                document.getElementById('viewEmployee').textContent = item.EmployeeName ? `${item.EmployeeName} (EMP-${item.RegisteredByEmployeeID})` : 'N/A';
                 document.getElementById('viewNote').textContent = item.Note || 'N/A';
                 document.getElementById('viewDescription').textContent = item.Description || 'N/A';
                 document.getElementById('viewDate').textContent = formatDate(item.CreatedDate);
@@ -236,7 +231,7 @@ function deleteItem(id) {
         return; // User clicked cancel
     }
     
-    fetch(`/backend/api/items/items.php?itemId=${id}`, {
+            fetch(buildApiUrl(`items/items.php?itemId=${id}`), {
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json',
@@ -273,7 +268,6 @@ function saveItem(e) {
         Price: document.getElementById('itemPrice').value,
         Quantity: document.getElementById('itemQuantity').value,
         CategoryID: document.getElementById('categoryId').value,
-        SupplierID: document.getElementById('supplierId').value,
         RegisteredByEmployeeID: document.getElementById('employeeId').value,
         Note: document.getElementById('note').value,
         Description: document.getElementById('description').value,
@@ -288,7 +282,7 @@ function saveItem(e) {
     }
     
     // Validate required fields
-    if (!formData.ItemName || !formData.CategoryID || !formData.SupplierID || !formData.RegisteredByEmployeeID) {
+    if (!formData.ItemName || !formData.CategoryID) {
         alert("Please fill in all required fields");
         console.log('Validation failed - missing required fields');
         return;
@@ -296,7 +290,7 @@ function saveItem(e) {
     
     // Determine URL and method
     const method = id ? 'PUT' : 'POST';
-    const url = '/backend/api/items/items.php';
+    const url = buildApiUrl('items/items.php');
     
     console.log('Sending request to:', url, 'with method:', method);
     console.log('Final form data:', formData);
@@ -335,7 +329,7 @@ function filterItems() {
     const searchTerm = searchInput.value;
     const categoryFilterValue = categoryFilter.value;
     
-    let url = '/backend/api/items/items.php';
+    let url = buildApiUrl('items/items.php');
     const params = new URLSearchParams();
     
     if (searchTerm) {
@@ -371,7 +365,7 @@ function filterItems() {
 function confirmDelete() {
     if (!currentItemToDelete) return;
     
-    fetch('/backend/api/items/items.php', {
+    fetch(buildApiUrl('items/items.php'), {
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json',
@@ -420,7 +414,7 @@ async function searchCategories(query) {
     }
 
     try {
-        const response = await fetch(`/backend/api/categories/categories.php?search=${encodeURIComponent(query)}`);
+        const response = await fetch(buildApiUrl(`categories/categories.php?search=${encodeURIComponent(query)}`));
         const data = await response.json();
         
         if (data.success && data.data.length > 0) {
@@ -448,40 +442,7 @@ async function searchCategories(query) {
     }
 }
 
-async function searchSuppliers(query) {
-    if (query.length < 2) {
-        supplierDropdown.style.display = 'none';
-        return;
-    }
 
-    try {
-        const response = await fetch(`/backend/api/suppliers/suppliers.php?search=${encodeURIComponent(query)}`);
-        const data = await response.json();
-        
-        if (data.success && data.data.length > 0) {
-            supplierDropdown.innerHTML = '';
-            for (const supplier of data.data) {
-                const item = document.createElement('div');
-                item.className = 'autocomplete-item';
-                item.textContent = `${supplier.name} (${supplier.supplierId})`;
-                item.onclick = () => {
-                    // Extract numeric ID from supplierId (e.g., "SUP-1" -> "1")
-                    const numericId = supplier.supplierId.replace('SUP-', '');
-                    console.log('Supplier selected:', supplier.name, 'Original ID:', supplier.supplierId, 'Numeric ID:', numericId);
-                    supplierIdInput.value = numericId;
-                    console.log('Supplier input value set to:', supplierIdInput.value);
-                    supplierDropdown.style.display = 'none';
-                };
-                supplierDropdown.appendChild(item);
-            }
-            supplierDropdown.style.display = 'block';
-        } else {
-            supplierDropdown.style.display = 'none';
-        }
-    } catch (error) {
-        console.error('Error searching suppliers:', error);
-    }
-}
 
 async function searchEmployees(query) {
     if (query.length < 2) {
@@ -490,7 +451,7 @@ async function searchEmployees(query) {
     }
 
     try {
-        const response = await fetch(`/backend/api/employees/employees.php?search=${encodeURIComponent(query)}`);
+        const response = await fetch(buildApiUrl(`employees/employees.php?search=${encodeURIComponent(query)}`));
         const data = await response.json();
         
         if (data.success && data.data.length > 0) {
@@ -518,7 +479,7 @@ async function searchEmployees(query) {
 
 async function loadCategoriesForFilter() {
     try {
-        const response = await fetch('/backend/api/categories/categories.php');
+        const response = await fetch(buildApiUrl('categories/categories.php'));
         const data = await response.json();
         
         if (data.success) {

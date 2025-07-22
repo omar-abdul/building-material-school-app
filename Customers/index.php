@@ -5,6 +5,7 @@
  * Uses centralized authentication system
  */
 
+require_once __DIR__ . '/../config/base_url.php';
 require_once __DIR__ . '/../config/auth.php';
 
 $auth = new Auth();
@@ -216,7 +217,7 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
     </script>
     </script>
 
-    <script src="customers.js"></script>
+        <!-- JavaScript Configuration -->\n    <script src="<?= BASE_URL ?>config/js-config.php"></script>\n    <script src="customers.js"></script>
 </body>
 
 </html>

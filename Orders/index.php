@@ -5,6 +5,7 @@
  * Uses centralized authentication system
  */
 
+require_once __DIR__ . '/../config/base_url.php';
 require_once __DIR__ . '/../config/auth.php';
 
 $auth = new Auth();
@@ -148,7 +149,7 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
                     </div>
                     <div class="form-group">
                         <label for="unitPrice">Unit Price ($)</label>
-                        <input type="number" id="unitPrice" step="0.01" readonly>
+                        <input type="number" id="unitPrice" step="0.01" min="0" placeholder="Enter price">
                     </div>
                     <div class="form-group" style="align-self: flex-end;">
                         <button type="button" class="btn btn-primary" id="addItemBtn">
@@ -274,7 +275,7 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
         });
     </script>
 
-    <script src="orders.js"></script>
+        <!-- JavaScript Configuration -->\n    <script src="<?= BASE_URL ?>config/js-config.php"></script>\n    <script src="orders.js"></script>
 </body>
 
 </html>

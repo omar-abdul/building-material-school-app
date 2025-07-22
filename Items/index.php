@@ -5,6 +5,7 @@
  * Uses centralized authentication system
  */
 
+require_once __DIR__ . '/../config/base_url.php';
 require_once __DIR__ . '/../config/auth.php';
 
 $auth = new Auth();
@@ -121,19 +122,9 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="supplierId">Supplier</label>
+                        <label for="employeeId">Registered By (Employee) - Optional</label>
                         <div class="autocomplete-container">
-                            <input type="text" id="supplierId" placeholder="Search suppliers..." required>
-                            <div class="autocomplete-dropdown" id="supplierDropdown"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="employeeId">Registered By (Employee)</label>
-                        <div class="autocomplete-container">
-                            <input type="text" id="employeeId" placeholder="Search employees..." required>
+                            <input type="text" id="employeeId" placeholder="Search employees...">
                             <div class="autocomplete-dropdown" id="employeeDropdown"></div>
                         </div>
                     </div>
@@ -229,6 +220,8 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
         </div>
     </div>
 
+    <!-- JavaScript Configuration -->
+    <script src="<?= BASE_URL ?>config/js-config.php"></script>
     <script src="items.js"></script>
 </body>
 

@@ -1,146 +1,208 @@
-# BMMS System Changes - Comprehensive Update
+# BMMS (Building Material Management System) - Changelog
 
-## Overview
+## [2025-07-22] - Major System Updates
 
-This document outlines all the major changes and improvements made to the
-Building Material Management System (BMMS) to modernize the codebase, improve
-consistency, and enhance functionality.
+### 🎯 **Core Features Implemented**
 
-## Major Changes Implemented
+#### **1. Cost of Goods Sold (COGS) Implementation**
 
-### 1. Replaced Stored Procedures with Direct SQL Code
+- **Database Changes:**
+  - Added `Cost` column to `inventory` table (decimal(10,2) DEFAULT 0.00)
+  - Updated existing inventory records to have default cost of 0.00
 
-- **Files Modified:**
-  - `includes/FinancialHelper.php`
-  - `api/financial/financial.php`
+- **Financial Helper Updates:**
+  - Added `calculateAverageCost()` method for weighted average costing
+  - Added `updateInventoryWithCost()` method to update inventory with average
+    costing
+  - Added `createCOGSTransaction()` method to record COGS when items are sold
+  - Modified `createSalesOrderTransaction()` to prevent duplicate transactions
+  - Modified `createPurchaseOrderTransaction()` to prevent duplicate
+    transactions
+
+- **API Updates:**
+  - Updated `api/orders/orders.php` to create COGS transactions after sales
+  - Updated `api/purchase-orders/purchase-orders.php` to use average costing
+  - Updated `api/financial/financial.php` to calculate COGS in financial
+    overview
+
+- **Frontend Updates:**
+  - Added COGS card to Financial dashboard (`Financial/index.php`)
+  - Updated financial overview to display COGS values (`Financial/financial.js`)
+
+#### **2. Purchase Orders - Expense vs Payable Fix**
+
+- **Problem:** Purchase orders were incorrectly recorded as expenses
+- **Solution:** Modified purchase order transactions to create payables instead
+  of expenses
 - **Changes:**
-  - Removed dependency on stored procedures for easier maintenance
-  - Replaced `CALL` statements with direct SQL queries
-  - Improved error handling and debugging capabilities
-  - Made code more portable and easier to understand
-  - **COMPLETED:** All stored procedures have been dropped from database
+  - Updated `FinancialHelper::createPurchaseOrderTransaction()` to use positive
+    amounts (payables)
+  - Updated financial overview calculation to exclude PURCHASE_ORDER from
+    expenses
+  - Deleted and recreated incorrect purchase order transactions in database
 
-### 2. Modernized User Management System
+#### **3. Editable Price Fields**
 
-- **Files Created:**
-  - `Users/index.php` (renamed from `signup/index.php`)
-  - `Users/users.js` (renamed from `signup/script.js`)
-  - `Users/users.css` (renamed from `signup/styles.css`)
-  - `api/users/users.php` (new modern API)
-  - `api/users/backup.php` (backup of old API)
+- **Sales Orders:**
+  - Removed `readonly` attribute from unit price input (`Orders/index.php`)
+  - Added `min="0"` and `placeholder="Enter price"` attributes
+  - Updated `Orders/orders.js` to clear price field and show suggested price as
+    placeholder
+
+- **Purchase Orders:**
+  - Removed `readonly` attribute from unit price input
+    (`PurchaseOrders/index.php`)
+  - Added `min="0"` and `placeholder="Enter price"` attributes
+  - Updated `PurchaseOrders/purchase-orders.js` to clear price field and show
+    suggested price as placeholder
+
+#### **4. Item Creation - Optional Fields**
+
+- **Database Changes:**
+  - Modified `items` table to make `SupplierID` and `RegisteredByEmployeeID`
+    nullable
+  - Updated foreign key constraints to use `ON DELETE SET NULL`
+
+- **Frontend Updates:**
+  - Removed supplier field from item creation form (`Items/index.php`)
+  - Made employee field optional with updated label (`Items/index.php`)
+  - Updated `Items/items.js` to remove supplier-related functionality
+  - Updated validation to not require supplier or employee
+
+- **API Updates:**
+  - Modified `api/items/items.php` to use `LEFT JOIN` for suppliers and
+    employees
+  - Updated search logic to handle NULL supplier names
+  - Made `SupplierID` and `RegisteredByEmployeeID` optional in POST/PUT requests
+
+#### **5. Employee Salary Increase Fix**
+
+- **Problem:** 0% salary increase was not allowed
+- **Solution:** Added `value="0"` to salary increase input field
+  (`Employees/index.php`)
+
+### 🔧 **Technical Fixes**
+
+#### **1. Session Manager Error Fix**
+
+- **Problem:** "cannot ini_set to a session that is already started" error
+- **Solution:** Modified `config/session_manager.php` to check session status
+  before setting ini values
 - **Changes:**
-  - Renamed `signup` directory to `Users` for better clarity
-  - Implemented consistent API structure with other modules
-  - Added modern UI with improved styling
-  - Integrated with sidebar navigation
-  - Added proper authentication and authorization
+  - Added session status check in `init()` method
+  - Only set ini values if session is not already active
 
-### 3. Created Standalone Login System
+#### **2. Transaction History Duplicate Display Fix**
 
-- **Files Created:**
-  - `Login/index.php`
-  - `Login/login.js`
-  - `Login/login.css`
-- **Changes:**
-  - Extracted login functionality from dashboard
-  - Created dedicated login page with modern design
-  - Implemented proper session management
-  - Added responsive design and user feedback
+- **Problem:** Transaction history showed duplicate entries in UI
+- **Root Cause:** JavaScript field name mismatches and wrong API endpoint
+- **Solution:**
+  - Fixed API endpoint from `/transactions.php` to
+    `/financial.php?action=getTransactions`
+  - Updated field names to match API response (uppercase):
+    - `transaction_id` → `TransactionID`
+    - `transaction_date` → `TransactionDate`
+    - `transaction_type` → `TransactionType`
+    - `description` → `Description`
+    - `amount` → `Amount`
+    - `status` → `Status`
+  - Fixed customer/supplier name display logic
 
-### 4. Created Standalone Logout System
+#### **3. Financial Calculations Update**
 
-- **Files Created:**
-  - `Logout/index.php`
-- **Changes:**
-  - Extracted logout functionality from dashboard
-  - Implemented proper session cleanup
-  - Added redirect to login page
+- **Revenue:** Only SALES_ORDER transactions (positive amounts)
+- **COGS:** Only INVENTORY_SALE transactions (negative amounts)
+- **Other Expenses:** Only SALARY_PAYMENT and DIRECT_EXPENSE transactions
+- **Net Profit:** Revenue - COGS - Other Expenses
 
-### 5. Applied Consistent File Naming Convention
+### 📊 **Database Schema Updates**
 
-- **Files Renamed:**
-  - `Items/script.js` → `Items/items.js`
-  - `Categories/script.js` → `Categories/categories.js`
-  - `Customers/script.js` → `Customers/customers.js`
-  - `Suppliers/script.js` → `Suppliers/suppliers.js`
-  - `Employees/script.js` → `Employees/employees.js`
-  - `Inventory/script.js` → `Inventory/inventory.js`
-  - `Transactions/script.js` → `Transactions/transactions.js`
-  - `Salaries/jscript.js` → `Salaries/salaries.js`
-  - `dashboard/script.js` → `dashboard/dashboard.js`
-- **Changes:**
-  - Updated all HTML files to reference renamed JavaScript files
-  - Maintained consistent naming pattern across all modules
-  - Improved code organization and maintainability
+#### **Inventory Table**
 
-### 6. Updated Root Index File
-
-- **Files Modified:**
-  - `index.php`
-- **Changes:**
-  - Changed redirect from dashboard to login page
-  - Improved user flow and security
-  - Added proper authentication check
-
-### 7. Updated Sidebar Navigation
-
-- **Files Modified:**
-  - `includes/sidebar.php`
-- **Changes:**
-  - Updated links to point to new Users directory
-  - Updated logout link to point to new Logout directory
-  - Maintained consistent navigation structure
-
-### 8. Enhanced Financial Management System
-
-- **Files Modified:**
-  - `includes/FinancialHelper.php`
-  - `api/financial/financial.php`
-- **Changes:**
-  - Removed stored procedure dependencies
-  - Improved transaction creation and management
-  - Enhanced balance tracking for customers and suppliers
-  - Added comprehensive financial reporting
-
-### 9. Improved Modal Styling and Layout
-
-- **Files Modified:**
-  - Multiple CSS files across modules
-- **Changes:**
-  - Consolidated modal styles in base CSS
-  - Improved spacing and padding
-  - Enhanced responsive design
-  - Fixed cramped modal issues
-
-### 10. Enhanced API Structure
-
-- **Files Modified:**
-  - All API files in `api/` directory
-- **Changes:**
-  - Implemented consistent RESTful structure
-  - Added proper error handling
-  - Improved JSON response format
-  - Enhanced security with authentication checks
-
-### 11. Fixed Users API Column Name Issues
-
-- **Files Modified:**
-  - `api/users/users.php`
-  - `Users/users.js`
-  - `Users/index.php`
-- **Changes:**
-  - Fixed column name mismatches between API and database schema
-  - Updated API to use correct column names: `id`, `username`, `role`,
-    `created_at`
-  - Removed non-existent columns: `Email`, `Status`, `UpdatedAt`
-  - Updated frontend JavaScript to match API response structure
-  - Simplified user form to only include existing database fields
-  - Added proper view user modal functionality
-  - **RESULT:** Users API now works correctly without database errors
-
-## File Structure Changes
-
-### Before:
-
+```sql
+ALTER TABLE `inventory` ADD COLUMN `Cost` decimal(10,2) DEFAULT 0.00 AFTER `Quantity`;
 ```
+
+#### **Items Table**
+
+```sql
+ALTER TABLE `items` MODIFY `SupplierID` int(11) DEFAULT NULL;
+ALTER TABLE `items` MODIFY `RegisteredByEmployeeID` int(11) DEFAULT NULL;
+ALTER TABLE `items` DROP FOREIGN KEY `items_ibfk_2`;
+ALTER TABLE `items` DROP FOREIGN KEY `items_ibfk_3`;
+ALTER TABLE `items`
+ADD CONSTRAINT `items_ibfk_2` FOREIGN KEY (`SupplierID`) REFERENCES `suppliers` (`SupplierID`) ON DELETE SET NULL,
+ADD CONSTRAINT `items_ibfk_3` FOREIGN KEY (`RegisteredByEmployeeID`) REFERENCES `employees` (`EmployeeID`) ON DELETE SET NULL;
 ```
+
+### 🎨 **UI/UX Improvements**
+
+#### **Financial Dashboard**
+
+- Added COGS card with inventory icon
+- Renamed "Total Expenses" to "Other Expenses" for clarity
+- Updated financial overview to show correct calculations
+
+#### **Order Forms**
+
+- Made price fields editable with clear placeholders
+- Added suggested price display without preventing manual input
+- Improved user experience for price entry
+
+#### **Item Management**
+
+- Simplified item creation by removing mandatory supplier requirement
+- Made employee registration optional
+- Updated form labels for clarity
+
+### 🔍 **Bug Fixes**
+
+1. **Transaction Duplication:** Fixed duplicate financial transactions for sales
+   and purchase orders
+2. **Price Field Read-only:** Made price fields editable in both sales and
+   purchase orders
+3. **COGS Not Recorded:** Implemented proper COGS recording for sales
+   transactions
+4. **Purchase Orders as Expenses:** Fixed purchase orders to create payables
+   instead of expenses
+5. **Session Errors:** Prevented ini_set errors when session is already active
+6. **0% Salary Increase:** Allowed 0% salary increase input
+7. **Transaction History Display:** Fixed duplicate entries and field name
+   issues
+
+### 📈 **Financial Impact**
+
+- **Proper COGS Accounting:** Sales now correctly record cost of goods sold
+- **Accurate Net Profit:** Financial reports now show true profitability
+- **Correct Expense Classification:** Purchase orders no longer inflate expenses
+- **Weighted Average Costing:** Inventory costs are calculated using proper
+  accounting method
+
+### 🚀 **Performance Improvements**
+
+- **Transaction Deduplication:** Prevented duplicate financial transactions
+- **Efficient Queries:** Updated JOIN statements to handle nullable foreign keys
+- **Session Management:** Improved session handling to prevent errors
+
+---
+
+## **For Future Development**
+
+### **Key Principles Established:**
+
+1. **Purchase Orders** → Create payables (not expenses)
+2. **Sales Orders** → Create revenue + COGS
+3. **Inventory Costing** → Use weighted average method
+4. **Financial Reports** → Revenue - COGS - Other Expenses = Net Profit
+
+### **Database Conventions:**
+
+- Use `LEFT JOIN` for optional foreign key relationships
+- Handle NULL values in search queries with `COALESCE()`
+- Use proper transaction types for financial categorization
+
+### **API Patterns:**
+
+- Check for existing transactions before creating new ones
+- Use consistent field naming (uppercase for database fields)
+- Implement proper error handling and rollback mechanisms
