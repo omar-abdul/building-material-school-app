@@ -4,6 +4,45 @@
 
 ### 🎯 **Core Features Implemented**
 
+#### **6. Cash/Wallet Management Module**
+
+- **New Module Created:**
+  - Created `Cash/` directory with complete cash/wallet management system
+  - Added `Cash/index.php` - Main cash management interface
+  - Added `Cash/cash.css` - Styled balance cards and transaction history
+  - Added `Cash/cash.js` - Frontend logic for balance tracking and expense
+    payments
+  - Added `api/cash/cash.php` - Backend API for cash/wallet operations
+
+- **Features Implemented:**
+  - **Balance Tracking:** Real-time cash and wallet balance display
+  - **Expense Recording:** Direct expense payment functionality with categories
+  - **Transaction History:** Complete transaction history with running balances
+  - **Payment Methods:** Support for Cash and Wallet payment methods
+  - **Export Functionality:** CSV export of transaction data
+  - **Search & Filter:** Transaction search and type filtering
+
+- **Database Integration:**
+  - Uses existing `financial_transactions` table
+  - Supports `DIRECT_EXPENSE` transaction type for cash/wallet expenses
+  - Calculates running balances for each payment method
+  - Integrates with Financial Management module
+
+- **Navigation:**
+  - Added Cash/Wallet link to sidebar navigation (`includes/sidebar.php`)
+  - Admin-only access for cash management
+
+- **UI/UX Features:**
+  - Beautiful gradient balance cards with hover effects
+  - Responsive design for mobile and desktop
+  - Modal forms for expense recording
+  - Transaction detail modals
+  - Real-time balance updates
+
+#### **1. Cost of Goods Sold (COGS) Implementation**
+
+### 🎯 **Core Features Implemented**
+
 #### **1. Cost of Goods Sold (COGS) Implementation**
 
 - **Database Changes:**
@@ -177,6 +216,15 @@ ADD CONSTRAINT `items_ibfk_3` FOREIGN KEY (`RegisteredByEmployeeID`) REFERENCES 
 - **Correct Expense Classification:** Purchase orders no longer inflate expenses
 - **Weighted Average Costing:** Inventory costs are calculated using proper
   accounting method
+
+### 💳 **Payment Method Simplification**
+
+- **Simplified Payment Options:** Reduced payment methods from 5 options to 2
+- **Cash:** Physical cash payments
+- **Wallet:** Digital wallet payments (replaces Bank, Online, Credit, Check)
+- **Updated Database:** Modified `financial_transactions.PaymentMethod` enum
+- **Frontend Updates:** Updated payment method dropdowns in Financial and
+  Salaries modules
 
 ### 🚀 **Performance Improvements**
 

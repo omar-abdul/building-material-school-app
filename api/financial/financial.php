@@ -80,6 +80,14 @@ function getTransactions()
     $dateFrom = $_GET['dateFrom'] ?? '';
     $dateTo = $_GET['dateTo'] ?? '';
 
+    // Get period filter parameters
+    $period = $_GET['period'] ?? 'current-month';
+    $startDate = $_GET['start_date'] ?? '';
+    $endDate = $_GET['end_date'] ?? '';
+
+    // Build date filter
+    $dateFilter = buildDateFilter($period, $startDate, $endDate);
+
     $query = "SELECT ft.*, 
                      c.CustomerName,
                      s.SupplierName,
@@ -88,9 +96,9 @@ function getTransactions()
               LEFT JOIN customers c ON ft.CustomerID = c.CustomerID
               LEFT JOIN suppliers s ON ft.SupplierID = s.SupplierID
               LEFT JOIN employees e ON ft.EmployeeID = e.EmployeeID
-              WHERE 1=1";
+              WHERE 1=1" . $dateFilter['where'];
 
-    $params = [];
+    $params = $dateFilter['params'];
 
     if (!empty($search)) {
         $query .= " AND (ft.ReferenceID LIKE ? OR ft.Description LIKE ? OR c.CustomerName LIKE ? OR s.SupplierName LIKE ?)";
@@ -550,26 +558,34 @@ function getFinancialOverview()
     global $db;
 
     try {
+        // Get period filter parameters
+        $period = $_GET['period'] ?? 'current-month';
+        $startDate = $_GET['start_date'] ?? '';
+        $endDate = $_GET['end_date'] ?? '';
+
+        // Build date filter
+        $dateFilter = buildDateFilter($period, $startDate, $endDate);
+
         // Calculate total revenue (positive sales transactions)
         $revenueQuery = "SELECT COALESCE(SUM(Amount), 0) as total_revenue 
                         FROM financial_transactions 
-                        WHERE TransactionType = 'SALES_ORDER' AND Status = 'Completed' AND Amount > 0";
-        $revenue = $db->fetchOne($revenueQuery);
+                        WHERE TransactionType = 'SALES_ORDER' AND Status = 'Completed' AND Amount > 0" . $dateFilter['where'];
+        $revenue = $db->fetchOne($revenueQuery, $dateFilter['params']);
         $totalRevenue = $revenue['total_revenue'] ?? 0;
 
         // Calculate total COGS (negative inventory sale transactions)
         $cogsQuery = "SELECT COALESCE(SUM(ABS(Amount)), 0) as total_cogs 
                      FROM financial_transactions 
-                     WHERE TransactionType = 'INVENTORY_SALE' AND Status = 'Completed' AND Amount < 0";
-        $cogs = $db->fetchOne($cogsQuery);
+                     WHERE TransactionType = 'INVENTORY_SALE' AND Status = 'Completed' AND Amount < 0" . $dateFilter['where'];
+        $cogs = $db->fetchOne($cogsQuery, $dateFilter['params']);
         $totalCOGS = $cogs['total_cogs'] ?? 0;
 
         // Calculate other expenses (only salary payments and direct expenses, NOT purchase orders)
         $expensesQuery = "SELECT COALESCE(SUM(ABS(Amount)), 0) as total_expenses 
                          FROM financial_transactions 
                          WHERE TransactionType IN ('SALARY_PAYMENT', 'DIRECT_EXPENSE') 
-                         AND Status = 'Completed' AND Amount < 0";
-        $expenses = $db->fetchOne($expensesQuery);
+                         AND Status = 'Completed' AND Amount < 0" . $dateFilter['where'];
+        $expenses = $db->fetchOne($expensesQuery, $dateFilter['params']);
         $totalExpenses = $expenses['total_expenses'] ?? 0;
 
         // Calculate net profit (revenue - COGS - other expenses)
@@ -578,8 +594,8 @@ function getFinancialOverview()
         // Calculate pending payments
         $pendingQuery = "SELECT COALESCE(SUM(Amount), 0) as pending_amount, COUNT(*) as pending_count 
                         FROM financial_transactions 
-                        WHERE Status = 'Pending' AND Amount > 0";
-        $pending = $db->fetchOne($pendingQuery);
+                        WHERE Status = 'Pending' AND Amount > 0" . $dateFilter['where'];
+        $pending = $db->fetchOne($pendingQuery, $dateFilter['params']);
         $pendingAmount = $pending['pending_amount'] ?? 0;
         $pendingCount = $pending['pending_count'] ?? 0;
 
@@ -596,4 +612,41 @@ function getFinancialOverview()
     } catch (Exception $e) {
         Utils::sendErrorResponse('Failed to get financial overview: ' . $e->getMessage());
     }
+}
+
+function buildDateFilter($period, $startDate, $endDate)
+{
+    $where = '';
+    $params = [];
+
+    if ($period === 'custom' && $startDate && $endDate) {
+        $where = " AND TransactionDate >= ? AND TransactionDate <= ?";
+        $params = [$startDate . ' 00:00:00', $endDate . ' 23:59:59'];
+    } else {
+        $now = new DateTime();
+
+        switch ($period) {
+            case 'current-month':
+                $start = new DateTime('first day of this month');
+                $end = new DateTime('last day of this month');
+                break;
+            case 'current-quarter':
+                $quarter = ceil($now->format('n') / 3);
+                $start = new DateTime($now->format('Y') . '-' . (($quarter - 1) * 3 + 1) . '-01');
+                $end = new DateTime($now->format('Y') . '-' . ($quarter * 3) . '-' . date('t', strtotime($now->format('Y') . '-' . ($quarter * 3) . '-01')));
+                break;
+            case 'current-year':
+                $start = new DateTime($now->format('Y') . '-01-01');
+                $end = new DateTime($now->format('Y') . '-12-31');
+                break;
+            default:
+                $start = new DateTime('first day of this month');
+                $end = new DateTime('last day of this month');
+        }
+
+        $where = " AND TransactionDate >= ? AND TransactionDate <= ?";
+        $params = [$start->format('Y-m-d 00:00:00'), $end->format('Y-m-d 23:59:59')];
+    }
+
+    return ['where' => $where, 'params' => $params];
 }

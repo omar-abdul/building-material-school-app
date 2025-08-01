@@ -8,6 +8,10 @@
 require_once __DIR__ . '/config/base_url.php';
 require_once __DIR__ . '/config/auth.php';
 
+// Run migrations and initial setup checks
+require_once __DIR__ . '/config/init.php';
+
+// If we reach here, migrations are complete and we can proceed with normal flow
 $auth = new Auth();
 $auth->startSession();
 

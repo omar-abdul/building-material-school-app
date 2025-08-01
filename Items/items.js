@@ -238,9 +238,10 @@ function deleteItem(id) {
         },
         body: JSON.stringify({ itemId: id })
     })
-    .then(response => {
+    .then(async response => {
         if (!response.ok) {
-            throw new Error('Network error');
+            const errorData = await response.json();
+            throw new Error(errorData.message);
         }
         return response.json();
     })
