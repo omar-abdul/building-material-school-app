@@ -46,6 +46,26 @@ $role = $auth->getUserRole();
                     <h1><i class="fas fa-chart-line"></i> Financial Management</h1>
                 </div>
 
+                <!-- Period Filter -->
+                <div class="period-filter">
+                    <div class="filter-controls">
+                        <label for="period-select">Period:</label>
+                        <select id="period-select" onchange="handlePeriodChange()">
+                            <option value="current-month">Current Month</option>
+                            <option value="current-quarter">Current Quarter</option>
+                            <option value="current-year">Current Year</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
+
+                        <div id="custom-date-range" class="custom-range" style="display: none;">
+                            <label for="start-date">From:</label>
+                            <input type="date" id="start-date" onchange="updatePeriodFilter()">
+                            <label for="end-date">To:</label>
+                            <input type="date" id="end-date" onchange="updatePeriodFilter()">
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Financial Overview Cards -->
                 <div class="financial-overview">
                     <div class="overview-card total-revenue">
@@ -236,12 +256,6 @@ $role = $auth->getUserRole();
                         <div class="section-header">
                             <h2><i class="fas fa-file-invoice-dollar"></i> Financial Report</h2>
                             <div class="section-actions">
-                                <select id="report-period" class="filter-select">
-                                    <option value="month">This Month</option>
-                                    <option value="quarter">This Quarter</option>
-                                    <option value="year">This Year</option>
-                                    <option value="custom">Custom Range</option>
-                                </select>
                                 <button class="btn btn-primary" onclick="generateReport()">
                                     <i class="fas fa-chart-bar"></i> Generate
                                 </button>
@@ -310,10 +324,7 @@ $role = $auth->getUserRole();
                             <select id="customer-payment-method" required>
                                 <option value="">Select Method</option>
                                 <option value="Cash">Cash</option>
-                                <option value="Bank">Bank Transfer</option>
-                                <option value="Online">Online Payment</option>
-                                <option value="Credit">Credit Card</option>
-                                <option value="Check">Check</option>
+                                <option value="Wallet">Wallet</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -369,10 +380,7 @@ $role = $auth->getUserRole();
                             <select id="supplier-payment-method" required>
                                 <option value="">Select Method</option>
                                 <option value="Cash">Cash</option>
-                                <option value="Bank">Bank Transfer</option>
-                                <option value="Online">Online Payment</option>
-                                <option value="Credit">Credit Card</option>
-                                <option value="Check">Check</option>
+                                <option value="Wallet">Wallet</option>
                             </select>
                         </div>
                         <div class="form-group">

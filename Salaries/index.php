@@ -149,9 +149,7 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
                         <select id="paymentMethod" required>
                             <option value="">Select Method</option>
                             <option value="Cash">Cash</option>
-                            <option value="Bank Transfer">Bank Transfer</option>
-                            <option value="Online">Online</option>
-                            <option value="Check">Check</option>
+                            <option value="Wallet">Wallet</option>
                         </select>
                     </div>
                 </div>
@@ -238,7 +236,7 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
         </div>
     </div>
 
-        <!-- JavaScript Configuration -->\n    <script src="<?= BASE_URL ?>config/js-config.php"></script>\n    <script src="salaries.js"></script>
+    <!-- JavaScript Configuration -->\n <script src="<?= BASE_URL ?>config/js-config.php"></script>\n <script src="salaries.js"></script>
 </body>
 
 </html>

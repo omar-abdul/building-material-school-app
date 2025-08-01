@@ -324,11 +324,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
         }
 
         // 2. Check foreign key constraints
-        $fkQuery = "SELECT COUNT(*) as count FROM inventory WHERE ItemID = ?";
+        $fkQuery = "SELECT * FROM inventory WHERE ItemID = ?";
         $fkResult = $db->fetchOne($fkQuery, [$itemId]);
 
-        if ($fkResult && $fkResult['count'] > 0) {
-            Utils::sendErrorResponse('This item is linked to inventory data, remove it first');
+        if ($fkResult && $fkResult['Quantity'] > 0) {
+            Utils::sendErrorResponse('This item is linked to inventory data, you can only delete it if the quantity is 0');
             return;
         }
 

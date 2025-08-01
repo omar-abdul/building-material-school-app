@@ -76,6 +76,10 @@ function isActive($pageName)
                 <i class="fas fa-money-bill-wave"></i>
                 <span>Salaries</span>
             </a>
+            <a href="<?= BASE_URL ?>Cash/index.php" class="sidebar-link <?= isActive('Cash') ?>">
+                <i class="fas fa-wallet"></i>
+                <span>Cash/Wallet</span>
+            </a>
             <a href="<?= BASE_URL ?>Financial/index.php" class="sidebar-link <?= isActive('Financial') ?>">
                 <i class="fas fa-chart-line"></i>
                 <span>Financial Management</span>

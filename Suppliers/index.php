@@ -188,15 +188,9 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
         </div>
     </div>
 
-    <script>
-        // Toggle dropdown when clicking the report button
-        {
-            e.preventDefault();
-            }
-        });
-    </script>
 
-        <!-- JavaScript Configuration -->\n    <script src="<?= BASE_URL ?>config/js-config.php"></script>\n    <script src="suppliers.js"></script>
+
+    <!-- JavaScript Configuration -->\n <script src="<?= BASE_URL ?>config/js-config.php"></script>\n <script src="suppliers.js"></script>
 </body>
 
 </html>

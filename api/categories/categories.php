@@ -272,8 +272,13 @@ function deleteCategory($categoryId)
 
     try {
         // First, update items in this category to uncategorized (assuming 0 is uncategorized)
-        $sql = "UPDATE items SET CategoryID = 0 WHERE CategoryID = ?";
-        $db->query($sql, [$idValue]);
+        $uncategorizedCategoryId = $db->fetchOne("SELECT CategoryID FROM categories WHERE LOWER(CategoryName) = LOWER('Uncategorized') LIMIT 1");
+        if (!$uncategorizedCategoryId) {
+            Utils::sendErrorResponse('Uncategorized category not found');
+            return;
+        }
+        $sql = "UPDATE items SET CategoryID = ? WHERE CategoryID = ?";
+        $db->query($sql, [$uncategorizedCategoryId['CategoryID'], $idValue]);
 
         // Then delete the category
         $sql = "DELETE FROM categories WHERE CategoryID = ?";

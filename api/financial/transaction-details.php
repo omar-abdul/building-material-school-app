@@ -40,12 +40,14 @@ try {
             ft.SupplierID as supplier_id,
             ft.CreatedAt as created_at,
             ft.UpdatedAt as updated_at,
+            ft.ReferenceType as reference_type,
             COALESCE(c.CustomerName, s.SupplierName) as customer_supplier_name,
             COALESCE(c.Email, s.Email) as customer_supplier_email,
             COALESCE(c.Phone, s.Phone) as customer_supplier_phone
         FROM financial_transactions ft
         LEFT JOIN customers c ON ft.CustomerID = c.CustomerID
         LEFT JOIN suppliers s ON ft.SupplierID = s.SupplierID
+        LEFT JOIN employees e ON ft.EmployeeID = e.EmployeeID
         WHERE ft.TransactionID = ?
     ";
 
@@ -66,10 +68,11 @@ try {
     $orderInfo = null;
     if ($transaction['reference']) {
         $orderQuery = "";
-        if ($transaction['transaction_type'] === 'SALES_ORDER') {
+
+        if ($transaction['transaction_type'] === 'SALES_ORDER' || ($transaction['transaction_type'] === 'INVENTORY_SALE' && $transaction['reference_type'] === 'SALES_ORDER')) {
             $orderQuery = "SELECT OrderID as order_id, OrderDate as order_date, TotalAmount as total_amount FROM orders WHERE OrderID = ?";
         } elseif ($transaction['transaction_type'] === 'PURCHASE_ORDER') {
-            $orderQuery = "SELECT OrderID as order_id, OrderDate as order_date, TotalAmount as total_amount FROM purchase_orders WHERE OrderID = ?";
+            $orderQuery = "SELECT PurchaseOrderID as order_id, OrderDate as order_date, TotalAmount as total_amount FROM purchase_orders WHERE PurchaseOrderID = ?";
         }
 
         if ($orderQuery) {
