@@ -5,33 +5,34 @@
  */
 
 // Base URL constants for JavaScript
-const BASE_URL = '<?php echo BASE_URL; ?>';
-const API_BASE_URL = '<?php echo API_BASE_URL; ?>';
-const ASSETS_BASE_URL = '<?php echo ASSETS_BASE_URL; ?>';
+const BASE_URL = "<?php echo BASE_URL; ?>";
+const API_BASE_URL = "<?php echo API_BASE_URL; ?>";
+const ASSETS_BASE_URL = "<?php echo ASSETS_BASE_URL; ?>";
 
 // Helper function to build API URLs
 function buildApiUrl(endpoint) {
-    return API_BASE_URL + 'endpoint;
+	// biome-ignore lint/style/useTemplate: <explanation>
+	return API_BASE_URL + "endpoint";
 }
 
 // Helper function to build asset URLs
 function buildAssetUrl(path) {
-    return ASSETS_BASE_URL + path;
+	return ASSETS_BASE_URL + path;
 }
 
 // Helper function to build page URLs
 function buildPageUrl(page) {
-    return BASE_URL + page;
+	return BASE_URL + page;
 }
 
 // Export for use in other modules (if using modules)
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = {
-        BASE_URL,
-        API_BASE_URL,
-        ASSETS_BASE_URL,
-        buildApiUrl,
-        buildAssetUrl,
-        buildPageUrl
-    };
-} 
+if (typeof module !== "undefined" && module.exports) {
+	module.exports = {
+		BASE_URL,
+		API_BASE_URL,
+		ASSETS_BASE_URL,
+		buildApiUrl,
+		buildAssetUrl,
+		buildPageUrl,
+	};
+}

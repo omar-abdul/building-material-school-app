@@ -29,11 +29,10 @@ try {
 
     // If both exist, proceed with normal bootstrap
     if ($hasAdminUser && $hasUncategorizedCategory) {
-        // Clear any output buffer
+        // Clear any output buffer and continue with normal flow
         ob_end_clean();
-        // Redirect to normal index.php bootstrap
-        header('Location: ' . BASE_URL . 'index.php');
-        exit();
+        // Don't redirect - just continue with the normal index.php flow
+        return;
     }
 
     // If we're missing data, set up the required initial configuration
@@ -62,14 +61,14 @@ try {
         exit();
     }
 
-    // If we reach here, we have admin user but missing category, redirect to normal flow
+    // If we reach here, we have admin user but missing category, continue with normal flow
     ob_end_clean();
-    header('Location: ' . BASE_URL . 'index.php');
-    exit();
+    // Don't redirect - just continue with the normal index.php flow
+    return;
 } catch (Exception $e) {
-    // If there's a database error, redirect to normal flow
+    // If there's a database error, continue with normal flow
     // This allows the application to work even if migrations fail
     ob_end_clean();
-    header('Location: ' . BASE_URL . 'index.php');
-    exit();
+    // Don't redirect - just continue with the normal index.php flow
+    return;
 }
