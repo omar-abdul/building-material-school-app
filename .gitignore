@@ -1,0 +1,28 @@
+# Configuration files that should not be tracked
+config/installed.lock
+config/database.php
+
+# Common PHP files to ignore
+*.log
+*.cache
+*.tmp
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
