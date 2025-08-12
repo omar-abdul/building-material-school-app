@@ -33,7 +33,34 @@ viewItemsBtn.addEventListener('click', viewSuppliedItems);
 sendEmailBtn.addEventListener('click', sendEmailToSupplier);
 
 // Load suppliers when page loads
-document.addEventListener('DOMContentLoaded', loadSuppliers);
+document.addEventListener('DOMContentLoaded', () => {
+    loadSuppliers();
+    setupActionButtonListeners();
+});
+
+// Setup event delegation for action buttons
+function setupActionButtonListeners() {
+    // Find the table body element
+    const tableBody = document.querySelector('.suppliers-table tbody');
+    
+    if (tableBody) {
+        tableBody.addEventListener('click', (e) => {
+            const target = e.target.closest('.action-btn');
+            if (!target) return;
+            
+            const supplierId = target.dataset.supplierId;
+            if (!supplierId) return;
+            
+            if (target.classList.contains('view-btn')) {
+                viewSupplier(supplierId);
+            } else if (target.classList.contains('edit-btn')) {
+                editSupplier(supplierId);
+            } else if (target.classList.contains('delete-btn')) {
+                deleteSupplier(supplierId);
+            }
+        });
+    }
+}
 
 // Functions
 function loadSuppliers() {
@@ -64,13 +91,13 @@ function renderSuppliers(suppliers) {
             <td>${supplier.address || 'N/A'}</td>
             <td>${supplier.dateAdded}</td>
             <td class="action-cell">
-                <button class="action-btn view-btn" onclick="viewSupplier(${supplier.id})">
+                <button class="action-btn view-btn" data-supplier-id="${supplier.id}">
                     <i class="fas fa-eye"></i> View
                 </button>
-                <button class="action-btn edit-btn" onclick="editSupplier(${supplier.id})">
+                <button class="action-btn edit-btn" data-supplier-id="${supplier.id}">
                     <i class="fas fa-edit"></i> Edit
                 </button>
-                <button class="action-btn delete-btn" onclick="deleteSupplier(${supplier.id})">
+                <button class="action-btn delete-btn" data-supplier-id="${supplier.id}">
                     <i class="fas fa-trash"></i> Delete
                 </button>
             </td>

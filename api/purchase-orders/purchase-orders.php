@@ -46,6 +46,119 @@ function updateInventory($itemId, $quantity, $unitCost)
     return FinancialHelper::updateInventoryWithCost($itemId, $quantity, $unitCost);
 }
 
+/**
+ * Recalculate COGS transactions for purchase orders
+ * This is called when purchase order items or quantities are updated
+ * Note: Purchase orders don't create COGS directly, but they affect inventory costs
+ * which in turn affect COGS calculations for sales orders
+ */
+function recalculatePurchaseOrderImpact($purchaseOrderId)
+{
+    global $db;
+
+    try {
+        // Get current purchase order status
+        $order = $db->fetchOne("SELECT Status FROM purchase_orders_main WHERE PurchaseOrderID = ?", [$purchaseOrderId]);
+        if (!$order || $order['Status'] !== 'Received') {
+            return; // Only recalculate for received purchase orders
+        }
+
+        // Get items from this purchase order
+        $items = $db->fetchAll("
+            SELECT poi.ItemID, poi.Quantity, poi.UnitPrice
+            FROM purchase_order_items poi 
+            WHERE poi.PurchaseOrderID = ?
+        ", [$purchaseOrderId]);
+
+        $updatedCount = 0;
+        foreach ($items as $item) {
+            // Update inventory cost for this item
+            $db->query("UPDATE inventory SET Cost = ? WHERE ItemID = ?", [$item['UnitPrice'], $item['ItemID']]);
+            $updatedCount++;
+        }
+
+        if ($updatedCount > 0) {
+            error_log("Updated inventory costs for $updatedCount items from PurchaseOrderID: $purchaseOrderId");
+
+            // Now recalculate COGS for all delivered sales orders that use these items
+            recalculateCOGSForAffectedItems($items);
+        }
+
+        return $updatedCount;
+    } catch (Exception $e) {
+        error_log("Error recalculating purchase order impact for PurchaseOrderID: $purchaseOrderId: " . $e->getMessage());
+        return 0;
+    }
+}
+
+/**
+ * Recalculate COGS for sales orders that use items with updated costs
+ */
+function recalculateCOGSForAffectedItems($affectedItems)
+{
+    global $db;
+
+    try {
+        $itemIds = array_column($affectedItems, 'ItemID');
+        if (empty($itemIds)) return;
+
+        $placeholders = str_repeat('?,', count($itemIds) - 1) . '?';
+
+        // Find all delivered sales orders that use these items
+        $ordersToRecalculate = $db->fetchAll("
+            SELECT DISTINCT som.OrderID
+            FROM sales_orders_main som
+            JOIN sales_order_items soi ON som.OrderID = soi.OrderID
+            WHERE som.Status = 'Delivered' 
+            AND soi.ItemID IN ($placeholders)
+        ", $itemIds);
+
+        $recalculatedCount = 0;
+        foreach ($ordersToRecalculate as $order) {
+            try {
+                // Delete existing COGS transactions for this order
+                $db->query("DELETE FROM financial_transactions 
+                            WHERE TransactionType = 'INVENTORY_SALE' 
+                            AND ReferenceID = ? 
+                            AND ReferenceType = 'order'", [$order['OrderID']]);
+
+                // Get current order items with updated costs
+                $items = $db->fetchAll("
+                    SELECT soi.ItemID, soi.Quantity, inv.Cost 
+                    FROM sales_order_items soi 
+                    LEFT JOIN inventory inv ON soi.ItemID = inv.ItemID 
+                    WHERE soi.OrderID = ?
+                ", [$order['OrderID']]);
+
+                // Recreate COGS transactions with updated costs
+                foreach ($items as $item) {
+                    if ($item['Cost'] && $item['Cost'] > 0) {
+                        require_once __DIR__ . '/../../includes/FinancialHelper.php';
+                        $cogsResult = FinancialHelper::createCOGSTransaction(
+                            $order['OrderID'],
+                            $item['ItemID'],
+                            $item['Quantity'],
+                            $item['Cost']
+                        );
+
+                        if ($cogsResult) {
+                            $recalculatedCount++;
+                        }
+                    }
+                }
+            } catch (Exception $e) {
+                error_log("Failed to recalculate COGS for OrderID: {$order['OrderID']}: " . $e->getMessage());
+            }
+        }
+
+        if ($recalculatedCount > 0) {
+            error_log("Recalculated COGS for $recalculatedCount items across " . count($ordersToRecalculate) . " orders due to cost updates");
+        }
+    } catch (Exception $e) {
+        error_log("Error recalculating COGS for affected items: " . $e->getMessage());
+    }
+}
+
 // ==============================================
 // FINANCIAL TRANSACTION FUNCTIONS
 // ==============================================
@@ -125,31 +238,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && !isset($_GET['purchaseOrderId']) && 
         $searchTerm = $_GET['search'] ?? '';
 
         $query = "
-            SELECT po.PurchaseOrderID, s.SupplierName, e.EmployeeName,
-                   COUNT(po.ItemID) as ItemsCount,
-                   SUM(po.TotalAmount) as TotalAmount,
-                   po.Status, po.OrderDate
-            FROM purchase_orders po
-            LEFT JOIN suppliers s ON po.SupplierID = s.SupplierID
-            LEFT JOIN employees e ON po.EmployeeID = e.EmployeeID
+            SELECT 
+                pom.PurchaseOrderID,
+                s.SupplierName,
+                e.EmployeeName,
+                COUNT(poi.ItemID) as ItemsCount,
+                pom.TotalAmount,
+                pom.Status,
+                pom.OrderDate
+            FROM purchase_orders_main pom
+            LEFT JOIN suppliers s ON pom.SupplierID = s.SupplierID
+            LEFT JOIN employees e ON pom.EmployeeID = e.EmployeeID
+            LEFT JOIN purchase_order_items poi ON pom.PurchaseOrderID = poi.PurchaseOrderID
             WHERE 1=1
         ";
 
         $params = [];
 
         if ($statusFilter) {
-            $query .= " AND po.Status = ?";
+            $query .= " AND pom.Status = ?";
             $params[] = $statusFilter;
         }
 
         if ($searchTerm) {
-            $query .= " AND (s.SupplierName LIKE ? OR e.EmployeeName LIKE ? OR po.PurchaseOrderID LIKE ?)";
-            $params[] = "%$searchTerm%";
+            $query .= " AND (s.SupplierName LIKE ? OR e.EmployeeName LIKE ?)";
             $params[] = "%$searchTerm%";
             $params[] = "%$searchTerm%";
         }
 
-        $query .= " GROUP BY po.PurchaseOrderID, s.SupplierName, e.EmployeeName, po.Status, po.OrderDate ORDER BY po.OrderDate DESC";
+        $query .= " GROUP BY pom.PurchaseOrderID ORDER BY pom.OrderDate DESC";
 
         $purchaseOrders = $db->fetchAll($query, $params);
         Utils::sendSuccessResponse('Purchase orders retrieved successfully', $purchaseOrders);
@@ -168,27 +285,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['purchaseOrderId'])) {
             return;
         }
 
-        // Get purchase order summary
+        // Get purchase order summary from new table structure
         $purchaseOrder = $db->fetchOne("
-            SELECT po.PurchaseOrderID, po.SupplierID, s.SupplierName, po.EmployeeID, e.EmployeeName,
-                   po.OrderDate, po.Status, SUM(po.TotalAmount) as TotalAmount
-            FROM purchase_orders po
-            LEFT JOIN suppliers s ON po.SupplierID = s.SupplierID
-            LEFT JOIN employees e ON po.EmployeeID = e.EmployeeID
-            WHERE po.PurchaseOrderID = ?
-            GROUP BY po.PurchaseOrderID, po.SupplierID, s.SupplierName, po.EmployeeID, e.EmployeeName, po.OrderDate, po.Status
+            SELECT pom.PurchaseOrderID, pom.SupplierID, s.SupplierName, pom.EmployeeID, e.EmployeeName,
+                   pom.OrderDate, pom.Status, pom.TotalAmount
+            FROM purchase_orders_main pom
+            LEFT JOIN suppliers s ON pom.SupplierID = s.SupplierID
+            LEFT JOIN employees e ON pom.EmployeeID = e.EmployeeID
+            WHERE pom.PurchaseOrderID = ?
         ", [$purchaseOrderId]);
 
         if ($purchaseOrder) {
-            // Get individual purchase order items
+            // Get individual purchase order items from new table structure
             $items = $db->fetchAll("
-                SELECT po.ItemID, i.ItemName, po.Quantity, po.UnitPrice, 
-                       po.TotalAmount,
+                SELECT poi.ItemID, i.ItemName, poi.Quantity, poi.UnitPrice, 
+                       poi.TotalAmount,
                        inv.Quantity as CurrentInventory
-                FROM purchase_orders po
-                JOIN items i ON po.ItemID = i.ItemID
+                FROM purchase_order_items poi
+                JOIN items i ON poi.ItemID = i.ItemID
                 LEFT JOIN inventory inv ON i.ItemID = inv.ItemID
-                WHERE po.PurchaseOrderID = ?
+                WHERE poi.PurchaseOrderID = ?
             ", [$purchaseOrderId]);
 
             $purchaseOrder['items'] = $items;
@@ -301,40 +417,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             // Process purchase order creation/update
             if (empty($data['purchase_order_id'])) {
-                $purchaseOrderId = getNextPurchaseOrderID();
+                // Create new purchase order in main table
+                $db->query("INSERT INTO purchase_orders_main (SupplierID, EmployeeID, OrderDate, Status, TotalAmount) VALUES (?, ?, ?, ?, 0)", [
+                    $supplierId,
+                    $employeeId,
+                    $data['order_date'],
+                    $data['status']
+                ]);
+                $purchaseOrderId = $db->lastInsertId();
             } else {
                 $purchaseOrderId = $data['purchase_order_id'];
-                // Delete existing purchase order entries for this PurchaseOrderID
-                $db->query("DELETE FROM purchase_orders WHERE PurchaseOrderID = ?", [$purchaseOrderId]);
+                // Delete existing purchase order items for this PurchaseOrderID
+                $db->query("DELETE FROM purchase_order_items WHERE PurchaseOrderID = ?", [$purchaseOrderId]);
+                // Update the main purchase order
+                $db->query("UPDATE purchase_orders_main SET SupplierID = ?, EmployeeID = ?, OrderDate = ?, Status = ? WHERE PurchaseOrderID = ?", [
+                    $supplierId,
+                    $employeeId,
+                    $data['order_date'],
+                    $data['status'],
+                    $purchaseOrderId
+                ]);
             }
 
-            // Insert items and update inventory
+            // Insert items into purchase_order_items table
             $totalAmount = 0;
             foreach ($data['items'] as $item) {
                 $itemTotal = $item['quantity'] * $item['unitPrice'];
                 $totalAmount += $itemTotal;
 
                 // Insert purchase order item
-                $db->query("INSERT INTO purchase_orders 
-                    (PurchaseOrderID, SupplierID, EmployeeID, ItemID, Quantity, UnitPrice, OrderDate, TotalAmount, Status) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", [
+                $db->query("INSERT INTO purchase_order_items 
+                    (PurchaseOrderID, ItemID, Quantity, UnitPrice, TotalAmount) 
+                    VALUES (?, ?, ?, ?, ?)", [
                     $purchaseOrderId,
-                    $supplierId,
-                    $employeeId,
                     $item['item_id'],
                     $item['quantity'],
                     $item['unitPrice'],
-                    $data['order_date'],
-                    $itemTotal,
-                    $data['status']
+                    $itemTotal
                 ]);
 
                 // Update inventory with average costing (increase stock for purchases)
                 updateInventory($item['item_id'], $item['quantity'], $item['unitPrice']);
             }
 
+            // Update total amount in main purchase order
+            $db->query("UPDATE purchase_orders_main SET TotalAmount = ? WHERE PurchaseOrderID = ?", [$totalAmount, $purchaseOrderId]);
+
             // Create financial transaction
             createPurchaseOrderFinancialTransaction($purchaseOrderId, $supplierId, $totalAmount, $data['status']);
+
+            // Recalculate impact if purchase order is received (handles cost updates)
+            if ($data['status'] === 'Received') {
+                recalculatePurchaseOrderImpact($purchaseOrderId);
+            }
 
             $db->commit();
             Utils::sendSuccessResponse('Purchase order saved successfully', ['purchase_order_id' => $purchaseOrderId]);
@@ -484,8 +619,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
         $db->beginTransaction();
 
         try {
-            // 1. Get all items from the purchase order first
-            $items = $db->fetchAll("SELECT ItemID, Quantity FROM purchase_orders WHERE PurchaseOrderID = ?", [$purchaseOrderId]);
+            // 1. Get all items from the purchase order first using new table structure
+            $items = $db->fetchAll("SELECT ItemID, Quantity FROM purchase_order_items WHERE PurchaseOrderID = ?", [$purchaseOrderId]);
 
             if (empty($items)) {
                 Utils::sendErrorResponse('Purchase order not found');
@@ -497,10 +632,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
                 $db->query("UPDATE inventory SET Quantity = GREATEST(0, Quantity - ?) WHERE ItemID = ?", [$item['Quantity'], $item['ItemID']]);
             }
 
-            // 3. Now delete the purchase order entries
-            $db->query("DELETE FROM purchase_orders WHERE PurchaseOrderID = ?", [$purchaseOrderId]);
+            // 3. Delete purchase order items first (foreign key constraint)
+            $db->query("DELETE FROM purchase_order_items WHERE PurchaseOrderID = ?", [$purchaseOrderId]);
 
-            // Delete financial transaction
+            // 4. Delete the main purchase order record
+            $db->query("DELETE FROM purchase_orders_main WHERE PurchaseOrderID = ?", [$purchaseOrderId]);
+
+            // 5. Delete financial transaction
             deletePurchaseOrderFinancialTransaction($purchaseOrderId);
 
             $db->commit();

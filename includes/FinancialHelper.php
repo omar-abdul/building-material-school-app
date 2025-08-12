@@ -295,32 +295,40 @@ class FinancialHelper
     {
         self::init();
 
-        // Calculate totals from transactions
+        // Calculate totals from transactions with proper logic
         $query = "SELECT 
-                    COALESCE(SUM(CASE WHEN Amount > 0 THEN Amount ELSE 0 END), 0) as totalPurchases,
-                    COALESCE(SUM(CASE WHEN Amount < 0 THEN ABS(Amount) ELSE 0 END), 0) as totalPayments,
+                    COALESCE(SUM(CASE 
+                        WHEN TransactionType = 'SALES_ORDER' THEN ABS(Amount)
+                        ELSE 0 
+                    END), 0) as totalSales,
+                    COALESCE(SUM(CASE 
+                        WHEN TransactionType = 'SALES_PAYMENT' THEN ABS(Amount)
+                        ELSE 0 
+                    END), 0) as totalPayments,
                     MAX(TransactionDate) as lastTransactionDate
                   FROM financial_transactions 
                   WHERE CustomerID = ? AND Status = 'Completed'";
 
         $result = self::$db->fetchOne($query, [$customerId]);
 
-        $totalPurchases = $result['totalPurchases'] ?? 0;
+        $totalSales = $result['totalSales'] ?? 0;
         $totalPayments = $result['totalPayments'] ?? 0;
         $lastTransactionDate = $result['lastTransactionDate'] ?? null;
 
-        // Calculate current balance (purchases - payments)
-        $currentBalance = $totalPurchases - $totalPayments;
+        // Calculate current balance (sales - payments)
+        // Positive balance means customer owes us money
+        // Negative balance means we owe the customer money (overpayment)
+        $currentBalance = $totalSales - $totalPayments;
 
         // Update customer balance
         $updateQuery = "UPDATE customer_balances 
-                       SET CurrentBalance = ?, TotalPurchases = ?, TotalPayments = ?, 
+                       SET CurrentBalance = ?, TotalSales = ?, TotalPayments = ?, 
                            LastTransactionDate = ?, UpdatedAt = CURRENT_TIMESTAMP
                        WHERE CustomerID = ?";
 
         $stmt = self::$db->query($updateQuery, [
             $currentBalance,
-            $totalPurchases,
+            $totalSales,
             $totalPayments,
             $lastTransactionDate,
             $customerId
@@ -329,16 +337,18 @@ class FinancialHelper
         // Insert if not exists
         if ($stmt->rowCount() === 0) {
             $insertQuery = "INSERT INTO customer_balances 
-                           (CustomerID, CurrentBalance, TotalPurchases, TotalPayments, LastTransactionDate)
+                           (CustomerID, CurrentBalance, TotalSales, TotalPayments, LastTransactionDate)
                            VALUES (?, ?, ?, ?, ?)";
             self::$db->query($insertQuery, [
                 $customerId,
                 $currentBalance,
-                $totalPurchases,
+                $totalSales,
                 $totalPayments,
                 $lastTransactionDate
             ]);
         }
+
+        error_log("Customer $customerId balance calculated: Sales=$totalSales, Payments=$totalPayments, Balance=$currentBalance");
     }
 
     /**
@@ -348,10 +358,16 @@ class FinancialHelper
     {
         self::init();
 
-        // Calculate totals from transactions
+        // Calculate totals from transactions with proper logic
         $query = "SELECT 
-                    COALESCE(SUM(CASE WHEN Amount < 0 THEN ABS(Amount) ELSE 0 END), 0) as totalPurchases,
-                    COALESCE(SUM(CASE WHEN Amount > 0 THEN Amount ELSE 0 END), 0) as totalPayments,
+                    COALESCE(SUM(CASE 
+                        WHEN TransactionType = 'PURCHASE_ORDER' THEN ABS(Amount)
+                        ELSE 0 
+                    END), 0) as totalPurchases,
+                    COALESCE(SUM(CASE 
+                        WHEN TransactionType = 'PURCHASE_PAYMENT' THEN ABS(Amount)
+                        ELSE 0 
+                    END), 0) as totalPayments,
                     MAX(TransactionDate) as lastTransactionDate
                   FROM financial_transactions 
                   WHERE SupplierID = ? AND Status = 'Completed'";
@@ -363,6 +379,8 @@ class FinancialHelper
         $lastTransactionDate = $result['lastTransactionDate'] ?? null;
 
         // Calculate current balance (purchases - payments)
+        // Positive balance means we owe the supplier money
+        // Negative balance means the supplier owes us money (overpayment)
         $currentBalance = $totalPurchases - $totalPayments;
 
         // Update supplier balance
@@ -392,6 +410,8 @@ class FinancialHelper
                 $lastTransactionDate
             ]);
         }
+
+        error_log("Supplier $supplierId balance calculated: Purchases=$totalPurchases, Payments=$totalPayments, Balance=$currentBalance");
     }
 
     /**
@@ -433,11 +453,17 @@ class FinancialHelper
 
         // Check if inventory record exists
         $existingInventory = self::$db->fetchOne(
-            "SELECT InventoryID FROM inventory WHERE ItemID = ?",
+            "SELECT InventoryID, Cost FROM inventory WHERE ItemID = ?",
             [$itemId]
         );
 
+        $costChanged = false;
         if ($existingInventory) {
+            // Check if cost has changed
+            if (abs($existingInventory['Cost'] - $averageCost) > 0.01) { // Allow for small floating point differences
+                $costChanged = true;
+            }
+
             // Update existing inventory
             $query = "UPDATE inventory 
                      SET Quantity = Quantity + ?, Cost = ?, LastUpdated = CURRENT_TIMESTAMP 
@@ -450,7 +476,82 @@ class FinancialHelper
             self::$db->query($query, [$itemId, $quantity, $averageCost]);
         }
 
+        // If cost changed, trigger COGS recalculation for all delivered orders using this item
+        if ($costChanged) {
+            self::recalculateCOGSForItem($itemId);
+        }
+
         return $averageCost;
+    }
+
+    /**
+     * Recalculate COGS for all delivered orders that use a specific item
+     * This is called when inventory costs change
+     */
+    public static function recalculateCOGSForItem($itemId)
+    {
+        self::init();
+
+        try {
+            // Find all delivered sales orders that use this item
+            $ordersToRecalculate = self::$db->fetchAll("
+                SELECT DISTINCT som.OrderID
+                FROM sales_orders_main som
+                JOIN sales_order_items soi ON som.OrderID = soi.OrderID
+                WHERE som.Status = 'Delivered' 
+                AND soi.ItemID = ?
+            ", [$itemId]);
+
+            if (empty($ordersToRecalculate)) {
+                return 0; // No orders to recalculate
+            }
+
+            $recalculatedCount = 0;
+            foreach ($ordersToRecalculate as $order) {
+                try {
+                    // Delete existing COGS transactions for this order
+                    self::$db->query("DELETE FROM financial_transactions 
+                                    WHERE TransactionType = 'INVENTORY_SALE' 
+                                    AND ReferenceID = ? 
+                                    AND ReferenceType = 'order'", [$order['OrderID']]);
+
+                    // Get current order items with updated costs
+                    $items = self::$db->fetchAll("
+                        SELECT soi.ItemID, soi.Quantity, inv.Cost 
+                        FROM sales_order_items soi 
+                        LEFT JOIN inventory inv ON soi.ItemID = inv.ItemID 
+                        WHERE soi.OrderID = ?
+                    ", [$order['OrderID']]);
+
+                    // Recreate COGS transactions with updated costs
+                    foreach ($items as $item) {
+                        if ($item['Cost'] && $item['Cost'] > 0) {
+                            $cogsResult = self::createCOGSTransaction(
+                                $order['OrderID'],
+                                $item['ItemID'],
+                                $item['Quantity'],
+                                $item['Cost']
+                            );
+
+                            if ($cogsResult) {
+                                $recalculatedCount++;
+                            }
+                        }
+                    }
+                } catch (Exception $e) {
+                    error_log("Failed to recalculate COGS for OrderID: {$order['OrderID']}: " . $e->getMessage());
+                }
+            }
+
+            if ($recalculatedCount > 0) {
+                error_log("Recalculated COGS for $recalculatedCount items across " . count($ordersToRecalculate) . " orders due to cost change for ItemID: $itemId");
+            }
+
+            return $recalculatedCount;
+        } catch (Exception $e) {
+            error_log("Error recalculating COGS for ItemID: $itemId: " . $e->getMessage());
+            return 0;
+        }
     }
 
     /**
@@ -467,7 +568,8 @@ class FinancialHelper
             'referenceId' => $orderId,
             'referenceType' => 'order',
             'amount' => -$cogsAmount, // Negative for expense (COGS)
-            'status' => $status,
+            'status' => 'Completed', // COGS transactions are always 'Completed' regardless of order status
+            'paymentMethod' => 'Cash', // Default to Cash for COGS transactions
             'description' => "COGS for Order #$orderId - Item #$itemId",
             'createdBy' => 1
         ]);
@@ -489,6 +591,7 @@ class FinancialHelper
             $balance = self::$db->fetchOne("SELECT CurrentBalance FROM supplier_balances WHERE SupplierID = ?", [$data['supplierId']]);
             $previousBalance = $balance ? $balance['CurrentBalance'] : 0;
         }
+        // For COGS and other non-customer/supplier transactions, PreviousBalance stays 0
 
         // Calculate new balance
         $newBalance = $previousBalance + floatval($data['amount']);
@@ -504,7 +607,7 @@ class FinancialHelper
                   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try {
-            self::$db->query($query, [
+            $params = [
                 $data['transactionType'],
                 $data['referenceId'],
                 $data['referenceType'],
@@ -521,7 +624,9 @@ class FinancialHelper
                 $data['description'] ?? null,
                 $data['notes'] ?? null,
                 $data['createdBy'] ?? 1
-            ]);
+            ];
+
+            self::$db->query($query, $params);
 
             $transactionId = self::$db->lastInsertId();
 
@@ -536,6 +641,29 @@ class FinancialHelper
             return $transactionId;
         } catch (Exception $e) {
             error_log("Failed to create financial transaction: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Update cash/wallet balances after financial transaction
+     * This ensures the cash module reflects the latest balances
+     */
+    public static function updateCashBalances()
+    {
+        self::init();
+
+        try {
+            // This method can be called after any financial transaction
+            // to ensure cash/wallet balances are up to date
+            // The actual balance calculation is done in the cash API
+
+            // For now, we just log that balances should be refreshed
+            error_log("Cash balances should be refreshed after financial transaction");
+
+            return true;
+        } catch (Exception $e) {
+            error_log("Failed to update cash balances: " . $e->getMessage());
             return false;
         }
     }

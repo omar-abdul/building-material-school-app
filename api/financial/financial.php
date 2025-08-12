@@ -60,6 +60,9 @@ try {
         case 'getFinancialOverview':
             getFinancialOverview();
             break;
+        case 'recalculateCOGS':
+            recalculateAllCOGS();
+            break;
         default:
             Utils::sendErrorResponse('Invalid action');
             break;
@@ -179,78 +182,60 @@ function addTransaction()
 {
     global $db;
 
-    // Handle both POST data and JSON data
-    $data = $_POST;
+    try {
+        $input = json_decode(file_get_contents('php://input'), true);
 
-    // If no POST data, try to get JSON data
-    if (empty($data)) {
-        $jsonData = file_get_contents('php://input');
-        if ($jsonData) {
-            $data = json_decode($jsonData, true);
-        }
-    }
-
-    // Validate required fields
-    $required = ['transactionType', 'referenceId', 'referenceType', 'amount', 'status'];
-    foreach ($required as $field) {
-        if (empty($data[$field])) {
-            Utils::sendErrorResponse("$field is required");
+        if (!$input) {
+            Utils::sendErrorResponse('Invalid input data');
             return;
         }
-    }
 
-    // Get current balance for customer/supplier
-    $previousBalance = 0;
-    if (!empty($data['customerId'])) {
-        $balance = $db->fetchOne("SELECT CurrentBalance FROM customer_balances WHERE CustomerID = ?", [$data['customerId']]);
-        $previousBalance = $balance ? $balance['CurrentBalance'] : 0;
-    } elseif (!empty($data['supplierId'])) {
-        $balance = $db->fetchOne("SELECT CurrentBalance FROM supplier_balances WHERE SupplierID = ?", [$data['supplierId']]);
-        $previousBalance = $balance ? $balance['CurrentBalance'] : 0;
-    }
+        // Validate required fields
+        $requiredFields = ['transactionType', 'referenceId', 'referenceType', 'amount', 'status'];
+        foreach ($requiredFields as $field) {
+            if (!isset($input[$field])) {
+                Utils::sendErrorResponse("Missing required field: $field");
+                return;
+            }
+        }
 
-    // Calculate new balance
-    $newBalance = $previousBalance + floatval($data['amount']);
+        // Insert the transaction
+        $sql = "INSERT INTO financial_transactions (
+                    TransactionType, ReferenceID, ReferenceType, Amount, 
+                    PaymentMethod, Status, TransactionDate, DueDate,
+                    CustomerID, SupplierID, EmployeeID, Description, Notes, CreatedBy
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-    // Set transaction date
-    $transactionDate = !empty($data['transactionDate']) ? $data['transactionDate'] : date('Y-m-d H:i:s');
+        $params = [
+            $input['transactionType'],
+            $input['referenceId'],
+            $input['referenceType'],
+            $input['amount'],
+            $input['paymentMethod'] ?? null,
+            $input['status'],
+            $input['transactionDate'] ?? date('Y-m-d H:i:s'),
+            $input['dueDate'] ?? null,
+            $input['customerId'] ?? null,
+            $input['supplierId'] ?? null,
+            $input['employeeId'] ?? null,
+            $input['description'] ?? null,
+            $input['notes'] ?? null,
+            $input['createdBy'] ?? 1
+        ];
 
-    // Insert transaction
-    $query = "INSERT INTO financial_transactions (
-                TransactionType, ReferenceID, ReferenceType, Amount, PaymentMethod, 
-                Status, TransactionDate, DueDate, CustomerID, SupplierID, EmployeeID,
-                PreviousBalance, NewBalance, Description, Notes, CreatedBy
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-    try {
-        $db->query($query, [
-            $data['transactionType'],
-            $data['referenceId'],
-            $data['referenceType'],
-            $data['amount'],
-            $data['paymentMethod'] ?? null,
-            $data['status'],
-            $transactionDate,
-            $data['dueDate'] ?? null,
-            $data['customerId'] ?? null,
-            $data['supplierId'] ?? null,
-            $data['employeeId'] ?? null,
-            $previousBalance,
-            $newBalance,
-            $data['description'] ?? null,
-            $data['notes'] ?? null,
-            $data['createdBy'] ?? 1 // Default to admin user
-        ]);
-
+        $db->query($sql, $params);
         $transactionId = $db->lastInsertId();
 
-        // Update balances
-        if (!empty($data['customerId'])) {
-            FinancialHelper::calculateCustomerBalance($data['customerId']);
+        // Update relevant balances based on transaction type
+        if ($input['customerId']) {
+            FinancialHelper::calculateCustomerBalance($input['customerId']);
         }
-        if (!empty($data['supplierId'])) {
-            FinancialHelper::calculateSupplierBalance($data['supplierId']);
+        if ($input['supplierId']) {
+            FinancialHelper::calculateSupplierBalance($input['supplierId']);
         }
+
+        // Update cash/wallet balances to ensure synchronization
+        FinancialHelper::updateCashBalances();
 
         Utils::sendSuccessResponse('Transaction added successfully', ['transactionId' => $transactionId]);
     } catch (Exception $e) {
@@ -553,11 +538,198 @@ function calculateAllBalances()
     }
 }
 
+/**
+ * Recalculate all customer and supplier balances
+ * This ensures consistency after COGS or other financial changes
+ */
+function recalculateAllBalances()
+{
+    global $db;
+    try {
+        require_once __DIR__ . '/../../includes/FinancialHelper.php';
+
+        // Get all customers and suppliers
+        $customers = $db->fetchAll("SELECT CustomerID FROM customers");
+        $suppliers = $db->fetchAll("SELECT SupplierID FROM suppliers");
+
+        $customerCount = 0;
+        $supplierCount = 0;
+
+        // Recalculate customer balances
+        foreach ($customers as $customer) {
+            try {
+                FinancialHelper::calculateCustomerBalance($customer['CustomerID']);
+                $customerCount++;
+            } catch (Exception $e) {
+                error_log("Failed to recalculate customer balance for CustomerID: {$customer['CustomerID']}: " . $e->getMessage());
+            }
+        }
+
+        // Recalculate supplier balances
+        foreach ($suppliers as $supplier) {
+            try {
+                FinancialHelper::calculateSupplierBalance($supplier['SupplierID']);
+                $supplierCount++;
+            } catch (Exception $e) {
+                error_log("Failed to recalculate supplier balance for SupplierID: {$supplier['SupplierID']}: " . $e->getMessage());
+            }
+        }
+
+        error_log("Recalculated balances for $customerCount customers and $supplierCount suppliers");
+    } catch (Exception $e) {
+        error_log("Error recalculating all balances: " . $e->getMessage());
+    }
+}
+
+/**
+ * Manually recalculate all COGS transactions
+ * This is useful for maintenance and testing
+ */
+function recalculateAllCOGS()
+{
+    global $db;
+
+    try {
+        // Find all delivered orders
+        $deliveredOrders = $db->fetchAll("
+            SELECT OrderID FROM sales_orders_main WHERE Status = 'Delivered'
+        ");
+
+        if (empty($deliveredOrders)) {
+            Utils::sendSuccessResponse('No delivered orders found to recalculate COGS for');
+            return;
+        }
+
+        $totalRecalculated = 0;
+        foreach ($deliveredOrders as $order) {
+            try {
+                // Delete existing COGS transactions for this order
+                $db->query("DELETE FROM financial_transactions 
+                            WHERE TransactionType = 'INVENTORY_SALE' 
+                            AND ReferenceID = ? 
+                            AND ReferenceType = 'order'", [$order['OrderID']]);
+
+                // Get current order items with costs
+                $items = $db->fetchAll("
+                    SELECT soi.ItemID, soi.Quantity, inv.Cost 
+                    FROM sales_order_items soi 
+                    LEFT JOIN inventory inv ON soi.ItemID = inv.ItemID 
+                    WHERE soi.OrderID = ?
+                ", [$order['OrderID']]);
+
+                $orderRecalculated = 0;
+                foreach ($items as $item) {
+                    if ($item['Cost'] && $item['Cost'] > 0) {
+                        try {
+                            $cogsResult = FinancialHelper::createCOGSTransaction(
+                                $order['OrderID'],
+                                $item['ItemID'],
+                                $item['Quantity'],
+                                $item['Cost']
+                            );
+
+                            if ($cogsResult) {
+                                $orderRecalculated++;
+                                $totalRecalculated++;
+                            }
+                        } catch (Exception $e) {
+                            error_log("Failed to create COGS transaction for OrderID: {$order['OrderID']}, ItemID: {$item['ItemID']}: " . $e->getMessage());
+                        }
+                    }
+                }
+
+                if ($orderRecalculated > 0) {
+                    error_log("Recalculated $orderRecalculated COGS transactions for OrderID: {$order['OrderID']}");
+                }
+            } catch (Exception $e) {
+                error_log("Error recalculating COGS for OrderID: {$order['OrderID']}: " . $e->getMessage());
+            }
+        }
+
+        Utils::sendSuccessResponse("COGS recalculation completed. Recalculated $totalRecalculated transactions across " . count($deliveredOrders) . " orders.");
+
+        // After COGS recalculation, recalculate all balances to ensure consistency
+        recalculateAllBalances();
+    } catch (Exception $e) {
+        Utils::sendErrorResponse('Failed to recalculate COGS: ' . $e->getMessage());
+    }
+}
+
+/**
+ * Ensure all delivered orders have COGS transactions
+ */
+function createMissingCOGSTransactionsIfNeeded()
+{
+    global $db;
+
+    try {
+        // Find delivered orders that don't have COGS transactions
+        $ordersWithoutCOGS = $db->fetchAll("
+            SELECT DISTINCT som.OrderID, som.Status
+            FROM sales_orders_main som
+            LEFT JOIN financial_transactions ft ON ft.ReferenceID = som.OrderID 
+                AND ft.TransactionType = 'INVENTORY_SALE' 
+                AND ft.ReferenceType = 'order'
+            WHERE som.Status = 'Delivered' 
+            AND ft.TransactionID IS NULL
+        ");
+
+        if (empty($ordersWithoutCOGS)) {
+            return; // No missing COGS transactions
+        }
+
+        $createdCount = 0;
+        foreach ($ordersWithoutCOGS as $order) {
+            // Get items for this order
+            $items = $db->fetchAll("
+                SELECT soi.ItemID, soi.Quantity, inv.Cost 
+                FROM sales_order_items soi 
+                LEFT JOIN inventory inv ON soi.ItemID = inv.ItemID 
+                WHERE soi.OrderID = ?
+            ", [$order['OrderID']]);
+
+            foreach ($items as $item) {
+                if ($item['Cost'] && $item['Cost'] > 0) {
+                    try {
+                        // Create COGS transaction using FinancialHelper
+                        require_once __DIR__ . '/../../includes/FinancialHelper.php';
+                        $cogsResult = FinancialHelper::createCOGSTransaction(
+                            $order['OrderID'],
+                            $item['ItemID'],
+                            $item['Quantity'],
+                            $item['Cost']
+                        );
+
+                        if ($cogsResult) {
+                            $createdCount++;
+                            error_log("Created missing COGS transaction for OrderID: {$order['OrderID']}, ItemID: {$item['ItemID']}");
+                        }
+                    } catch (Exception $e) {
+                        error_log("Failed to create missing COGS transaction for OrderID: {$order['OrderID']}, ItemID: {$item['ItemID']}: " . $e->getMessage());
+                    }
+                }
+            }
+        }
+
+        if ($createdCount > 0) {
+            error_log("Created $createdCount missing COGS transactions in financial overview");
+
+            // After creating COGS transactions, recalculate all balances to ensure consistency
+            recalculateAllBalances();
+        }
+    } catch (Exception $e) {
+        error_log("Error creating missing COGS transactions: " . $e->getMessage());
+    }
+}
+
 function getFinancialOverview()
 {
     global $db;
 
     try {
+        // Ensure all delivered orders have COGS transactions
+        createMissingCOGSTransactionsIfNeeded();
+
         // Get period filter parameters
         $period = $_GET['period'] ?? 'current-month';
         $startDate = $_GET['start_date'] ?? '';
@@ -573,17 +745,17 @@ function getFinancialOverview()
         $revenue = $db->fetchOne($revenueQuery, $dateFilter['params']);
         $totalRevenue = $revenue['total_revenue'] ?? 0;
 
-        // Calculate total COGS (negative inventory sale transactions)
+        // Calculate total COGS (cost of goods sold from inventory sales)
         $cogsQuery = "SELECT COALESCE(SUM(ABS(Amount)), 0) as total_cogs 
                      FROM financial_transactions 
                      WHERE TransactionType = 'INVENTORY_SALE' AND Status = 'Completed' AND Amount < 0" . $dateFilter['where'];
         $cogs = $db->fetchOne($cogsQuery, $dateFilter['params']);
         $totalCOGS = $cogs['total_cogs'] ?? 0;
 
-        // Calculate other expenses (only salary payments and direct expenses, NOT purchase orders)
+        // Calculate other expenses (salary payments, direct expenses, and purchase orders that are completed)
         $expensesQuery = "SELECT COALESCE(SUM(ABS(Amount)), 0) as total_expenses 
                          FROM financial_transactions 
-                         WHERE TransactionType IN ('SALARY_PAYMENT', 'DIRECT_EXPENSE') 
+                         WHERE TransactionType IN ('SALARY_PAYMENT', 'DIRECT_EXPENSE', 'PURCHASE_ORDER') 
                          AND Status = 'Completed' AND Amount < 0" . $dateFilter['where'];
         $expenses = $db->fetchOne($expensesQuery, $dateFilter['params']);
         $totalExpenses = $expenses['total_expenses'] ?? 0;
@@ -591,7 +763,7 @@ function getFinancialOverview()
         // Calculate net profit (revenue - COGS - other expenses)
         $netProfit = $totalRevenue - $totalCOGS - $totalExpenses;
 
-        // Calculate pending payments
+        // Calculate pending payments (all pending transactions with positive amounts)
         $pendingQuery = "SELECT COALESCE(SUM(Amount), 0) as pending_amount, COUNT(*) as pending_count 
                         FROM financial_transactions 
                         WHERE Status = 'Pending' AND Amount > 0" . $dateFilter['where'];

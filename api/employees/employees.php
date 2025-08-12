@@ -67,8 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && !isset($_GET['id']) && !isset($_GET[
                 'email' => $row['Email'],
                 'guarantor' => $row['Guarantor'],
                 'address' => $row['Address'],
-                'dateAdded' => $row['CreatedDate'],
-                'status' => 'Active' // Assuming all are active for this example
+                'dateAdded' => $row['CreatedDate']
             );
         }
         Utils::sendSuccessResponse('Employees retrieved successfully', $employees);
@@ -95,8 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['id'])) {
                 'email' => $row['Email'],
                 'guarantor' => $row['Guarantor'],
                 'address' => $row['Address'],
-                'dateAdded' => $row['CreatedDate'],
-                'status' => 'Active'
+                'dateAdded' => $row['CreatedDate']
             );
             Utils::sendSuccessResponse('Employee retrieved successfully', $employee);
         } else {
@@ -120,14 +118,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $email = $data['email'] ?? '';
         $guarantor = $data['guarantor'] ?? '';
         $address = $data['address'] ?? '';
+        $dateAdded = $data['dateAdded'] ?? date('Y-m-d H:i:s');
 
         if (empty($name) || empty($position)) {
             Utils::sendErrorResponse('Name and position are required');
             return;
         }
 
-        $sql = "INSERT INTO employees (EmployeeName, Position, BaseSalary, ExpectedSalary, Phone, Email, Guarantor, Address) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-        $db->query($sql, [$name, $position, $baseSalary, $expectedSalary, $phone, $email, $guarantor, $address]);
+        $sql = "INSERT INTO employees (EmployeeName, Position, BaseSalary, ExpectedSalary, Phone, Email, Guarantor, Address, CreatedDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $db->query($sql, [$name, $position, $baseSalary, $expectedSalary, $phone, $email, $guarantor, $address, $dateAdded]);
         Utils::sendSuccessResponse('Employee added successfully');
     } catch (Exception $e) {
         Utils::sendErrorResponse('Failed to add employee: ' . $e->getMessage());
@@ -148,14 +147,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
         $email = $data['email'] ?? '';
         $guarantor = $data['guarantor'] ?? '';
         $address = $data['address'] ?? '';
+        $dateAdded = $data['dateAdded'] ?? date('Y-m-d H:i:s');
 
         if (empty($id) || empty($name) || empty($position)) {
             Utils::sendErrorResponse('Employee ID, name and position are required');
             return;
         }
 
-        $sql = "UPDATE employees SET EmployeeName=?, Position=?, BaseSalary=?, ExpectedSalary=?, Phone=?, Email=?, Guarantor=?, Address=? WHERE EmployeeID=?";
-        $db->query($sql, [$name, $position, $baseSalary, $expectedSalary, $phone, $email, $guarantor, $address, $id]);
+        $sql = "UPDATE employees SET EmployeeName=?, Position=?, BaseSalary=?, ExpectedSalary=?, Phone=?, Email=?, Guarantor=?, Address=?, CreatedDate=? WHERE EmployeeID=?";
+        $db->query($sql, [$name, $position, $baseSalary, $expectedSalary, $phone, $email, $guarantor, $address, $dateAdded, $id]);
         Utils::sendSuccessResponse('Employee updated successfully');
     } catch (Exception $e) {
         Utils::sendErrorResponse('Failed to update employee: ' . $e->getMessage());

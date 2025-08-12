@@ -39,7 +39,34 @@ document.addEventListener('DOMContentLoaded', () => {
     loadItems();
     filterPurchaseOrders();
     setupAutocomplete();
+    
+    // Add event delegation for action buttons
+    setupActionButtonListeners();
 });
+
+// Setup event delegation for action buttons
+function setupActionButtonListeners() {
+    // Find the table body element
+    const tableBody = document.querySelector('.purchase-orders-table tbody');
+    
+    if (tableBody) {
+        tableBody.addEventListener('click', (e) => {
+            const target = e.target.closest('.action-btn');
+            if (!target) return;
+            
+            const purchaseOrderId = target.dataset.purchaseOrderId;
+            if (!purchaseOrderId) return;
+            
+            if (target.classList.contains('view-btn')) {
+                viewPurchaseOrder(purchaseOrderId);
+            } else if (target.classList.contains('edit-btn')) {
+                editPurchaseOrder(purchaseOrderId);
+            } else if (target.classList.contains('delete-btn')) {
+                deletePurchaseOrder(purchaseOrderId);
+            }
+        });
+    }
+}
 
 // Load suppliers from API
 async function loadSuppliers() {
@@ -549,13 +576,13 @@ function updatePurchaseOrdersTable(purchaseOrders) {
                 <td><span class="status-${status.toLowerCase()}">${status}</span></td>
                 <td>${orderDate}</td>
                 <td class="action-cell">
-                    <button class="action-btn view-btn" onclick="viewPurchaseOrder('${purchaseOrder.PurchaseOrderID || ''}')">
+                    <button class="action-btn view-btn" data-purchase-order-id="${purchaseOrder.PurchaseOrderID || ''}">
                         <i class="fas fa-eye"></i> View
                     </button>
-                    <button class="action-btn edit-btn" onclick="editPurchaseOrder('${purchaseOrder.PurchaseOrderID || ''}')">
+                    <button class="action-btn edit-btn" data-purchase-order-id="${purchaseOrder.PurchaseOrderID || ''}">
                         <i class="fas fa-edit"></i> Edit
                     </button>
-                    <button class="action-btn delete-btn" onclick="deletePurchaseOrder('${purchaseOrder.PurchaseOrderID || ''}')">
+                    <button class="action-btn delete-btn" data-purchase-order-id="${purchaseOrder.PurchaseOrderID || ''}">
                         <i class="fas fa-trash"></i> Delete
                     </button>
                 </td>

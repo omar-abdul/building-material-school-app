@@ -142,6 +142,10 @@ $role = $auth->getUserRole();
                         <i class="fas fa-file-invoice-dollar"></i>
                         Financial Report
                     </button>
+                    <button class="action-btn" onclick="refreshFinancialData()">
+                        <i class="fas fa-sync-alt"></i>
+                        Refresh Data
+                    </button>
                 </div>
 
                 <!-- Main Content Area -->

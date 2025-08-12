@@ -51,6 +51,14 @@ function setupEventListeners() {
 		});
 	}
 
+	// Transaction view buttons (event delegation)
+	document.addEventListener("click", (e) => {
+		const target = e.target.closest("[data-transaction-id]");
+		if (target?.dataset.transactionId) {
+			viewTransactionDetails(target.dataset.transactionId);
+		}
+	});
+
 	// Search inputs
 	document
 		.getElementById("customer-search")
@@ -343,8 +351,8 @@ function renderTransactionHistory(transactions) {
             </td>
             <td>
                 <div class="action-buttons">
-                    <button class="btn btn-sm btn-primary" onclick="viewTransactionDetails(${transaction.TransactionID})">
-                        <i class="fas fa-eye"></i> Details
+                    <button class="btn btn-sm btn-primary" data-transaction-id="${transaction.TransactionID}">
+                        <i class="fas fa-eye"></i> View
                     </button>
                 </div>
             </td>
@@ -1135,69 +1143,126 @@ async function recordSupplierPayment() {
 	}
 }
 
-// Period Filter Functions
+/**
+ * Handle period filter change
+ */
 function handlePeriodChange() {
 	const periodSelect = document.getElementById("period-select");
 	const customRange = document.getElementById("custom-date-range");
+	const period = periodSelect.value;
 
-	if (periodSelect.value === "custom") {
-		customRange.style.display = "flex";
-		// Set default dates to current month
-		const now = new Date();
-		const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-		const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-		document.getElementById("start-date").value = firstDay
-			.toISOString()
-			.split("T")[0];
-		document.getElementById("end-date").value = lastDay
-			.toISOString()
-			.split("T")[0];
+	if (period === "custom") {
+		customRange.style.display = "block";
 	} else {
 		customRange.style.display = "none";
+		// Auto-update the overview when period changes
+		updatePeriodFilter();
 	}
-
-	updatePeriodFilter();
 }
 
+/**
+ * Update period filter and reload data
+ */
 function updatePeriodFilter() {
 	const periodSelect = document.getElementById("period-select");
-	const startDate = document.getElementById("start-date").value;
-	const endDate = document.getElementById("end-date").value;
+	const startDate = document.getElementById("start-date");
+	const endDate = document.getElementById("end-date");
+	const period = periodSelect.value;
 
-	// Update global filter
-	currentPeriodFilter.type = periodSelect.value;
-	currentPeriodFilter.startDate = startDate;
-	currentPeriodFilter.endDate = endDate;
-
-	// Reload data based on current section
-	if (currentSection === "customer-balances") {
-		showCustomerBalances();
-	} else if (currentSection === "supplier-balances") {
-		showSupplierBalances();
-	} else if (currentSection === "transaction-history") {
-		showTransactionHistory();
-	} else if (currentSection === "financial-report") {
-		showFinancialReport();
+	// Validate custom date range
+	if (period === "custom") {
+		if (!startDate.value || !endDate.value) {
+			alert("Please select both start and end dates for custom range");
+			return;
+		}
+		if (startDate.value > endDate.value) {
+			alert("Start date cannot be after end date");
+			return;
+		}
 	}
 
-	// Always reload overview cards
+	// Reload financial overview with new period
 	loadFinancialOverview();
+
+	// Reload current section data if it's transaction history
+	if (currentSection === "transaction-history") {
+		showTransactionHistory();
+	}
 }
 
+/**
+ * Get period filter parameters for API calls
+ */
 function getPeriodFilterParams() {
-	const params = new URLSearchParams();
+	const periodSelect = document.getElementById("period-select");
+	const startDate = document.getElementById("start-date");
+	const endDate = document.getElementById("end-date");
+	const period = periodSelect.value;
 
-	if (
-		currentPeriodFilter.type === "custom" &&
-		currentPeriodFilter.startDate &&
-		currentPeriodFilter.endDate
-	) {
-		params.append("start_date", currentPeriodFilter.startDate);
-		params.append("end_date", currentPeriodFilter.endDate);
-	} else {
-		params.append("period", currentPeriodFilter.type);
+	let params = `period=${period}`;
+
+	if (period === "custom" && startDate.value && endDate.value) {
+		params += `&start_date=${startDate.value}&end_date=${endDate.value}`;
 	}
 
-	return params.toString();
+	return params;
+}
+
+/**
+ * Refresh all financial data
+ */
+async function refreshFinancialData() {
+	try {
+		// Show loading state
+		const refreshBtn = document.querySelector(
+			'.action-btn[onclick="refreshFinancialData()"]',
+		);
+		const originalText = refreshBtn.innerHTML;
+		refreshBtn.innerHTML =
+			'<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+		refreshBtn.disabled = true;
+
+		// Reload financial overview
+		await loadFinancialOverview();
+
+		// Reload current section data
+		if (currentSection === "customer-balances") {
+			await showCustomerBalances();
+		} else if (currentSection === "supplier-balances") {
+			await showSupplierBalances();
+		} else if (currentSection === "transaction-history") {
+			await showTransactionHistory();
+		} else if (currentSection === "financial-report") {
+			await showFinancialReport();
+		}
+
+		// Show success message
+		showSuccessMessage("Financial data refreshed successfully");
+	} catch (error) {
+		console.error("Error refreshing financial data:", error);
+		showErrorMessage("Failed to refresh financial data");
+	} finally {
+		// Restore button state
+		const refreshBtn = document.querySelector(
+			'.action-btn[onclick="refreshFinancialData()"]',
+		);
+		refreshBtn.innerHTML = originalText;
+		refreshBtn.disabled = false;
+	}
+}
+
+/**
+ * Show success message
+ */
+function showSuccessMessage(message) {
+	// You can implement a toast notification system here
+	console.log("SUCCESS:", message);
+}
+
+/**
+ * Show error message
+ */
+function showErrorMessage(message) {
+	// You can implement a toast notification system here
+	console.error("ERROR:", message);
 }

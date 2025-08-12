@@ -6,13 +6,13 @@
  */
 
 require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../config/utils.php';
 require_once __DIR__ . '/../../includes/FinancialHelper.php';
 
 header('Content-Type: application/json');
 
 try {
-    $pdo = Database::getInstance()->getConnection();
-    $financialHelper = new FinancialHelper($pdo);
+    $db = Database::getInstance();
 
     // Get customer balances with their information
     $query = "
@@ -28,9 +28,7 @@ try {
         ORDER BY c.CustomerName ASC
     ";
 
-    $stmt = $pdo->prepare($query);
-    $stmt->execute();
-    $customers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $customers = $db->fetchAll($query);
 
     // Format the data
     $formattedCustomers = [];
@@ -57,11 +55,7 @@ try {
         ]
     ];
 
-    echo json_encode($response);
+    Utils::sendSuccessResponse('Customer balances retrieved successfully', $formattedCustomers);
 } catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode([
-        'success' => false,
-        'message' => 'Error loading customer balances: ' . $e->getMessage()
-    ]);
+    Utils::sendErrorResponse('Error loading customer balances: ' . $e->getMessage());
 }

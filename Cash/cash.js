@@ -108,7 +108,7 @@ async function showTransactionHistory() {
 		const data = await response.json();
 
 		if (data.success) {
-			renderTransactionHistory(data.data);
+			renderTransactions(data.data);
 		} else {
 			tbody.innerHTML =
 				'<tr><td colspan="8" class="empty-state">No transactions found</td></tr>';
@@ -123,43 +123,30 @@ async function showTransactionHistory() {
 /**
  * Render transaction history
  */
-function renderTransactionHistory(transactions) {
+function renderTransactions(transactions) {
 	const tbody = document.getElementById("transaction-history-body");
 
 	if (!transactions || transactions.length === 0) {
 		tbody.innerHTML =
-			'<tr><td colspan="8" class="empty-state">No transactions found</td></tr>';
+			'<tr><td colspan="7" class="empty-state">No transactions found</td></tr>';
 		return;
 	}
 
 	tbody.innerHTML = transactions
 		.map(
 			(transaction) => `
-        <tr>
-            <td>${transaction.TransactionID}</td>
-            <td>${formatDate(transaction.TransactionDate)}</td>
-            <td>
-                <span class="status-badge ${getTransactionTypeClass(transaction.TransactionType)}">
-                    ${transaction.TransactionType}
-                </span>
-            </td>
-            <td>${escapeHtml(transaction.Description || "N/A")}</td>
-            <td class="${getAmountClass(transaction.Amount)}">
-                ${formatCurrency(Math.abs(transaction.Amount))}
-            </td>
-            <td>${escapeHtml(transaction.PaymentMethod || "N/A")}</td>
-            <td class="${getBalanceClass(transaction.NewBalance)}">
-                ${formatCurrency(transaction.NewBalance)}
-            </td>
-            <td>
-                <div class="action-buttons">
-                    <button class="btn btn-primary btn-sm" onclick="viewTransactionDetails(${transaction.TransactionID})">
-                        <i class="fas fa-eye"></i> View
-                    </button>
-                </div>
-            </td>
-        </tr>
-    `,
+		<tr>
+			<td>${formatDate(transaction.TransactionDate)}</td>
+			<td>${transaction.TransactionType}</td>
+			<td>${transaction.ReferenceID}</td>
+			<td>${transaction.Description || "-"}</td>
+			<td class="amount ${transaction.Amount >= 0 ? "positive" : "negative"}">
+				${formatCurrency(transaction.Amount)}
+			</td>
+			<td>${transaction.PaymentMethod}</td>
+			<td class="balance">${formatCurrency(transaction.RunningBalance)}</td>
+		</tr>
+	`,
 		)
 		.join("");
 }
@@ -191,49 +178,30 @@ function setDefaultExpenseDate() {
 }
 
 /**
- * Record expense payment
+ * Refresh balances and transaction history
+ */
+async function refreshCashModule() {
+	await loadBalances();
+	await showTransactionHistory();
+}
+
+/**
+ * Record expense transaction
  */
 async function recordExpense() {
-	const amount = Number.parseFloat(
-		document.getElementById("expense-amount").value,
-	);
-	const paymentMethod = document.getElementById("expense-payment-method").value;
-	const date = document.getElementById("expense-date").value;
-	const category = document.getElementById("expense-category").value;
-	const description = document.getElementById("expense-description").value;
-	const notes = document.getElementById("expense-notes").value;
+	const form = document.getElementById("expense-form");
+	const formData = new FormData(form);
 
-	if (!amount || amount <= 0) {
-		alert("Please enter a valid amount");
-		return;
-	}
-
-	if (!paymentMethod) {
-		alert("Please select a payment method");
-		return;
-	}
-
-	if (!date) {
-		alert("Please select a date");
-		return;
-	}
-
-	if (!description) {
-		alert("Please enter a description");
-		return;
-	}
-
-	const formData = {
-		transactionType: "DIRECT_EXPENSE",
-		referenceId: `EXP-${Date.now()}`,
-		referenceType: "expense",
-		amount: -amount, // Negative for expense
-		paymentMethod: paymentMethod,
-		status: "Completed",
-		transactionDate: date,
-		description: description,
-		notes: notes,
-		category: category,
+	// Convert FormData to JSON object
+	const expenseData = {
+		transactionType: formData.get("transactionType"),
+		amount: -Math.abs(Number.parseFloat(formData.get("amount"))), // Make expenses negative
+		paymentMethod: formData.get("paymentMethod"),
+		transactionDate: formData.get("transactionDate"),
+		description: formData.get("description"),
+		notes: formData.get("notes") || null,
+		referenceId: formData.get("referenceId") || null,
+		referenceType: formData.get("referenceType") || null,
 	};
 
 	try {
@@ -244,23 +212,28 @@ async function recordExpense() {
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify(formData),
+				body: JSON.stringify(expenseData),
 			},
 		);
 
 		const data = await response.json();
 
 		if (data.success) {
-			alert("Expense recorded successfully!");
-			closeExpenseModal();
-			loadBalances();
-			showTransactionHistory();
+			// Close modal and refresh data
+			closeModal();
+			form.reset();
+
+			// Refresh the entire module to show updated balances
+			await refreshCashModule();
+
+			// Show success message
+			showNotification("Expense recorded successfully", "success");
 		} else {
-			alert(`Failed to record expense: ${data.message}`);
+			showNotification(`Failed to record expense: ${data.message}`, "error");
 		}
 	} catch (error) {
 		console.error("Error recording expense:", error);
-		alert("Failed to record expense");
+		showNotification("Error recording expense", "error");
 	}
 }
 
@@ -529,4 +502,33 @@ function debounce(func, wait) {
 		clearTimeout(timeout);
 		timeout = setTimeout(later, wait);
 	};
+}
+
+/**
+ * Show notification message
+ */
+function showNotification(message, type = "info") {
+	// Remove existing notifications
+	const existingNotifications = document.querySelectorAll(".notification");
+	for (const notification of existingNotifications) {
+		notification.remove();
+	}
+
+	// Create notification element
+	const notification = document.createElement("div");
+	notification.className = `notification ${type}`;
+	notification.innerHTML = `
+		<span class="notification-message">${message}</span>
+		<button class="notification-close" onclick="this.parentElement.remove()">&times;</button>
+	`;
+
+	// Add to page
+	document.body.appendChild(notification);
+
+	// Auto-remove after 5 seconds
+	setTimeout(() => {
+		if (notification.parentElement) {
+			notification.remove();
+		}
+	}, 5000);
 }

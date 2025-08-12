@@ -6,13 +6,13 @@
  */
 
 require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../config/utils.php';
 require_once __DIR__ . '/../../includes/FinancialHelper.php';
 
 header('Content-Type: application/json');
 
 try {
-    $pdo = Database::getInstance()->getConnection();
-    $financialHelper = new FinancialHelper($pdo);
+    $db = Database::getInstance();
 
     // Get supplier balances with their information
     $query = "
@@ -28,9 +28,7 @@ try {
         ORDER BY s.SupplierName ASC
     ";
 
-    $stmt = $pdo->prepare($query);
-    $stmt->execute();
-    $suppliers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $suppliers = $db->fetchAll($query);
 
     // Format the data
     $formattedSuppliers = [];
@@ -57,11 +55,7 @@ try {
         ]
     ];
 
-    echo json_encode($response);
+    Utils::sendSuccessResponse('Supplier balances retrieved successfully', $formattedSuppliers);
 } catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode([
-        'success' => false,
-        'message' => 'Error loading supplier balances: ' . $e->getMessage()
-    ]);
+    Utils::sendErrorResponse('Error loading supplier balances: ' . $e->getMessage());
 }

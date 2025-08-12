@@ -36,7 +36,36 @@ customerForm.addEventListener('submit', saveCustomer);
 searchInput.addEventListener('input', filterCustomers);
 
 // Load customers when page loads
-document.addEventListener('DOMContentLoaded', loadCustomers);
+document.addEventListener('DOMContentLoaded', () => {
+    loadCustomers();
+    setupActionButtonListeners();
+});
+
+// Setup event delegation for action buttons
+function setupActionButtonListeners() {
+    // Find the table body element
+    const tableBody = document.querySelector('.customers-table tbody');
+    
+    if (tableBody) {
+        tableBody.addEventListener('click', (e) => {
+            const target = e.target.closest('.action-btn');
+            if (!target) return;
+            
+            const customerId = target.dataset.customerId;
+            if (!customerId) return;
+            
+            if (target.classList.contains('view-btn')) {
+                viewCustomer(customerId);
+            } else if (target.classList.contains('edit-btn')) {
+                editCustomer(customerId);
+            } else if (target.classList.contains('delete-btn')) {
+                deleteCustomer(customerId);
+            } else if (target.classList.contains('history-btn')) {
+                viewOrderHistory(customerId);
+            }
+        });
+    }
+}
 
 // Functions
 function loadCustomers() {
@@ -69,16 +98,16 @@ function renderCustomersTable(customers) {
             <td>${customer.Address || ''}</td>
             <td>${customer.DateAdded}</td>
             <td class="action-cell">
-                <button class="action-btn view-btn" onclick="viewCustomer('${customer.CustomerID}')">
+                <button class="action-btn view-btn" data-customer-id="${customer.CustomerID}">
                     <i class="fas fa-eye"></i> View
                 </button>
-                <button class="action-btn edit-btn" onclick="editCustomer('${customer.CustomerID}')">
+                <button class="action-btn edit-btn" data-customer-id="${customer.CustomerID}">
                     <i class="fas fa-edit"></i> Edit
                 </button>
-                <button class="action-btn delete-btn" onclick="deleteCustomer('${customer.CustomerID}')">
+                <button class="action-btn delete-btn" data-customer-id="${customer.CustomerID}">
                     <i class="fas fa-trash"></i> Delete
                 </button>
-                <button class="action-btn history-btn" onclick="viewOrderHistory('${customer.CustomerID}')">
+                <button class="action-btn history-btn" data-customer-id="${customer.CustomerID}">
                     <i class="fas fa-history"></i> History
                 </button>
             </td>
@@ -103,7 +132,7 @@ function editCustomer(id) {
         .then(data => {
             if (data.success) {
                 const customer = data.data;
-                document.getElementById(')modalTitle').textContent = "Edit Customer";
+                document.getElementById('modalTitle').textContent = "Edit Customer";
                 document.getElementById('customerId').value = customer.CustomerID;
                 document.getElementById('customerName').value = customer.Name;
                 document.getElementById('phone').value = customer.Phone;
@@ -127,7 +156,7 @@ function viewCustomer(id) {
         .then(data => {
             if (data.success) {
                 const customer = data.data;
-                document.getElementById(')viewId').textContent = customer.CustomerID;
+                document.getElementById('viewId').textContent = customer.CustomerID;
                 document.getElementById('viewName').textContent = customer.Name;
                 document.getElementById('viewPhone').textContent = customer.Phone;
                 document.getElementById('viewEmail').textContent = customer.Email || "N/A";

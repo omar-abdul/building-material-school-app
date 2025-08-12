@@ -88,6 +88,10 @@ $role = $auth->getUserRole();
                         <i class="fas fa-plus"></i>
                         Record Expense
                     </button>
+                    <button class="action-btn" onclick="refreshCashModule()">
+                        <i class="fas fa-sync-alt"></i>
+                        Refresh Balances
+                    </button>
                     <button class="action-btn" onclick="showTransactionHistory()">
                         <i class="fas fa-history"></i>
                         Transaction History
@@ -147,11 +151,11 @@ $role = $auth->getUserRole();
                     <div class="form-row">
                         <div class="form-group">
                             <label for="expense-amount">Amount ($) *</label>
-                            <input type="number" id="expense-amount" step="0.01" min="0.01" required>
+                            <input type="number" id="expense-amount" name="amount" step="0.01" min="0.01" required>
                         </div>
                         <div class="form-group">
                             <label for="expense-payment-method">Payment Method *</label>
-                            <select id="expense-payment-method" required>
+                            <select id="expense-payment-method" name="paymentMethod" required>
                                 <option value="">Select Method</option>
                                 <option value="Cash">Cash</option>
                                 <option value="Wallet">Wallet</option>
@@ -162,11 +166,11 @@ $role = $auth->getUserRole();
                     <div class="form-row">
                         <div class="form-group">
                             <label for="expense-date">Date *</label>
-                            <input type="date" id="expense-date" required>
+                            <input type="date" id="expense-date" name="transactionDate" required>
                         </div>
                         <div class="form-group">
                             <label for="expense-category">Category</label>
-                            <select id="expense-category">
+                            <select id="expense-category" name="referenceType">
                                 <option value="">Select Category</option>
                                 <option value="Office Supplies">Office Supplies</option>
                                 <option value="Utilities">Utilities</option>
@@ -180,13 +184,16 @@ $role = $auth->getUserRole();
 
                     <div class="form-group">
                         <label for="expense-description">Description *</label>
-                        <input type="text" id="expense-description" placeholder="Expense description..." required>
+                        <input type="text" id="expense-description" name="description" placeholder="Expense description..." required>
                     </div>
 
                     <div class="form-group">
                         <label for="expense-notes">Notes</label>
-                        <textarea id="expense-notes" rows="3" placeholder="Additional notes..."></textarea>
+                        <textarea id="expense-notes" name="notes" rows="3" placeholder="Additional notes..."></textarea>
                     </div>
+
+                    <!-- Hidden field for transaction type -->
+                    <input type="hidden" name="transactionType" value="DIRECT_EXPENSE">
 
                     <div class="form-actions">
                         <button type="button" class="btn btn-secondary" onclick="closeExpenseModal()">Cancel</button>

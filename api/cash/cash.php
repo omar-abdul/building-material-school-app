@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 require_once __DIR__ . '/../../config/base_url.php';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/auth.php';
-require_once __DIR__ . '/../../includes/Utils.php';
+require_once __DIR__ . '/../../config/utils.php';
 
 $auth = new Auth();
 $auth->requireAuth();
@@ -54,23 +54,47 @@ function getBalances()
     global $db;
 
     try {
-        // Calculate cash balance (sum of all cash transactions)
+        // Calculate cash balance - consider transaction types for proper balance
         $cashQuery = "
-            SELECT COALESCE(SUM(Amount), 0) as cash_balance 
+            SELECT 
+                COALESCE(SUM(
+                    CASE 
+                        -- Money coming IN (positive for cash balance)
+                        WHEN TransactionType IN ('SALES_PAYMENT', 'DIRECT_INCOME', 'PURCHASE_REFUND') THEN ABS(Amount)
+                        -- Money going OUT (negative for cash balance)  
+                        WHEN TransactionType IN ('PURCHASE_PAYMENT', 'SALARY_PAYMENT', 'DIRECT_EXPENSE', 'SALES_REFUND') THEN -ABS(Amount)
+                        -- For inventory transactions, consider the direction
+                        WHEN TransactionType = 'INVENTORY_SALE' AND Amount > 0 THEN ABS(Amount)
+                        WHEN TransactionType = 'INVENTORY_PURCHASE' AND Amount < 0 THEN -ABS(Amount)
+                        ELSE 0
+                    END
+                ), 0) as cash_balance 
             FROM financial_transactions 
-            WHERE PaymentMethod = 'Cash'
+            WHERE PaymentMethod = 'Cash' AND Status = 'Completed'
         ";
         $cashResult = $db->fetchOne($cashQuery);
-        $cashBalance = $cashResult ? $cashResult : 0;
+        $cashBalance = $cashResult['cash_balance'] ?? 0;
 
-        // Calculate wallet balance (sum of all wallet transactions)
+        // Calculate wallet balance - same logic for wallet transactions
         $walletQuery = "
-            SELECT COALESCE(SUM(Amount), 0) as wallet_balance 
+            SELECT 
+                COALESCE(SUM(
+                    CASE 
+                        -- Money coming IN (positive for wallet balance)
+                        WHEN TransactionType IN ('SALES_PAYMENT', 'DIRECT_INCOME', 'PURCHASE_REFUND') THEN ABS(Amount)
+                        -- Money going OUT (negative for wallet balance)
+                        WHEN TransactionType IN ('PURCHASE_PAYMENT', 'SALARY_PAYMENT', 'DIRECT_EXPENSE', 'SALES_REFUND') THEN -ABS(Amount)
+                        -- For inventory transactions, consider the direction
+                        WHEN TransactionType = 'INVENTORY_SALE' AND Amount > 0 THEN ABS(Amount)
+                        WHEN TransactionType = 'INVENTORY_PURCHASE' AND Amount < 0 THEN -ABS(Amount)
+                        ELSE 0
+                    END
+                ), 0) as wallet_balance 
             FROM financial_transactions 
-            WHERE PaymentMethod = 'Wallet'
+            WHERE PaymentMethod = 'Wallet' AND Status = 'Completed'
         ";
         $walletResult = $db->fetchOne($walletQuery);
-        $walletBalance = $walletResult ? $walletResult : 0;
+        $walletBalance = $walletResult['wallet_balance'] ?? 0;
 
         // Total balance
         $totalBalance = $cashBalance + $walletBalance;
@@ -111,17 +135,41 @@ function getTransactions()
                 -- Calculate running balance for each payment method
                 CASE 
                     WHEN ft.PaymentMethod = 'Cash' THEN
-                        (SELECT COALESCE(SUM(Amount), 0) 
+                        (SELECT COALESCE(SUM(
+                            CASE 
+                                -- Money coming IN (positive for cash balance)
+                                WHEN ft2.TransactionType IN ('SALES_PAYMENT', 'DIRECT_INCOME', 'PURCHASE_REFUND') THEN ABS(ft2.Amount)
+                                -- Money going OUT (negative for cash balance)  
+                                WHEN ft2.TransactionType IN ('PURCHASE_PAYMENT', 'SALARY_PAYMENT', 'DIRECT_EXPENSE', 'SALES_REFUND') THEN -ABS(ft2.Amount)
+                                -- For inventory transactions, consider the direction
+                                WHEN ft2.TransactionType = 'INVENTORY_SALE' AND ft2.Amount > 0 THEN ABS(ft2.Amount)
+                                WHEN ft2.TransactionType = 'INVENTORY_PURCHASE' AND ft2.Amount < 0 THEN -ABS(ft2.Amount)
+                                ELSE 0
+                            END
+                        ), 0) 
                          FROM financial_transactions ft2 
                          WHERE ft2.PaymentMethod = 'Cash' 
+                         AND ft2.Status = 'Completed'
                          AND ft2.TransactionID <= ft.TransactionID)
                     WHEN ft.PaymentMethod = 'Wallet' THEN
-                        (SELECT COALESCE(SUM(Amount), 0) 
+                        (SELECT COALESCE(SUM(
+                            CASE 
+                                -- Money coming IN (positive for wallet balance)
+                                WHEN ft2.TransactionType IN ('SALES_PAYMENT', 'DIRECT_INCOME', 'PURCHASE_REFUND') THEN ft2.Amount
+                                -- Money going OUT (negative for wallet balance)
+                                WHEN ft2.TransactionType IN ('PURCHASE_PAYMENT', 'SALARY_PAYMENT', 'DIRECT_EXPENSE', 'SALES_REFUND') THEN -ABS(ft2.Amount)
+                                -- For inventory transactions, consider the direction
+                                WHEN ft2.TransactionType = 'INVENTORY_SALE' AND ft2.Amount > 0 THEN ft2.Amount
+                                WHEN ft2.TransactionType = 'INVENTORY_PURCHASE' AND ft2.Amount < 0 THEN -ABS(ft2.Amount)
+                                ELSE 0
+                            END
+                        ), 0) 
                          FROM financial_transactions ft2 
                          WHERE ft2.PaymentMethod = 'Wallet' 
+                         AND ft2.Status = 'Completed'
                          AND ft2.TransactionID <= ft.TransactionID)
                     ELSE 0
-                END as NewBalance
+                END as RunningBalance
             FROM financial_transactions ft
             WHERE ft.PaymentMethod IN ('Cash', 'Wallet')
             ORDER BY ft.TransactionDate DESC, ft.TransactionID DESC
@@ -165,17 +213,41 @@ function getTransaction()
                 -- Calculate running balance for each payment method
                 CASE 
                     WHEN ft.PaymentMethod = 'Cash' THEN
-                        (SELECT COALESCE(SUM(Amount), 0) 
+                        (SELECT COALESCE(SUM(
+                            CASE 
+                                -- Money coming IN (positive for cash balance)
+                                WHEN ft2.TransactionType IN ('SALES_PAYMENT', 'DIRECT_INCOME', 'PURCHASE_REFUND') THEN ABS(ft2.Amount)
+                                -- Money going OUT (negative for cash balance)  
+                                WHEN ft2.TransactionType IN ('PURCHASE_PAYMENT', 'SALARY_PAYMENT', 'DIRECT_EXPENSE', 'SALES_REFUND') THEN -ABS(ft2.Amount)
+                                -- For inventory transactions, consider the direction
+                                WHEN ft2.TransactionType = 'INVENTORY_SALE' AND ft2.Amount > 0 THEN ABS(ft2.Amount)
+                                WHEN ft2.TransactionType = 'INVENTORY_PURCHASE' AND ft2.Amount < 0 THEN -ABS(ft2.Amount)
+                                ELSE 0
+                            END
+                        ), 0) 
                          FROM financial_transactions ft2 
                          WHERE ft2.PaymentMethod = 'Cash' 
+                         AND ft2.Status = 'Completed'
                          AND ft2.TransactionID <= ft.TransactionID)
                     WHEN ft.PaymentMethod = 'Wallet' THEN
-                        (SELECT COALESCE(SUM(Amount), 0) 
+                        (SELECT COALESCE(SUM(
+                            CASE 
+                                -- Money coming IN (positive for wallet balance)
+                                WHEN ft2.TransactionType IN ('SALES_PAYMENT', 'DIRECT_INCOME', 'PURCHASE_REFUND') THEN ft2.Amount
+                                -- Money going OUT (negative for wallet balance)
+                                WHEN ft2.TransactionType IN ('PURCHASE_PAYMENT', 'SALARY_PAYMENT', 'DIRECT_EXPENSE', 'SALES_REFUND') THEN -ABS(ft2.Amount)
+                                -- For inventory transactions, consider the direction
+                                WHEN ft2.TransactionType = 'INVENTORY_SALE' AND ft2.Amount > 0 THEN ft2.Amount
+                                WHEN ft2.TransactionType = 'INVENTORY_PURCHASE' AND ft2.Amount < 0 THEN -ABS(ft2.Amount)
+                                ELSE 0
+                            END
+                        ), 0) 
                          FROM financial_transactions ft2 
                          WHERE ft2.PaymentMethod = 'Wallet' 
+                         AND ft2.Status = 'Completed'
                          AND ft2.TransactionID <= ft.TransactionID)
                     ELSE 0
-                END as NewBalance
+                END as RunningBalance
             FROM financial_transactions ft
             WHERE ft.TransactionID = ? AND ft.PaymentMethod IN ('Cash', 'Wallet')
         ";
@@ -232,9 +304,19 @@ function addTransaction()
                 TransactionDate,
                 Description,
                 Notes,
+                PreviousBalance,
+                NewBalance,
+                CreatedBy,
                 CreatedAt
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
         ";
+
+        // Get current user ID from session
+        $currentUserId = SessionManager::getUserId() ?? 1; // Default to 1 if not set
+
+        // Calculate balances (for now, set to 0 - this can be enhanced later)
+        $previousBalance = 0.00;
+        $newBalance = 0.00;
 
         $params = [
             $input['transactionType'],
@@ -245,10 +327,14 @@ function addTransaction()
             $input['status'] ?? 'Completed',
             $input['transactionDate'],
             $input['description'],
-            $input['notes'] ?? null
+            $input['notes'] ?? null,
+            $previousBalance,
+            $newBalance,
+            $currentUserId
         ];
 
-        $transactionId = $db->insert($query, $params);
+        $db->query($query, $params);
+        $transactionId = $db->lastInsertId();
 
         if (!$transactionId) {
             throw new Exception('Failed to insert transaction');
@@ -256,39 +342,7 @@ function addTransaction()
 
         $db->commit();
 
-        // Get the created transaction
-        $createdTransaction = $db->fetchOne("
-            SELECT 
-                ft.TransactionID,
-                ft.TransactionDate,
-                ft.TransactionType,
-                ft.ReferenceID,
-                ft.ReferenceType,
-                ft.Amount,
-                ft.PaymentMethod,
-                ft.Status,
-                ft.Description,
-                ft.Notes,
-                ft.CreatedAt,
-                -- Calculate running balance for each payment method
-                CASE 
-                    WHEN ft.PaymentMethod = 'Cash' THEN
-                        (SELECT COALESCE(SUM(Amount), 0) 
-                         FROM financial_transactions ft2 
-                         WHERE ft2.PaymentMethod = 'Cash' 
-                         AND ft2.TransactionID <= ft.TransactionID)
-                    WHEN ft.PaymentMethod = 'Wallet' THEN
-                        (SELECT COALESCE(SUM(Amount), 0) 
-                         FROM financial_transactions ft2 
-                         WHERE ft2.PaymentMethod = 'Wallet' 
-                         AND ft2.TransactionID <= ft.TransactionID)
-                    ELSE 0
-                END as NewBalance
-            FROM financial_transactions ft
-            WHERE ft.TransactionID = ?
-        ", [$transactionId]);
-
-        Utils::sendSuccessResponse('Transaction added successfully', $createdTransaction);
+        Utils::sendSuccessResponse('Transaction added successfully', ['transactionId' => $transactionId]);
     } catch (Exception $e) {
         $db->rollback();
         Utils::sendErrorResponse('Failed to add transaction: ' . $e->getMessage());

@@ -29,7 +29,7 @@ CREATE TABLE `categories` (
   `Description` varchar(500) DEFAULT NULL,
   `CreatedDate` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`CategoryID`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -39,7 +39,7 @@ CREATE TABLE `categories` (
 LOCK TABLES `categories` WRITE;
 /*!40000 ALTER TABLE `categories` DISABLE KEYS */;
 INSERT INTO `categories` VALUES
-(8,'Uncategorized','Default category for uncategorized items','2025-08-01 14:54:26');
+(1,'Uncategorized','Default category for uncategorized items','2025-08-12 17:59:07');
 /*!40000 ALTER TABLE `categories` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -69,7 +69,7 @@ CREATE TABLE `customer_balances` (
 LOCK TABLES `customer_balances` WRITE;
 /*!40000 ALTER TABLE `customer_balances` DISABLE KEYS */;
 INSERT INTO `customer_balances` VALUES
-(1,20.00,30.00,10.00,'2025-08-01 00:00:00','2025-08-01 12:03:12');
+(1,61.00,67.00,6.00,'2025-08-12 19:00:07','2025-08-12 19:00:07');
 /*!40000 ALTER TABLE `customer_balances` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -98,7 +98,7 @@ CREATE TABLE `customers` (
 LOCK TABLES `customers` WRITE;
 /*!40000 ALTER TABLE `customers` DISABLE KEYS */;
 INSERT INTO `customers` VALUES
-(1,'Test customer','064444444','email@email.com','ewew','2025-07-22 14:07:21');
+(1,'Customer','064444444444','emmail@rmai.cpm','ewere','2025-08-12 21:22:58');
 /*!40000 ALTER TABLE `customers` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -131,7 +131,7 @@ CREATE TABLE `employees` (
 LOCK TABLES `employees` WRITE;
 /*!40000 ALTER TABLE `employees` DISABLE KEYS */;
 INSERT INTO `employees` VALUES
-(1,'TEST EMP','Manager',100.00,101,'me','0644444','email@email.com','ddas','2025-07-22 14:04:36');
+(1,'Employee 1','Manager',100.00,110,'aabe','0633333333','email@email.com','rrrw','2025-08-12 21:22:13');
 /*!40000 ALTER TABLE `employees` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -169,7 +169,7 @@ CREATE TABLE `financial_transactions` (
   KEY `idx_supplier` (`SupplierID`),
   KEY `idx_status` (`Status`),
   KEY `idx_date` (`TransactionDate`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -179,12 +179,11 @@ CREATE TABLE `financial_transactions` (
 LOCK TABLES `financial_transactions` WRITE;
 /*!40000 ALTER TABLE `financial_transactions` DISABLE KEYS */;
 INSERT INTO `financial_transactions` VALUES
-(2,'SALES_ORDER','1','order',30.00,NULL,'Completed','2025-07-22 11:16:41',NULL,1,NULL,NULL,0.00,30.00,'Sales Order #1',NULL,1,'2025-07-22 11:16:41','2025-07-22 11:16:41'),
-(3,'INVENTORY_SALE','1','order',-15.00,NULL,'Completed','2025-07-22 14:22:59',NULL,NULL,NULL,NULL,0.00,0.00,'COGS for Order #1 - Item #1',NULL,1,'2025-07-22 11:22:59','2025-07-22 11:22:59'),
-(4,'PURCHASE_ORDER','1','purchase',300.00,NULL,'Completed','2025-07-22 14:24:02',NULL,NULL,1,NULL,0.00,0.00,'Purchase Order #1',NULL,1,'2025-07-22 11:24:02','2025-07-22 11:24:02'),
-(5,'SALES_PAYMENT','PAY-1754049792483','payment',-10.00,'Cash','Completed','2025-08-01 00:00:00',NULL,1,NULL,NULL,30.00,20.00,'weq','qwe',1,'2025-08-01 12:03:12','2025-08-01 12:03:12'),
-(6,'PURCHASE_PAYMENT','PAY-1754049809569','payment',150.00,'Wallet','Completed','2025-08-01 00:00:00',NULL,NULL,1,NULL,300.00,450.00,'wew','we',1,'2025-08-01 12:03:29','2025-08-01 13:15:43'),
-(7,'SALARY_PAYMENT','2','salary',-100.00,'Wallet','Completed','2025-08-01 12:06:54',NULL,NULL,NULL,1,0.00,-100.00,'Salary Payment #2',NULL,1,'2025-08-01 12:06:54','2025-08-01 13:15:43');
+(1,'PURCHASE_ORDER','1','purchase',160.00,NULL,'Completed','2025-08-12 18:24:26',NULL,NULL,1,NULL,0.00,160.00,'Purchase Order #1',NULL,1,'2025-08-12 18:24:26','2025-08-12 18:24:26'),
+(2,'SALES_ORDER','1','order',48.00,NULL,'Completed','2025-08-12 18:24:50',NULL,1,NULL,NULL,0.00,48.00,'Sales Order #1',NULL,1,'2025-08-12 18:24:50','2025-08-12 18:24:50'),
+(3,'SALES_PAYMENT','PAY-1755023140885','payment',-6.00,'Cash','Completed','2025-08-12 00:00:00',NULL,1,NULL,NULL,0.00,0.00,'iii','qw',1,'2025-08-12 18:25:40','2025-08-12 18:25:40'),
+(4,'PURCHASE_ORDER','3','purchase',6.00,NULL,'Completed','2025-08-12 18:54:07',NULL,NULL,1,NULL,-160.00,-154.00,'Purchase Order #3',NULL,1,'2025-08-12 18:54:07','2025-08-12 18:54:07'),
+(5,'SALES_ORDER','250812125','order',19.00,NULL,'Completed','2025-08-12 19:00:07',NULL,1,NULL,NULL,42.00,61.00,'Sales Order #250812125',NULL,1,'2025-08-12 19:00:07','2025-08-12 19:00:07');
 /*!40000 ALTER TABLE `financial_transactions` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -204,7 +203,7 @@ CREATE TABLE `inventory` (
   PRIMARY KEY (`InventoryID`),
   KEY `ItemID` (`ItemID`),
   CONSTRAINT `inventory_ibfk_1` FOREIGN KEY (`ItemID`) REFERENCES `items` (`ItemID`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -214,7 +213,8 @@ CREATE TABLE `inventory` (
 LOCK TABLES `inventory` WRITE;
 /*!40000 ALTER TABLE `inventory` DISABLE KEYS */;
 INSERT INTO `inventory` VALUES
-(1,1,19,15.00,'2025-07-22 14:15:46');
+(1,1,4,13.40,'2025-08-12 21:54:07'),
+(2,2,1,3.00,'2025-08-12 21:54:07');
 /*!40000 ALTER TABLE `inventory` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -243,7 +243,7 @@ CREATE TABLE `items` (
   CONSTRAINT `items_ibfk_1` FOREIGN KEY (`CategoryID`) REFERENCES `categories` (`CategoryID`),
   CONSTRAINT `items_ibfk_2` FOREIGN KEY (`SupplierID`) REFERENCES `suppliers` (`SupplierID`) ON DELETE SET NULL,
   CONSTRAINT `items_ibfk_3` FOREIGN KEY (`RegisteredByEmployeeID`) REFERENCES `employees` (`EmployeeID`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -253,7 +253,8 @@ CREATE TABLE `items` (
 LOCK TABLES `items` WRITE;
 /*!40000 ALTER TABLE `items` DISABLE KEYS */;
 INSERT INTO `items` VALUES
-(1,'test item',4.00,8,NULL,1,'','fer','2025-07-22 00:00:00');
+(1,'new items',5.00,1,NULL,1,'ewsss','fdsfd','2025-08-12 00:00:00'),
+(2,'second',8.00,1,NULL,1,'sdsd','erew','2025-08-12 00:00:00');
 /*!40000 ALTER TABLE `items` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -283,7 +284,7 @@ CREATE TABLE `orders` (
   CONSTRAINT `orders_ibfk_1` FOREIGN KEY (`CustomerID`) REFERENCES `customers` (`CustomerID`),
   CONSTRAINT `orders_ibfk_2` FOREIGN KEY (`EmployeeID`) REFERENCES `employees` (`EmployeeID`),
   CONSTRAINT `orders_ibfk_3` FOREIGN KEY (`ItemID`) REFERENCES `items` (`ItemID`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -293,7 +294,8 @@ CREATE TABLE `orders` (
 LOCK TABLES `orders` WRITE;
 /*!40000 ALTER TABLE `orders` DISABLE KEYS */;
 INSERT INTO `orders` VALUES
-(1,1,1,1,1,1,30.00,'2025-07-22 00:00:00',30.00,'Delivered');
+(1,1,1,1,1,6,8.00,'2025-08-12 00:00:00',48.00,'Delivered'),
+(2,250812125,1,NULL,1,1,19.00,'2025-08-12 00:00:00',19.00,'Delivered');
 /*!40000 ALTER TABLE `orders` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -321,7 +323,7 @@ CREATE TABLE `purchase_orders` (
   CONSTRAINT `purchase_orders_ibfk_1` FOREIGN KEY (`SupplierID`) REFERENCES `suppliers` (`SupplierID`) ON DELETE CASCADE,
   CONSTRAINT `purchase_orders_ibfk_2` FOREIGN KEY (`EmployeeID`) REFERENCES `employees` (`EmployeeID`) ON DELETE SET NULL,
   CONSTRAINT `purchase_orders_ibfk_3` FOREIGN KEY (`ItemID`) REFERENCES `items` (`ItemID`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -330,6 +332,10 @@ CREATE TABLE `purchase_orders` (
 
 LOCK TABLES `purchase_orders` WRITE;
 /*!40000 ALTER TABLE `purchase_orders` DISABLE KEYS */;
+INSERT INTO `purchase_orders` VALUES
+(1,1,1,1,10,16.00,'2025-08-12 00:00:00',160.00,'Received'),
+(3,1,1,1,1,3.00,'2025-08-12 00:00:00',3.00,'Received'),
+(4,1,1,2,1,3.00,'2025-08-12 00:00:00',3.00,'Received');
 /*!40000 ALTER TABLE `purchase_orders` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -357,7 +363,7 @@ CREATE TABLE `salaries` (
   KEY `idx_status` (`Status`),
   KEY `idx_employee_payment_date` (`EmployeeID`,`PaymentDate`),
   CONSTRAINT `salaries_ibfk_1` FOREIGN KEY (`EmployeeID`) REFERENCES `employees` (`EmployeeID`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -366,9 +372,6 @@ CREATE TABLE `salaries` (
 
 LOCK TABLES `salaries` WRITE;
 /*!40000 ALTER TABLE `salaries` DISABLE KEYS */;
-INSERT INTO `salaries` VALUES
-(1,1,100.00,0.00,100.00,'Cash','2025-07-22','Paid','2025-07-22 12:22:42','2025-07-22 12:23:09'),
-(2,1,100.00,0.00,100.00,'Wallet','2025-08-01','Paid','2025-08-01 12:06:54','2025-08-01 13:15:43');
 /*!40000 ALTER TABLE `salaries` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -397,6 +400,8 @@ CREATE TABLE `supplier_balances` (
 
 LOCK TABLES `supplier_balances` WRITE;
 /*!40000 ALTER TABLE `supplier_balances` DISABLE KEYS */;
+INSERT INTO `supplier_balances` VALUES
+(1,-166.00,0.00,166.00,'2025-08-12 18:54:07','2025-08-12 18:54:07');
 /*!40000 ALTER TABLE `supplier_balances` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -416,7 +421,7 @@ CREATE TABLE `suppliers` (
   `Address` varchar(200) DEFAULT NULL,
   `CreatedDate` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`SupplierID`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -426,7 +431,7 @@ CREATE TABLE `suppliers` (
 LOCK TABLES `suppliers` WRITE;
 /*!40000 ALTER TABLE `suppliers` DISABLE KEYS */;
 INSERT INTO `suppliers` VALUES
-(2,'NEXT ','new customer','044','email@email.com','eewr','2025-08-01 15:27:24');
+(1,'TEST SUPPLIER','me','0633333333','email@email.com','rrrw','2025-08-12 21:21:01');
 /*!40000 ALTER TABLE `suppliers` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -475,7 +480,7 @@ CREATE TABLE `users` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `username` (`username`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -485,8 +490,7 @@ CREATE TABLE `users` (
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
 INSERT INTO `users` VALUES
-(6,'user','$2y$10$tDH9Mu5aaSVBLh6W/g.zbuX5xTLpcGTsJCkPp2Wbd6Kkv9yWKB7oi','user','2025-07-18 10:25:21'),
-(7,'admin','$2y$12$0Hv8nyGZvPUMQnhOB/N1Le73o7evzUlP1Kcjs6b5aOqFQsm0Y9746','admin','2025-08-01 11:55:08');
+(1,'admin','$2y$12$hYNqxKF8GZoBxQIekfimHOu1IvQ8mfwZAaB.lBfiQiq7Yw1xjUP4a','admin','2025-08-12 17:59:07');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -499,4 +503,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-08-01 16:19:43
+-- Dump completed on 2025-08-12 22:19:52
