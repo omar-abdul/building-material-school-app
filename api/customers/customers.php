@@ -108,20 +108,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['id']) && isset($_GET['h
             return;
         }
 
-        $sql = "SELECT 
-                    CONCAT('ORD-', o.OrderID) as OrderID,
-                    DATE_FORMAT(o.OrderDate, '%Y-%m-%d') as OrderDate,
-                    o.TotalAmount as Total,
-                    o.Status,
-                    COUNT(t.TransactionID) as TransactionsCount,
-                    IFNULL(SUM(t.Amount), 0) as PaidAmount
-                FROM orders o
-                LEFT JOIN Transactions t ON o.OrderID = t.OrderID
-                WHERE o.CustomerID = ?
-                GROUP BY o.OrderID
-                ORDER BY o.OrderDate DESC";
+        // Check if new table structure exists, otherwise use old structure
+        $tableExists = $db->fetchOne("SHOW TABLES LIKE 'sales_orders_main'");
+
+        if ($tableExists) {
+            // Use new table structure
+            $sql = "SELECT 
+                        CONCAT('ORD-', som.OrderID) as OrderID,
+                        DATE_FORMAT(som.OrderDate, '%Y-%m-%d') as OrderDate,
+                        som.TotalAmount as Total,
+                        som.Status,
+                        som.Notes,
+                        COUNT(DISTINCT soi.ItemEntryID) as ItemsCount,
+                        COALESCE(SUM(CASE WHEN ft.TransactionType = 'SALES_PAYMENT' THEN ABS(ft.Amount) ELSE 0 END), 0) as PaidAmount,
+                        COALESCE(SUM(CASE WHEN ft.TransactionType = 'SALES_ORDER' THEN ABS(ft.Amount) ELSE 0 END), 0) as TotalAmount
+                    FROM sales_orders_main som
+                    LEFT JOIN sales_order_items soi ON som.OrderID = soi.OrderID
+                    LEFT JOIN financial_transactions ft ON som.OrderID = ft.ReferenceID AND ft.ReferenceType = 'order'
+                    WHERE som.CustomerID = ?
+                    GROUP BY som.OrderID, som.OrderDate, som.TotalAmount, som.Status, som.Notes
+                    ORDER BY som.OrderDate DESC";
+        } else {
+            // Use old table structure
+            $sql = "SELECT 
+                        CONCAT('ORD-', o.OrderID) as OrderID,
+                        DATE_FORMAT(o.OrderDate, '%Y-%m-%d') as OrderDate,
+                        o.TotalAmount as Total,
+                        o.Status,
+                        '' as Notes,
+                        COUNT(DISTINCT o.OrderEntryID) as ItemsCount,
+                        COALESCE(SUM(CASE WHEN ft.TransactionType = 'SALES_PAYMENT' THEN ABS(ft.Amount) ELSE 0 END), 0) as PaidAmount,
+                        COALESCE(SUM(CASE WHEN ft.TransactionType = 'SALES_ORDER' THEN ABS(ft.Amount) ELSE 0 END), 0) as TotalAmount
+                    FROM orders o
+                    LEFT JOIN financial_transactions ft ON o.OrderID = ft.ReferenceID AND ft.ReferenceType = 'order'
+                    WHERE o.CustomerID = ?
+                    GROUP BY o.OrderID, o.OrderDate, o.TotalAmount, o.Status
+                    ORDER BY o.OrderDate DESC";
+        }
 
         $orders = $db->fetchAll($sql, [$customerId]);
+
+        // Calculate balance for each order
+        foreach ($orders as &$order) {
+            $order['Balance'] = $order['TotalAmount'] - $order['PaidAmount'];
+            $order['BalanceFormatted'] = '$' . number_format($order['Balance'], 2);
+            $order['TotalFormatted'] = '$' . number_format($order['TotalAmount'], 2);
+            $order['PaidFormatted'] = '$' . number_format($order['PaidAmount'], 2);
+        }
+
         Utils::sendSuccessResponse('Order history retrieved successfully', $orders);
     } catch (Exception $e) {
         Utils::sendErrorResponse('Failed to retrieve order history: ' . $e->getMessage());

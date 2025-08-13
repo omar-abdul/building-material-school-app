@@ -46,15 +46,8 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
             <div class="search-filter">
                 <div class="search-box">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="searchInput" placeholder="Search employees...">
+                    <input type="text" id="searchInput" placeholder="Search employees by name or phone...">
                 </div>
-                <select id="positionFilter" class="form-group">
-                    <option value="">Filter by Position</option>
-                    <option value="Manager">Manager</option>
-                    <option value="Sales">Sales</option>
-                    <option value="Accountant">Accountant</option>
-                    <option value="Warehouse">Warehouse</option>
-                </select>
             </div>
 
             <!-- Employees Table -->
@@ -98,13 +91,13 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
                 <input type="hidden" id="employeeId">
 
                 <div class="form-group">
-                    <label for="employeeName">Employee Name</label>
+                    <label for="employeeName">Employee Name *</label>
                     <input type="text" id="employeeName" required>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="position">Position</label>
+                        <label for="position">Position *</label>
                         <select id="position" required>
                             <option value="">Select Position</option>
                             <option value="Manager">Manager</option>
@@ -142,7 +135,7 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="phone">Phone</label>
+                        <label for="phone">Phone *</label>
                         <input type="tel" id="phone" required>
                     </div>
                     <div class="form-group">
@@ -161,7 +154,7 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
                     <textarea id="address" rows="3"></textarea>
                 </div>
 
-                <!-- Add this form-group right after the customer details section in the items modal -->
+                <!-- Add this form-group right after the employee details section in the items modal -->
                 <div class="form-group">
                     <label for="DateAdded">Date Added</label>
                     <input type="date" id="DateAdded" required>

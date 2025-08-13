@@ -13,7 +13,7 @@ const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
 const employeeForm = document.getElementById("employeeForm");
 const calculateBtn = document.getElementById("calculateBtn");
 const searchInput = document.getElementById("searchInput");
-const positionFilter = document.getElementById("positionFilter");
+// Position filter removed to match customers page style
 const employeesTable = document.querySelector(".employees-table tbody");
 
 // Form elements for dynamic calculation
@@ -36,7 +36,7 @@ confirmDeleteBtn.addEventListener("click", confirmDelete);
 employeeForm.addEventListener("submit", saveEmployee);
 calculateBtn.addEventListener("click", calculateExpectedSalary);
 searchInput.addEventListener("input", filterEmployees);
-positionFilter.addEventListener("change", filterEmployees);
+// Position filter event listener removed
 
 // Dynamic calculation event listeners
 baseSalaryInput.addEventListener("input", calculateExpectedSalary);
@@ -340,7 +340,6 @@ function saveEmployee(e) {
 
 function filterEmployees() {
 	const searchTerm = searchInput.value.toLowerCase();
-	const positionFilterValue = positionFilter.value.toLowerCase();
 
 	const rows = document.querySelectorAll(".employees-table tbody tr");
 
@@ -358,10 +357,7 @@ function filterEmployees() {
 			phone.includes(searchTerm) ||
 			email.includes(searchTerm);
 
-		const matchesPositionFilter =
-			positionFilterValue === "" || position === positionFilterValue;
-
-		if (matchesSearch && matchesPositionFilter) {
+		if (matchesSearch) {
 			row.style.display = "";
 		} else {
 			row.style.display = "none";

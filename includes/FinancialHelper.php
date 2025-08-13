@@ -300,7 +300,7 @@ class FinancialHelper
                     COALESCE(SUM(CASE 
                         WHEN TransactionType = 'SALES_ORDER' THEN ABS(Amount)
                         ELSE 0 
-                    END), 0) as totalSales,
+                    END), 0) as totalPurchases,
                     COALESCE(SUM(CASE 
                         WHEN TransactionType = 'SALES_PAYMENT' THEN ABS(Amount)
                         ELSE 0 
@@ -311,24 +311,24 @@ class FinancialHelper
 
         $result = self::$db->fetchOne($query, [$customerId]);
 
-        $totalSales = $result['totalSales'] ?? 0;
+        $totalPurchases = $result['totalPurchases'] ?? 0;
         $totalPayments = $result['totalPayments'] ?? 0;
         $lastTransactionDate = $result['lastTransactionDate'] ?? null;
 
         // Calculate current balance (sales - payments)
         // Positive balance means customer owes us money
         // Negative balance means we owe the customer money (overpayment)
-        $currentBalance = $totalSales - $totalPayments;
+        $currentBalance = $totalPurchases - $totalPayments;
 
         // Update customer balance
         $updateQuery = "UPDATE customer_balances 
-                       SET CurrentBalance = ?, TotalSales = ?, TotalPayments = ?, 
+                       SET CurrentBalance = ?, TotalPurchases = ?, TotalPayments = ?, 
                            LastTransactionDate = ?, UpdatedAt = CURRENT_TIMESTAMP
                        WHERE CustomerID = ?";
 
         $stmt = self::$db->query($updateQuery, [
             $currentBalance,
-            $totalSales,
+            $totalPurchases,
             $totalPayments,
             $lastTransactionDate,
             $customerId
@@ -337,18 +337,18 @@ class FinancialHelper
         // Insert if not exists
         if ($stmt->rowCount() === 0) {
             $insertQuery = "INSERT INTO customer_balances 
-                           (CustomerID, CurrentBalance, TotalSales, TotalPayments, LastTransactionDate)
+                           (CustomerID, CurrentBalance, TotalPurchases, TotalPayments, LastTransactionDate)
                            VALUES (?, ?, ?, ?, ?)";
             self::$db->query($insertQuery, [
                 $customerId,
                 $currentBalance,
-                $totalSales,
+                $totalPurchases,
                 $totalPayments,
                 $lastTransactionDate
             ]);
         }
 
-        error_log("Customer $customerId balance calculated: Sales=$totalSales, Payments=$totalPayments, Balance=$currentBalance");
+        error_log("Customer $customerId balance calculated: Purchases=$totalPurchases, Payments=$totalPayments, Balance=$currentBalance");
     }
 
     /**

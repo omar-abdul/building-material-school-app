@@ -96,47 +96,47 @@ CREATE TABLE `inventory` (
   CONSTRAINT `inventory_ibfk_1` FOREIGN KEY (`ItemID`) REFERENCES `items` (`ItemID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Table structure for table `orders`
-CREATE TABLE `orders` (
-  `OrderEntryID` int(11) NOT NULL AUTO_INCREMENT,
-  `OrderID` int(11) NOT NULL,
-  `CustomerID` int(11) NOT NULL,
-  `EmployeeID` int(11) DEFAULT NULL,
-  `ItemID` int(11) NOT NULL,
-  `Quantity` int(11) NOT NULL DEFAULT 1,
-  `UnitPrice` decimal(10,2) NOT NULL,
-  `OrderDate` datetime DEFAULT current_timestamp(),
-  `TotalAmount` decimal(10,2) DEFAULT 0.00,
-  `Status` varchar(20) DEFAULT 'Pending',
-  PRIMARY KEY (`OrderEntryID`),
-  KEY `CustomerID` (`CustomerID`),
-  KEY `EmployeeID` (`EmployeeID`),
-  KEY `ItemID` (`ItemID`),
-  KEY `OrderID` (`OrderID`),
-  CONSTRAINT `orders_ibfk_1` FOREIGN KEY (`CustomerID`) REFERENCES `customers` (`CustomerID`),
-  CONSTRAINT `orders_ibfk_2` FOREIGN KEY (`EmployeeID`) REFERENCES `employees` (`EmployeeID`),
-  CONSTRAINT `orders_ibfk_3` FOREIGN KEY (`ItemID`) REFERENCES `items` (`ItemID`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+-- -- Table structure for table `orders`
+-- CREATE TABLE `orders` (
+--   `OrderEntryID` int(11) NOT NULL AUTO_INCREMENT,
+--   `OrderID` int(11) NOT NULL,
+--   `CustomerID` int(11) NOT NULL,
+--   `EmployeeID` int(11) DEFAULT NULL,
+--   `ItemID` int(11) NOT NULL,
+--   `Quantity` int(11) NOT NULL DEFAULT 1,
+--   `UnitPrice` decimal(10,2) NOT NULL,
+--   `OrderDate` datetime DEFAULT current_timestamp(),
+--   `TotalAmount` decimal(10,2) DEFAULT 0.00,
+--   `Status` varchar(20) DEFAULT 'Pending',
+--   PRIMARY KEY (`OrderEntryID`),
+--   KEY `CustomerID` (`CustomerID`),
+--   KEY `EmployeeID` (`EmployeeID`),
+--   KEY `ItemID` (`ItemID`),
+--   KEY `OrderID` (`OrderID`),
+--   CONSTRAINT `orders_ibfk_1` FOREIGN KEY (`CustomerID`) REFERENCES `customers` (`CustomerID`),
+--   CONSTRAINT `orders_ibfk_2` FOREIGN KEY (`EmployeeID`) REFERENCES `employees` (`EmployeeID`),
+--   CONSTRAINT `orders_ibfk_3` FOREIGN KEY (`ItemID`) REFERENCES `items` (`ItemID`)
+-- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Table structure for table `purchase_orders`
-CREATE TABLE `purchase_orders` (
-  `PurchaseOrderID` int(11) NOT NULL AUTO_INCREMENT,
-  `SupplierID` int(11) NOT NULL,
-  `EmployeeID` int(11) DEFAULT NULL,
-  `ItemID` int(11) NOT NULL,
-  `Quantity` int(11) NOT NULL,
-  `UnitPrice` decimal(10,2) NOT NULL,
-  `OrderDate` datetime NOT NULL,
-  `TotalAmount` decimal(10,2) NOT NULL,
-  `Status` enum('Pending','Processing','Received','Cancelled') NOT NULL DEFAULT 'Pending',
-  PRIMARY KEY (`PurchaseOrderID`),
-  KEY `SupplierID` (`SupplierID`),
-  KEY `EmployeeID` (`EmployeeID`),
-  KEY `ItemID` (`ItemID`),
-  CONSTRAINT `purchase_orders_ibfk_1` FOREIGN KEY (`SupplierID`) REFERENCES `suppliers` (`SupplierID`) ON DELETE CASCADE,
-  CONSTRAINT `purchase_orders_ibfk_2` FOREIGN KEY (`EmployeeID`) REFERENCES `employees` (`EmployeeID`) ON DELETE SET NULL,
-  CONSTRAINT `purchase_orders_ibfk_3` FOREIGN KEY (`ItemID`) REFERENCES `items` (`ItemID`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+-- -- Table structure for table `purchase_orders`
+-- CREATE TABLE `purchase_orders` (
+--   `PurchaseOrderID` int(11) NOT NULL AUTO_INCREMENT,
+--   `SupplierID` int(11) NOT NULL,
+--   `EmployeeID` int(11) DEFAULT NULL,
+--   `ItemID` int(11) NOT NULL,
+--   `Quantity` int(11) NOT NULL,
+--   `UnitPrice` decimal(10,2) NOT NULL,
+--   `OrderDate` datetime NOT NULL,
+--   `TotalAmount` decimal(10,2) NOT NULL,
+--   `Status` enum('Pending','Processing','Received','Cancelled') NOT NULL DEFAULT 'Pending',
+--   PRIMARY KEY (`PurchaseOrderID`),
+--   KEY `SupplierID` (`SupplierID`),
+--   KEY `EmployeeID` (`EmployeeID`),
+--   KEY `ItemID` (`ItemID`),
+--   CONSTRAINT `purchase_orders_ibfk_1` FOREIGN KEY (`SupplierID`) REFERENCES `suppliers` (`SupplierID`) ON DELETE CASCADE,
+--   CONSTRAINT `purchase_orders_ibfk_2` FOREIGN KEY (`EmployeeID`) REFERENCES `employees` (`EmployeeID`) ON DELETE SET NULL,
+--   CONSTRAINT `purchase_orders_ibfk_3` FOREIGN KEY (`ItemID`) REFERENCES `items` (`ItemID`) ON DELETE CASCADE
+-- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Table structure for table `salaries`
 CREATE TABLE `salaries` (
@@ -213,18 +213,18 @@ CREATE TABLE `supplier_balances` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Table structure for table `transactions`
-CREATE TABLE `transactions` (
-  `TransactionID` int(11) NOT NULL AUTO_INCREMENT,
-  `OrderID` int(11) NOT NULL,
-  `PaymentMethod` varchar(50) NOT NULL,
-  `Amount` decimal(10,2) NOT NULL,
-  `Balance` decimal(10,2) DEFAULT 0.00,
-  `TransactionDate` datetime DEFAULT current_timestamp(),
-  `Status` varchar(20) DEFAULT 'Completed',
-  PRIMARY KEY (`TransactionID`),
-  KEY `OrderID` (`OrderID`),
-  CONSTRAINT `transactions_ibfk_1` FOREIGN KEY (`OrderID`) REFERENCES `orders` (`OrderID`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+-- CREATE TABLE `transactions` (
+--   `TransactionID` int(11) NOT NULL AUTO_INCREMENT,
+--   `OrderID` int(11) NOT NULL,
+--   `PaymentMethod` varchar(50) NOT NULL,
+--   `Amount` decimal(10,2) NOT NULL,
+--   `Balance` decimal(10,2) DEFAULT 0.00,
+--   `TransactionDate` datetime DEFAULT current_timestamp(),
+--   `Status` varchar(20) DEFAULT 'Completed',
+--   PRIMARY KEY (`TransactionID`),
+--   KEY `OrderID` (`OrderID`),
+--   CONSTRAINT `transactions_ibfk_1` FOREIGN KEY (`OrderID`) REFERENCES `orders` (`OrderID`)
+-- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
 -- Fixed Database Structure for BMMS

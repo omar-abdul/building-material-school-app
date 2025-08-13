@@ -186,6 +186,21 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
                     <strong>Customer:</strong> <span id="historyCustomerName">Ahmed Mohamed (CUST-1001)</span>
                 </div>
 
+                <div class="history-summary">
+                    <div class="summary-item">
+                        <strong>Total Orders:</strong> <span id="totalOrders">0</span>
+                    </div>
+                    <div class="summary-item">
+                        <strong>Total Amount:</strong> <span id="totalAmount">$0.00</span>
+                    </div>
+                    <div class="summary-item">
+                        <strong>Total Paid:</strong> <span id="totalPaid">$0.00</span>
+                    </div>
+                    <div class="summary-item">
+                        <strong>Outstanding Balance:</strong> <span id="outstandingBalance">$0.00</span>
+                    </div>
+                </div>
+
                 <table class="orders-table">
                     <thead>
                         <tr>
@@ -193,7 +208,7 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
                             <th>Date</th>
                             <th>Total</th>
                             <th>Paid</th>
-                            <th>Transactions</th>
+                            <th>Balance</th>
                             <th>Status</th>
                         </tr>
                     </thead>
@@ -217,7 +232,7 @@ $role = $auth->getUserRole(); // 'admin' or 'user'
     </script>
     </script>
 
-        <!-- JavaScript Configuration -->\n    <script src="<?= BASE_URL ?>config/js-config.php"></script>\n    <script src="customers.js"></script>
+    <!-- JavaScript Configuration -->\n <script src="<?= BASE_URL ?>config/js-config.php"></script>\n <script src="customers.js"></script>
 </body>
 
 </html>

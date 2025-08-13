@@ -23,6 +23,109 @@
     /* Inherits from base button styles */
 }
 
+/* Order History Table Styles */
+.orders-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.orders-table th,
+.orders-table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.orders-table th {
+    background-color: #f3f4f6;
+    font-weight: 600;
+    color: #374151;
+}
+
+.orders-table tbody tr:hover {
+    background-color: #f9fafb;
+}
+
+/* History Summary Styles */
+.history-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin: 20px 0;
+    padding: 20px;
+    background-color: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.summary-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.summary-item strong {
+    color: #374151;
+    font-size: 14px;
+}
+
+.summary-item span {
+    color: #1f2937;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.summary-item:nth-child(1) span {
+    color: #3b82f6;
+}
+
+.summary-item:nth-child(2) span {
+    color: #10b981;
+}
+
+.summary-item:nth-child(3) span {
+    color: #f59e0b;
+}
+
+.summary-item:nth-child(4) span {
+    color: #ef4444;
+}
+
+/* Status Badge Styles */
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.status-pending {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.status-processing {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+.status-delivered {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.status-completed {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.status-cancelled {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
 /* Customers specific responsive styles */
 @media (max-width: 768px) {
     .customers-table {
@@ -32,5 +135,24 @@
     .customers-table th,
     .customers-table td {
         padding: 8px 10px;
+    }
+    
+    .orders-table {
+        font-size: 12px;
+    }
+    
+    .orders-table th,
+    .orders-table td {
+        padding: 6px 8px;
+    }
+    
+    .history-summary {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        padding: 15px;
+    }
+    
+    .summary-item span {
+        font-size: 16px;
     }
 }
