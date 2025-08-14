@@ -5,6 +5,10 @@
  * Handles all financial transactions and balance calculations
  */
 
+// Suppress warnings to prevent them from corrupting JSON output
+error_reporting(E_ERROR | E_PARSE);
+ini_set('display_errors', 0);
+
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/utils.php';
 require_once __DIR__ . '/../../includes/FinancialHelper.php';
@@ -227,10 +231,10 @@ function addTransaction()
         $transactionId = $db->lastInsertId();
 
         // Update relevant balances based on transaction type
-        if ($input['customerId']) {
+        if (isset($input['customerId']) && $input['customerId']) {
             FinancialHelper::calculateCustomerBalance($input['customerId']);
         }
-        if ($input['supplierId']) {
+        if (isset($input['supplierId']) && $input['supplierId']) {
             FinancialHelper::calculateSupplierBalance($input['supplierId']);
         }
 
